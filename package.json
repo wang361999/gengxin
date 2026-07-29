@@ -1,0 +1,16 @@
+{
+  "name": "git-upload-saas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
+    "tar": "^7.5.22"
+  }
+}

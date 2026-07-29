@@ -1,0 +1,10 @@
+{
+  "name": "GitUpload",
+  "short_name": "GitUpload",
+  "description": "一键上传 ZIP 代码包到 GitHub",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "icons": []
+}
