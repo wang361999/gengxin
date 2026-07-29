@@ -2158,10 +2158,12 @@
     }
 
     // 检测 URL 中的 oauth_token 参数
+    var oauthCallbackToken = null; // 保存 OAuth token 供导入仓库时使用
     async function handleOauthCallback() {
       var params = new URLSearchParams(window.location.search);
       var oauthToken = params.get('oauth_token');
       if (!oauthToken) return;
+      oauthCallbackToken = oauthToken; // 保存 token
       // 清理 URL 参数
       var cleanUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, document.title, cleanUrl);
@@ -2171,10 +2173,13 @@
       document.getElementById('oauthRepoList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);">加载中...</div>';
 
       try {
-        var res = await fetch('/api/oauth/import-token', { method: 'POST', headers: authHeader(), body: JSON.stringify({ oauthToken: oauthToken }) });
+        var res = await fetch('/api/oauth/import-token', { method: 'POST', headers: authHeader(), body: JSON.stringify({ token: oauthToken }) });
         var data = await res.json();
         if (data.ok && data.repos && data.repos.length > 0) {
           document.getElementById('oauthImportAlert').innerHTML = '';
+          if (data.githubUser) {
+            document.getElementById('oauthImportAlert').innerHTML = '<div class="alert alert-ok">已授权账号: ' + escapeHtml(data.githubUser.login) + '</div>';
+          }
           document.getElementById('oauthRepoList').innerHTML = data.repos.map(function(r) {
             return '<div class="oauth-repo-item">' +
               '<div>' +
@@ -2196,12 +2201,18 @@
 
     async function importOauthRepo(fullName, cloneUrl, defaultBranch) {
       if (!confirm('确定导入仓库 ' + fullName + '？')) return;
+      if (!oauthCallbackToken) {
+        showAlert('授权已过期，请重新进行 GitHub 授权', false);
+        closeOauthImportModal();
+        return;
+      }
       try {
-        var res = await fetch('/api/oauth/import-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ fullName: fullName, cloneUrl: cloneUrl, defaultBranch: defaultBranch }) });
+        var res = await fetch('/api/oauth/import-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ token: oauthCallbackToken, repoUrl: cloneUrl, repoName: fullName, branch: defaultBranch }) });
         var data = await res.json();
         if (data.ok) {
           showAlert('仓库已导入：' + fullName, true);
           closeOauthImportModal();
+          oauthCallbackToken = null; // 导入后清除 token
           await loadRepos();
           await loadStats();
         } else {

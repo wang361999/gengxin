@@ -174,7 +174,7 @@ module.exports = async (req, res) => {
     if (action === 'import-token') {
       if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
       const body = await readBody(req);
-      const ghToken = String(body.token || '');
+      const ghToken = String(body.token || body.oauthToken || '');
       if (!ghToken) return sendJson(res, 400, { error: '缺少 Token' });
 
       // 获取用户信息
@@ -208,10 +208,10 @@ module.exports = async (req, res) => {
     if (action === 'import-repo') {
       if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
       const body = await readBody(req);
-      const ghToken = String(body.token || '');
-      const repoUrl = String(body.repoUrl || '');
-      const repoName = String(body.repoName || '');
-      const branch = String(body.branch || 'main');
+      const ghToken = String(body.token || body.oauthToken || '');
+      const repoUrl = String(body.repoUrl || body.cloneUrl || '');
+      const repoName = String(body.repoName || body.fullName || body.name || '');
+      const branch = String(body.branch || body.defaultBranch || 'main');
       const targetDir = String(body.targetDir || '.');
 
       if (!ghToken || !repoUrl) return sendJson(res, 400, { error: '缺少 Token 或仓库地址' });
