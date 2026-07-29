@@ -563,7 +563,7 @@
   </footer>
   <script>
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
-    (async function() {
+    async function checkAppVersion() {
       try {
         var res = await fetch('/api/auth/version');
         var data = await res.json();
@@ -571,13 +571,23 @@
           var stored = localStorage.getItem('app_version');
           if (stored && stored !== data.version) {
             localStorage.setItem('app_version', data.version);
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+            }
             window.location.reload(true);
           } else if (!stored) {
             localStorage.setItem('app_version', data.version);
           }
         }
       } catch(e) {}
-    })();
+    }
+    checkAppVersion();
+    setInterval(checkAppVersion, 5 * 60 * 1000);
+
+    // ===== Service Worker 注册 =====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
   </script>
 </body>
 </html>

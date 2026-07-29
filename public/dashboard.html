@@ -570,7 +570,7 @@
     function goAdmin() { window.location.href = '/admin'; }
 
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
-    (async function() {
+    async function checkAppVersion() {
       try {
         var res = await fetch('/api/auth/version');
         var data = await res.json();
@@ -578,13 +578,21 @@
           var stored = localStorage.getItem('app_version');
           if (stored && stored !== data.version) {
             localStorage.setItem('app_version', data.version);
+            // 通知 Service Worker 清理缓存
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+            }
+            // 强制刷新页面加载新版本
             window.location.reload(true);
           } else if (!stored) {
             localStorage.setItem('app_version', data.version);
           }
         }
       } catch(e) {}
-    })();
+    }
+    checkAppVersion();
+    // 每5分钟轮询一次版本号
+    setInterval(checkAppVersion, 5 * 60 * 1000);
 
     function authHeader() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
 

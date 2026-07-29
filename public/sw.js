@@ -1,13 +1,16 @@
-const CACHE_NAME = 'gitupload-v1';
+// Service Worker：网络优先策略，版本联动缓存清理
+const CACHE_NAME = 'gitupload-v2';
 const STATIC_ASSETS = [
   '/style.css',
   '/dashboard.html',
   '/login.html',
   '/index.html',
+  '/register.html',
+  '/admin.html',
   '/manifest.json'
 ];
 
-// 安装：预缓存静态资源
+// 安装：预缓存静态资源，立即激活
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
@@ -17,7 +20,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// 激活：清理旧缓存
+// 激活：清理所有旧缓存，立即接管
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -29,16 +32,40 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// 请求拦截：网络优先，离线回退缓存
+// 接收来自页面的消息（版本更新时强制清理缓存）
+self.addEventListener('message', event => {
+  if (event.data === 'CLEAR_CACHE') {
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key));
+    });
+  }
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// 请求拦截：智能策略
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // API 请求：网络优先，离线时从缓存读取（仅限历史记录）
-  if (url.pathname.startsWith('/api/history')) {
+  // 1. API 请求：永不缓存，始终网络优先
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response(JSON.stringify({ ok: false, error: '网络连接失败，请检查网络' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
+    );
+    return;
+  }
+
+  // 2. 导航请求（HTML 页面）：网络优先，离线回退
+  if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // 成功获取后缓存响应克隆
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, clone);
@@ -46,39 +73,36 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => {
-          // 离线时尝试从缓存读取
           return caches.match(event.request).then(cached => {
-            return cached || new Response(JSON.stringify({ error: '离线状态，无法加载' }), {
-              status: 503,
-              headers: { 'Content-Type': 'application/json' }
-            });
+            return cached || caches.match('/index.html');
           });
         })
     );
     return;
   }
 
-  // 静态资源和其他页面：网络优先，离线回退缓存
+  // 3. 静态资源（CSS/JS/图片）：缓存优先，后台更新
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // 成功获取后缓存
+    caches.match(event.request).then(cached => {
+      if (cached) {
+        // 后台更新缓存
+        fetch(event.request).then(response => {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, response.clone());
+          });
+        }).catch(() => {});
+        return cached;
+      }
+      // 没有缓存，网络获取
+      return fetch(event.request).then(response => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => {
           cache.put(event.request, clone);
         });
         return response;
-      })
-      .catch(() => {
-        // 离线时从缓存读取
-        return caches.match(event.request).then(cached => {
-          if (cached) return cached;
-          // 如果是导航请求，回退到 index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('离线状态', { status: 503 });
-        });
-      })
+      }).catch(() => {
+        return new Response('离线状态', { status: 503 });
+      });
+    })
   );
 });

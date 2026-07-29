@@ -60,9 +60,8 @@ module.exports = async (req, res) => {
     const queryToken = urlObj.searchParams.get('token');
 
     if (downloadRepoId && queryToken) {
-      // 确保密钥已加载后验证 token
-      await initSecret();
-      const payload = verifyToken(queryToken);
+      // 确保密钥已加载后验证 token（异步版本）
+      const payload = await verifyToken(queryToken);
       if (!payload) return sendJson(res, 401, { error: 'Token 无效' });
       const dlUserId = payload.role === 'admin' && !payload.userId ? (payload.adminId || 'admin_user') : payload.userId;
       if (!dlUserId) return sendJson(res, 401, { error: '无法识别用户' });

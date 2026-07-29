@@ -89,7 +89,7 @@ module.exports = async (req, res) => {
       if (admin) {
         const valid = await bcrypt.compare(password, admin.passwordHash);
         if (!valid) return sendJson(res, 401, { error: '用户名或密码错误' });
-        const token = signAdminToken({ adminId: admin.id, username: admin.username });
+        const token = await signAdminToken({ adminId: admin.id, username: admin.username });
         // 单会话登录：记录当前活跃 token，使旧 token 自动失效
         try { await updateAdminSession(admin.id, token); } catch {}
         // 检查是否需要强制修改密码
@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
         }
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return sendJson(res, 401, { error: '用户名或密码错误' });
-        const token = signToken({ userId: user.id, username: user.username });
+        const token = await signToken({ userId: user.id, username: user.username });
         // 单会话登录：记录当前活跃 token，使旧 token 自动失效
         try { await updateUserSession(user.id, token); } catch {}
         return sendJson(res, 200, { ok: true, token, role: 'user', redirect: '/dashboard' });
@@ -142,7 +142,7 @@ module.exports = async (req, res) => {
 
       const hash = await bcrypt.hash(password, 10);
       const user = await createUser(username, hash, brandName || username);
-      const token = signToken({ userId: user.id, username: user.username });
+      const token = await signToken({ userId: user.id, username: user.username });
       // 单会话登录：记录当前活跃 token
       try { await updateUserSession(user.id, token); } catch {}
       return sendJson(res, 201, { ok: true, token, user: { id: user.id, username: user.username, brandName: user.brandName } });
