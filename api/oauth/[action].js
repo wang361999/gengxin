@@ -1,8 +1,8 @@
 const https = require('https');
-const { sendJson, readBody } = require('../lib/helpers');
-const { requireAuth, initSecret } = require('../lib/auth');
-const { addRepo, listRepos, getSetting } = require('../lib/db');
-const { encrypt } = require('../lib/crypto');
+const { sendJson, readBody } = require('../../lib/helpers');
+const { requireAuth, initSecret } = require('../../lib/auth');
+const { addRepo, listRepos, getSetting } = require('../../lib/db');
+const { encrypt } = require('../../lib/crypto');
 
 // GitHub OAuth 配置
 function getOAuthConfig() {
