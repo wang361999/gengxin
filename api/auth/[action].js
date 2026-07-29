@@ -1,8 +1,39 @@
 const bcrypt = require('bcryptjs');
+const https = require('https');
 const { sendJson, readBody } = require('../../lib/helpers');
 const { findUserByUsername, ensureDefaultAdmin, findAdmin, createUser, findUserById, updateUser, deleteUser, getSetting, getAllSettings, getUserPlan, getUserSubscriptions, getPlans, getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications, getUserOrders, requestUpgrade, listApiKeys, createApiKey, deleteApiKey, markOrderPaid, updateUserSession, updateAdminSession, getAppVersion, updateAppVersion, healthCheck, getOnlineCount, getOnlineUsers, cleanOnlineSessions } = require('../../lib/db');
 const { signToken, signAdminToken, requireAuth, initSecret, extractToken } = require('../../lib/auth');
 const { loginLimiter, registerLimiter, getClientIp, cleanupStore } = require('../../lib/rateLimit');
+
+// 通过 GitHub Token 获取用户信息
+function getGithubUserByToken(token) {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.github.com',
+      path: '/user',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'git-upload-saas',
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          resolve(data);
+        } catch (e) {
+          reject(new Error('解析 GitHub 用户信息失败'));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 module.exports = async (req, res) => {
   await initSecret();
@@ -118,6 +149,57 @@ module.exports = async (req, res) => {
         return sendJson(res, 200, { ok: true, token, role: 'user', redirect: '/dashboard' });
       }
       return sendJson(res, 401, { error: '用户名或密码错误' });
+    }
+
+    // ===== GitHub Token 登录（用 GitHub Personal Access Token 登录/注册） =====
+    if (action === 'github-login') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      cleanupStore();
+      const ip = getClientIp(req);
+      if (loginLimiter(ip)) return sendJson(res, 429, { error: '请求过于频繁，请稍后再试' });
+
+      const body = await readBody(req);
+      const ghToken = String(body.token || '').trim();
+      if (!ghToken) return sendJson(res, 400, { error: '请输入 GitHub Token' });
+
+      // 通过 Token 获取 GitHub 用户信息
+      let ghUser;
+      try {
+        ghUser = await getGithubUserByToken(ghToken);
+      } catch (e) {
+        return sendJson(res, 401, { error: 'GitHub Token 验证失败，请检查 Token 是否有效' });
+      }
+      if (!ghUser || !ghUser.login) {
+        return sendJson(res, 401, { error: 'GitHub Token 无效或已过期' });
+      }
+
+      // 检查是否已有该 GitHub 用户（username 格式: github_用户名）
+      const ghUsername = 'github_' + ghUser.login.toLowerCase();
+      let user = await findUserByUsername(ghUsername);
+
+      if (user) {
+        // 已有账号，直接登录
+        if (user.status === 'disabled') {
+          return sendJson(res, 403, { error: '账号已被禁用，请联系管理员' });
+        }
+        const token = await signToken({ userId: user.id, username: user.username });
+        try { await updateUserSession(user.id, token); } catch {}
+        return sendJson(res, 200, { ok: true, token, role: 'user', redirect: '/dashboard' });
+      }
+
+      // 没有账号则自动注册
+      const allowRegister = await getSetting('allow_register');
+      if (allowRegister === 'false') {
+        return sendJson(res, 403, { error: '系统已关闭注册，无法通过 GitHub 登录' });
+      }
+
+      // 使用随机密码创建用户（GitHub 登录用户不需要密码）
+      const randomPwd = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const hash = await bcrypt.hash(randomPwd, 10);
+      user = await createUser(ghUsername, hash, ghUser.name || ghUser.login);
+      const token = await signToken({ userId: user.id, username: user.username });
+      try { await updateUserSession(user.id, token); } catch {}
+      return sendJson(res, 200, { ok: true, token, role: 'user', redirect: '/dashboard', githubUser: ghUser.login });
     }
 
     // ===== 注册 =====
