@@ -2,7 +2,7 @@ const { sendJson, readBody } = require('../lib/helpers');
 const { requireAuth, getUser, verifyToken, initSecret } = require('../lib/auth');
 const { addRepo, listRepos, getRepo, updateRepo, deleteRepo, addHistory, getUserPlan, checkUploadLimit, incrementUploadUsage } = require('../lib/db');
 const { encrypt, decrypt } = require('../lib/crypto');
-const { parseRepo, ghRequest, clearRepoFiles, getRepoFileTree, getRepoArchiveUrl } = require('../lib/github');
+const { parseRepo, ghRequest, clearRepoFiles, getRepoFileTree, getRepoArchiveUrl, deleteFiles } = require('../lib/github');
 const https = require('https');
 const http = require('http');
 
@@ -209,6 +209,44 @@ module.exports = async (req, res) => {
           deletedCount: result.deletedCount,
           commitSha: result.commitSha,
           keptReadme: result.keptReadme
+        });
+      }
+
+      // ===== 删除指定文件（支持批量） =====
+      if (action === 'delete-files') {
+        const repoId = body.repoId;
+        if (!repoId) return sendJson(res, 400, { error: '缺少仓库 ID' });
+        const filesToDelete = Array.isArray(body.files) ? body.files : [];
+        if (filesToDelete.length === 0) return sendJson(res, 400, { error: '请选择要删除的文件' });
+        if (filesToDelete.length > 500) return sendJson(res, 400, { error: '单次最多删除 500 个文件' });
+
+        const config = await getRepo(user.userId, repoId);
+        if (!config) return sendJson(res, 404, { error: '仓库不存在' });
+
+        const token = decrypt(config.encToken);
+        if (!token) return sendJson(res, 500, { error: 'Token 解密失败' });
+
+        const branch = config.branch || 'main';
+        const { owner, repo } = parseRepo(config.repo);
+
+        const result = await deleteFiles(owner, repo, branch, filesToDelete, token);
+
+        await addHistory(user.userId, {
+          fileName: `删除 ${result.deletedCount} 个文件`,
+          fileCount: -(result.deletedCount),
+          size: 0,
+          repo: `${owner}/${repo}`,
+          branch,
+          status: 'success',
+          commitSha: result.commitSha
+        });
+
+        return sendJson(res, 200, {
+          ok: true,
+          message: `成功删除 ${result.deletedCount} 个文件`,
+          deletedCount: result.deletedCount,
+          deletedFiles: result.deletedFiles,
+          commitSha: result.commitSha
         });
       }
 
