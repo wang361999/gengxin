@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { sendJson, readBody } = require('../../lib/helpers');
-const { findUserByUsername, ensureDefaultAdmin, findAdmin, createUser, findUserById, updateUser, deleteUser, getSetting, getAllSettings, getUserPlan, getUserSubscriptions, getPlans, getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications, getUserOrders, requestUpgrade, listApiKeys, createApiKey, deleteApiKey, markOrderPaid, updateUserSession, updateAdminSession, getAppVersion, updateAppVersion, healthCheck } = require('../../lib/db');
+const { findUserByUsername, ensureDefaultAdmin, findAdmin, createUser, findUserById, updateUser, deleteUser, getSetting, getAllSettings, getUserPlan, getUserSubscriptions, getPlans, getNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead, clearNotifications, getUserOrders, requestUpgrade, listApiKeys, createApiKey, deleteApiKey, markOrderPaid, updateUserSession, updateAdminSession, getAppVersion, updateAppVersion, healthCheck, getOnlineCount, getOnlineUsers, cleanOnlineSessions } = require('../../lib/db');
 const { signToken, signAdminToken, requireAuth, initSecret, extractToken } = require('../../lib/auth');
 const { loginLimiter, registerLimiter, getClientIp, cleanupStore } = require('../../lib/rateLimit');
 
@@ -70,6 +70,13 @@ module.exports = async (req, res) => {
         nodeVersion: process.version || 'unknown'
       };
       return sendJson(res, 200, { ok: true, db: result, env: envStatus });
+    }
+
+    // ===== 在线人数（公开端点） =====
+    if (action === 'online-count') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const count = await getOnlineCount();
+      return sendJson(res, 200, { ok: true, onlineCount: count });
     }
 
     // ===== 登录 =====

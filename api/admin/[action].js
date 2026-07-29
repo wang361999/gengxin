@@ -6,7 +6,8 @@ const {
   findAdminById, updateAdminPassword, getUserDetail, getUploadTrend,
   getAllSettings, updateSetting, updateUser, setUserPlan, getPlans,
   getAllOrders, confirmOrder, clearPendingOrders, addNotification,
-  getAnalyticsData, getSetting, getAppVersion, updateAppVersion, healthCheck
+  getAnalyticsData, getSetting, getAppVersion, updateAppVersion, healthCheck,
+  getOnlineCount, getOnlineUsers, cleanOnlineSessions
 } = require('../../lib/db');
 
 module.exports = async (req, res) => {
@@ -73,7 +74,18 @@ module.exports = async (req, res) => {
     if (action === 'stats') {
       if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
       const stats = await getStats();
-      return sendJson(res, 200, { ok: true, stats });
+      const onlineCount = await getOnlineCount();
+      return sendJson(res, 200, { ok: true, stats, onlineCount });
+    }
+
+    // ===== 在线用户列表（管理员） =====
+    if (action === 'online-users') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const onlineCount = await getOnlineCount();
+      const onlineUsers = await getOnlineUsers();
+      // 顺便清理过期记录
+      cleanOnlineSessions().catch(() => {});
+      return sendJson(res, 200, { ok: true, onlineCount, users: onlineUsers });
     }
 
     // ===== 上传趋势（最近30天） =====

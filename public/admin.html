@@ -249,6 +249,11 @@
         <div class="stat-num" id="statToday" style="font-size:22px;">-</div>
         <div class="stat-name">今日上传</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div>
+        <div class="stat-num" id="statOnline" style="font-size:22px;color:#16a34a;">-</div>
+        <div class="stat-name">在线人数</div>
+      </div>
     </div>
 
     <!-- 上传趋势 -->
@@ -1018,9 +1023,16 @@
           document.getElementById('statToday').textContent = s.todayUploads;
           document.getElementById('statPaid').textContent = s.paidUsers || 0;
           document.getElementById('statRevenue').textContent = (s.totalRevenue || 0).toFixed(2);
+          // 在线人数
+          if (data.onlineCount !== undefined) {
+            document.getElementById('statOnline').textContent = data.onlineCount;
+          }
         }
       } catch (e) {}
     }
+
+    // 在线人数定时刷新
+    setInterval(loadStats, 60 * 1000);
 
     async function loadTrend() {
       try {

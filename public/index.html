@@ -330,6 +330,10 @@
       .hero-actions { flex-direction: column; align-items: center; }
       .btn-hero { width: 100%; max-width: 280px; justify-content: center; }
     }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
   </style>
 </head>
 <body>
@@ -351,6 +355,12 @@
     <div class="hero-badge">
       <span class="dot"></span>
       免费开源 · 部署在 Vercel · 零服务器成本
+    </div>
+    <div id="onlineBadge" style="display:none;justify-content:center;margin-bottom:12px;">
+      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);color:#16a34a;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid rgba(34,197,94,0.3);">
+        <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        <span id="onlineCount">0</span> 人在线
+      </span>
     </div>
     <h1>
       ZIP 代码包<br>
@@ -583,6 +593,24 @@
     }
     checkAppVersion();
     setInterval(checkAppVersion, 5 * 60 * 1000);
+
+    // ===== 在线人数统计 =====
+    async function loadOnlineCount() {
+      try {
+        var res = await fetch('/api/auth/online-count');
+        var data = await res.json();
+        if (data.ok) {
+          var badge = document.getElementById('onlineBadge');
+          var count = document.getElementById('onlineCount');
+          if (badge && count) {
+            count.textContent = data.onlineCount;
+            badge.style.display = 'flex';
+          }
+        }
+      } catch(e) {}
+    }
+    loadOnlineCount();
+    setInterval(loadOnlineCount, 60 * 1000);
 
     // ===== Service Worker 注册 =====
     if ('serviceWorker' in navigator) {

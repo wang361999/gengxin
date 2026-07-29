@@ -189,6 +189,7 @@
       <div class="mini-stat-card"><div class="mini-stat-icon icon-green">🔗</div><div class="mini-stat-info"><div class="num" id="myRepos">-</div><div class="label">仓库数</div></div></div>
       <div class="mini-stat-card"><div class="mini-stat-icon icon-purple">📦</div><div class="mini-stat-info"><div class="num" id="myFiles">-</div><div class="label">总文件数</div></div></div>
       <div class="mini-stat-card"><div class="mini-stat-icon icon-orange">💾</div><div class="mini-stat-info"><div class="num" id="mySize">-</div><div class="label">总大小</div></div></div>
+      <div class="mini-stat-card"><div class="mini-stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div><div class="mini-stat-info"><div class="num" id="onlineCountBadge" style="color:#16a34a;">-</div><div class="label">在线人数</div></div></div>
     </div>
 
     <div class="grid2">
@@ -1511,9 +1512,23 @@
     loadTeams();
     loadWebhooks();
     handleOauthCallback();
+    loadOnlineCount();
 
     // 每 30 秒轮询通知，检测套餐变更后自动刷新
     setInterval(function() { loadNotifications(); }, 30000);
+
+    // ===== 在线人数统计 =====
+    async function loadOnlineCount() {
+      try {
+        var res = await fetch('/api/auth/online-count');
+        var data = await res.json();
+        if (data.ok) {
+          var el = document.getElementById('onlineCountBadge');
+          if (el) el.textContent = data.onlineCount;
+        }
+      } catch(e) {}
+    }
+    setInterval(loadOnlineCount, 60 * 1000);
 
     async function loadAnnouncement() {
       try {
