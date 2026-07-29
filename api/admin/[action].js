@@ -110,7 +110,7 @@ module.exports = async (req, res) => {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat'];
+        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret'];
         for (const key of allowedKeys) {
           if (body[key] !== undefined) {
             await updateSetting(key, body[key]);

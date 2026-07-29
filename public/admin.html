@@ -631,6 +631,25 @@
         </div>
       </div>
 
+      <!-- GitHub OAuth 配置 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">GitHub OAuth 配置</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以通过 GitHub 弹窗授权一键导入仓库，无需手动填写 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
+        <div class="field">
+          <label>GitHub OAuth Client ID</label>
+          <input type="text" id="setOauthClientId" placeholder="Iv1.xxxxxxxxxxxxxxxx" style="max-width:400px;">
+        </div>
+        <div class="field">
+          <label>GitHub OAuth Client Secret</label>
+          <input type="password" id="setOauthClientSecret" placeholder="GitHub OAuth App 的 Secret" style="max-width:400px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-primary" onclick="saveOauthConfig()">保存 OAuth 配置</button>
+          <button class="btn btn-outline" onclick="testOauthConfig()">测试 OAuth 是否可用</button>
+        </div>
+        <div id="oauthTestResult" style="margin-top:12px;"></div>
+      </div>
+
       <!-- 系统健康检查 -->
       <div class="card" style="margin-top:20px;">
         <h3 style="margin-bottom:16px;">系统健康检查</h3>
@@ -1319,6 +1338,9 @@
           document.getElementById('setWechatQrcode').value = s.wechat_qrcode || '';
           document.getElementById('setPaymentInstructions').value = s.payment_instructions || '';
           loadPaymentQrcodes();
+          // OAuth 配置
+          document.getElementById('setOauthClientId').value = s.github_oauth_client_id || '';
+          document.getElementById('setOauthClientSecret').value = s.github_oauth_client_secret || '';
         }
       } catch (e) {}
     }
@@ -1378,8 +1400,40 @@
         var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
         if (!data) return;
         if (data.ok) showAlert('设置已保存', true);
+      else showAlert(data.error, false);
+    } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== GitHub OAuth 配置 =====
+    async function saveOauthConfig() {
+      var body = {
+        github_oauth_client_id: document.getElementById('setOauthClientId').value.trim(),
+        github_oauth_client_secret: document.getElementById('setOauthClientSecret').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('OAuth 配置已保存', true);
         else showAlert(data.error, false);
       } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function testOauthConfig() {
+      var resultEl = document.getElementById('oauthTestResult');
+      resultEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;font-size:14px;color:var(--text2);">正在测试...</div>';
+      try {
+        var data = await apiFetch('/api/oauth/auth-url');
+        if (!data) return;
+        if (data.ok && data.enabled) {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:14px;color:#059669;">✅ OAuth 已配置，可以使用 GitHub 授权登录<br><br>授权链接：<a href="' + escapeHtml(data.authUrl) + '" target="_blank" style="color:var(--blue);word-break:break-all;">点击测试 GitHub 授权</a></div>';
+        } else if (data.ok && !data.enabled) {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;font-size:14px;color:#ea580c;">⚠️ OAuth 未配置，请先填写 Client ID 和 Secret 并保存</div>';
+        } else {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">' + escapeHtml(data.error || '测试失败') + '</div>';
+        }
+      } catch (e) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';
+      }
     }
 
     async function savePlanSettings() {
@@ -1633,6 +1687,8 @@
     loadOrders();
     loadCurrentVersion();
     checkNeedChangePassword();
+    // 显示 OAuth 回调 URL
+    document.getElementById('oauthCallbackHint').textContent = window.location.origin + '/api/oauth/callback';
   </script>
 </body>
 </html>

@@ -4,11 +4,11 @@ const { requireAuth, initSecret } = require('../../lib/auth');
 const { addRepo, listRepos, getSetting } = require('../../lib/db');
 const { encrypt } = require('../../lib/crypto');
 
-// GitHub OAuth 配置
-function getOAuthConfig() {
+// GitHub OAuth 配置（异步：getSetting 是异步函数）
+async function getOAuthConfig() {
   return {
-    clientId: process.env.GITHUB_OAUTH_CLIENT_ID || getSetting('github_oauth_client_id') || '',
-    clientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET || getSetting('github_oauth_client_secret') || ''
+    clientId: process.env.GITHUB_OAUTH_CLIENT_ID || await getSetting('github_oauth_client_id') || '',
+    clientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET || await getSetting('github_oauth_client_secret') || ''
   };
 }
 
