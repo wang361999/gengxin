@@ -9,6 +9,7 @@ const {
   getAnalyticsData, getSetting, getAppVersion, updateAppVersion, healthCheck,
   getOnlineCount, getOnlineUsers, cleanOnlineSessions
 } = require('../../lib/db');
+const vercel = require('../../lib/vercel');
 
 module.exports = async (req, res) => {
   await initSecret();
@@ -110,7 +111,7 @@ module.exports = async (req, res) => {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret'];
+        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id'];
         for (const key of allowedKeys) {
           if (body[key] !== undefined) {
             await updateSetting(key, body[key]);
@@ -248,6 +249,87 @@ module.exports = async (req, res) => {
           appVersion: all.app_version || 'unknown'
         }
       });
+    }
+
+    // ===== Vercel 项目状态 =====
+    if (action === 'vercel-status') {
+      if (req.method === 'GET') {
+        // 读取 Vercel Token 和 Project ID（从环境变量或数据库设置）
+        const vercelToken = process.env.VERCEL_TOKEN || await getSetting('vercel_token') || '';
+        const vercelProjectId = process.env.VERCEL_PROJECT_ID || await getSetting('vercel_project_id') || '';
+
+        if (!vercelToken) {
+          return sendJson(res, 200, { ok: false, error: '未配置 Vercel Token，请在设置中配置', configured: false });
+        }
+
+        try {
+          const status = await vercel.getProjectStatus(vercelToken, vercelProjectId);
+          return sendJson(res, 200, {
+            ok: true,
+            configured: true,
+            hasProjectId: !!vercelProjectId,
+            ...status
+          });
+        } catch (e) {
+          return sendJson(res, 200, { ok: false, configured: true, error: e.message });
+        }
+      }
+      if (req.method === 'POST') {
+        // 保存 Vercel 配置
+        const body = await readBody(req);
+        if (body.vercelToken !== undefined) {
+          await updateSetting('vercel_token', body.vercelToken);
+        }
+        if (body.vercelProjectId !== undefined) {
+          await updateSetting('vercel_project_id', body.vercelProjectId);
+        }
+        return sendJson(res, 200, { ok: true, message: 'Vercel 配置已保存' });
+      }
+      return sendJson(res, 405, { error: '只支持 GET 和 POST' });
+    }
+
+    // ===== Vercel 部署列表 =====
+    if (action === 'vercel-deployments') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const vercelToken = process.env.VERCEL_TOKEN || await getSetting('vercel_token') || '';
+      const vercelProjectId = process.env.VERCEL_PROJECT_ID || await getSetting('vercel_project_id') || '';
+      if (!vercelToken) return sendJson(res, 400, { error: '未配置 Vercel Token' });
+      try {
+        const data = await vercel.getDeployments(vercelProjectId, vercelToken, 20);
+        return sendJson(res, 200, { ok: true, ...data });
+      } catch (e) {
+        return sendJson(res, 500, { error: e.message });
+      }
+    }
+
+    // ===== Vercel 构建日志 =====
+    if (action === 'vercel-logs') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const body = await readBody(req);
+      if (!body.deploymentId) return sendJson(res, 400, { error: '缺少 deploymentId' });
+      const vercelToken = process.env.VERCEL_TOKEN || await getSetting('vercel_token') || '';
+      if (!vercelToken) return sendJson(res, 400, { error: '未配置 Vercel Token' });
+      try {
+        const logs = await vercel.getBuildLogs(body.deploymentId, vercelToken);
+        return sendJson(res, 200, { ok: true, logs });
+      } catch (e) {
+        return sendJson(res, 500, { error: e.message });
+      }
+    }
+
+    // ===== Vercel 重新部署 =====
+    if (action === 'vercel-redeploy') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const body = await readBody(req);
+      if (!body.deploymentId) return sendJson(res, 400, { error: '缺少 deploymentId' });
+      const vercelToken = process.env.VERCEL_TOKEN || await getSetting('vercel_token') || '';
+      if (!vercelToken) return sendJson(res, 400, { error: '未配置 Vercel Token' });
+      try {
+        const result = await vercel.redeploy(body.deploymentId, vercelToken);
+        return sendJson(res, 200, { ok: true, message: '已触发重新部署', ...result });
+      } catch (e) {
+        return sendJson(res, 500, { error: e.message });
+      }
     }
 
     return sendJson(res, 404, { error: '未知的操作: ' + action });

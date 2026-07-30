@@ -2,7 +2,7 @@ const { sendJson, readBody } = require('../lib/helpers');
 const { requireAuth, getUser, verifyToken, initSecret } = require('../lib/auth');
 const { addRepo, listRepos, getRepo, updateRepo, deleteRepo, addHistory, getUserPlan, checkUploadLimit, incrementUploadUsage, createUploadTemplate, listUploadTemplates, deleteUploadTemplate, createSchedule, listSchedules, deleteSchedule, updateScheduleStatus, getEmailConfig, updateEmailConfig, getUserEmailNotify, setUserEmailNotify, getUserUploadTrend, getUserRepoDist, getUserFileTypeDist } = require('../lib/db');
 const { encrypt, decrypt } = require('../lib/crypto');
-const { parseRepo, ghRequest, clearRepoFiles, getRepoFileTree, getRepoArchiveUrl, deleteFiles, getRepoFileContent, checkTokenStatus } = require('../lib/github');
+const { parseRepo, ghRequest, clearRepoFiles, getRepoFileTree, getRepoArchiveUrl, deleteFiles, getRepoFileContent, checkTokenStatus, createOrUpdateFile, createFileInRepo, renameFile, getFileTree } = require('../lib/github');
 const { sendUploadEmail } = require('../lib/email');
 const https = require('https');
 const http = require('http');
@@ -319,6 +319,136 @@ module.exports = async (req, res) => {
         const result = await checkTokenStatus(token);
 
         return sendJson(res, 200, { ok: true, ...result });
+      }
+
+      // ===== 保存文件（新建或更新） =====
+      if (action === 'save-file') {
+        const repoId = body.repoId;
+        const filePath = body.path;
+        if (!repoId) return sendJson(res, 400, { error: '缺少仓库 ID' });
+        if (!filePath) return sendJson(res, 400, { error: '缺少文件路径' });
+        if (body.content === undefined || body.content === null) {
+          return sendJson(res, 400, { error: '缺少文件内容' });
+        }
+
+        const config = await getRepo(user.userId, repoId);
+        if (!config) return sendJson(res, 404, { error: '仓库不存在' });
+
+        const token = decrypt(config.encToken);
+        if (!token) return sendJson(res, 500, { error: 'Token 解密失败' });
+
+        const branch = config.branch || 'main';
+        const { owner, repo } = parseRepo(config.repo);
+
+        const commitMsg = body.commitMsg || ('更新文件: ' + filePath);
+        const result = await createOrUpdateFile(owner, repo, filePath, body.content, branch, commitMsg, token);
+
+        await addHistory(user.userId, {
+          fileName: filePath,
+          fileCount: 1,
+          size: Buffer.byteLength(String(body.content), 'utf8'),
+          repo: `${owner}/${repo}`,
+          branch,
+          status: 'success',
+          commitSha: result.commitSha
+        });
+
+        return sendJson(res, 200, {
+          ok: true,
+          commitSha: result.commitSha,
+          message: '文件已保存'
+        });
+      }
+
+      // ===== 新建文件（已存在则报错） =====
+      if (action === 'create-file') {
+        const repoId = body.repoId;
+        const filePath = body.path;
+        if (!repoId) return sendJson(res, 400, { error: '缺少仓库 ID' });
+        if (!filePath) return sendJson(res, 400, { error: '缺少文件路径' });
+        if (body.content === undefined || body.content === null) {
+          return sendJson(res, 400, { error: '缺少文件内容' });
+        }
+
+        const config = await getRepo(user.userId, repoId);
+        if (!config) return sendJson(res, 404, { error: '仓库不存在' });
+
+        const token = decrypt(config.encToken);
+        if (!token) return sendJson(res, 500, { error: 'Token 解密失败' });
+
+        const branch = config.branch || 'main';
+        const { owner, repo } = parseRepo(config.repo);
+
+        const commitMsg = body.commitMsg || ('新建文件: ' + filePath);
+        const result = await createFileInRepo(owner, repo, filePath, body.content, branch, commitMsg, token);
+
+        await addHistory(user.userId, {
+          fileName: filePath,
+          fileCount: 1,
+          size: Buffer.byteLength(String(body.content), 'utf8'),
+          repo: `${owner}/${repo}`,
+          branch,
+          status: 'success',
+          commitSha: result.commitSha
+        });
+
+        return sendJson(res, 200, {
+          ok: true,
+          commitSha: result.commitSha,
+          message: '文件已创建'
+        });
+      }
+
+      // ===== 重命名文件 =====
+      if (action === 'rename-file') {
+        const repoId = body.repoId;
+        const oldPath = body.oldPath;
+        const newPath = body.newPath;
+        if (!repoId) return sendJson(res, 400, { error: '缺少仓库 ID' });
+        if (!oldPath) return sendJson(res, 400, { error: '缺少原文件路径 (oldPath)' });
+        if (!newPath) return sendJson(res, 400, { error: '缺少新文件路径 (newPath)' });
+
+        const config = await getRepo(user.userId, repoId);
+        if (!config) return sendJson(res, 404, { error: '仓库不存在' });
+
+        const token = decrypt(config.encToken);
+        if (!token) return sendJson(res, 500, { error: 'Token 解密失败' });
+
+        const branch = config.branch || 'main';
+        const { owner, repo } = parseRepo(config.repo);
+
+        const commitMsg = body.commitMsg || ('重命名: ' + oldPath + ' -> ' + newPath);
+        const result = await renameFile(owner, repo, oldPath, newPath, branch, commitMsg, token);
+
+        return sendJson(res, 200, {
+          ok: true,
+          message: '文件已重命名'
+        });
+      }
+
+      // ===== 列出目录内容 =====
+      if (action === 'list-dir') {
+        const repoId = body.repoId;
+        if (!repoId) return sendJson(res, 400, { error: '缺少仓库 ID' });
+        const dirPath = body.path || '';
+
+        const config = await getRepo(user.userId, repoId);
+        if (!config) return sendJson(res, 404, { error: '仓库不存在' });
+
+        const token = decrypt(config.encToken);
+        if (!token) return sendJson(res, 500, { error: 'Token 解密失败' });
+
+        const branch = config.branch || 'main';
+        const { owner, repo } = parseRepo(config.repo);
+
+        const result = await getFileTree(owner, repo, branch, token, dirPath);
+
+        return sendJson(res, 200, {
+          ok: true,
+          items: result,
+          path: dirPath,
+          branch
+        });
       }
 
       // ===== 上传模板管理 =====

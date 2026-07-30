@@ -834,7 +834,10 @@
     <div class="modal" style="max-width:780px;">
       <div class="modal-header">
         <h3 style="margin:0;" id="fileBrowserTitle">仓库文件浏览</h3>
-        <button class="modal-close" onclick="closeFileBrowser()">&times;</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-blue btn-sm" onclick="openNewFileModal(currentBrowseRepoId)" title="新建文件">+ 新建</button>
+          <button class="modal-close" onclick="closeFileBrowser()">&times;</button>
+        </div>
       </div>
       <div id="fileBrowserAlert"></div>
       <div id="fileBrowserLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
@@ -842,14 +845,99 @@
         <div>正在获取文件列表...</div>
       </div>
       <div id="fileBrowserContent" style="display:none;">
-        <div class="file-preview-list" id="fileBrowserList" style="max-height:300px;"></div>
+        <div class="file-preview-list" id="fileBrowserList" style="max-height:420px;"></div>
       </div>
       <div id="fileViewerContent" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
         <div style="background:var(--bg);padding:8px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
           <span id="fileViewerPath" style="font-family:monospace;"></span>
-          <button class="btn btn-outline btn-sm" onclick="closeFileViewer()">返回列表</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="editCurrentViewingFile()">编辑此文件</button>
+            <button class="btn btn-outline btn-sm" onclick="closeFileViewer()">返回列表</button>
+          </div>
         </div>
         <pre id="fileViewerPre" style="margin:0;padding:12px;max-height:360px;overflow:auto;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 文件编辑器弹窗 -->
+  <div class="modal-overlay" id="fileEditorModal">
+    <div class="modal" style="max-width:820px;">
+      <div class="modal-header">
+        <h3 style="margin:0;" id="fileEditorTitle">编辑文件</h3>
+        <button class="modal-close" onclick="closeFileEditor()">&times;</button>
+      </div>
+      <div id="fileEditorAlert"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+        <span style="font-size:13px;color:var(--text2);white-space:nowrap;">文件路径</span>
+        <input type="text" id="fileEditorPath" style="flex:1;font-family:monospace;font-size:13px;" placeholder="例如：src/index.html" readonly>
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label>文件内容</label>
+        <textarea id="fileEditorContent" style="width:100%;min-height:320px;max-height:500px;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;line-height:1.5;resize:vertical;" placeholder="在此输入文件内容..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>Commit Message（可选）</label>
+        <input type="text" id="fileEditorCommitMsg" placeholder="例如：修复首页样式" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeFileEditor()">取消</button>
+        <button class="btn btn-primary" id="saveFileBtn" onclick="saveFileContent()">保存文件</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建文件弹窗 -->
+  <div class="modal-overlay" id="newFileModal">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <h3>新建文件</h3>
+        <button class="modal-close" onclick="closeNewFileModal()">&times;</button>
+      </div>
+      <div id="newFileAlert"></div>
+      <div class="field">
+        <label>文件路径</label>
+        <input type="text" id="newFilePath" placeholder="例如：src/new-file.js（用 / 分隔目录）" style="font-family:monospace;font-size:13px;">
+        <div class="hint">在路径末尾输入 <code>/</code> 会自动创建文件夹</div>
+      </div>
+      <div class="field">
+        <label>文件内容</label>
+        <textarea id="newFileContent" style="width:100%;min-height:180px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;" placeholder="输入文件内容..."></textarea>
+      </div>
+      <div class="field">
+        <label>Commit Message（可选）</label>
+        <input type="text" id="newFileCommitMsg" placeholder="例如：新建配置文件" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeNewFileModal()">取消</button>
+        <button class="btn btn-primary" id="createFileBtn" onclick="createNewFile()">创建文件</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重命名文件弹窗 -->
+  <div class="modal-overlay" id="renameFileModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3>重命名 / 移动文件</h3>
+        <button class="modal-close" onclick="closeRenameModal()">&times;</button>
+      </div>
+      <div id="renameAlert"></div>
+      <div class="field">
+        <label>原路径</label>
+        <input type="text" id="renameOldPath" readonly style="font-family:monospace;font-size:13px;background:var(--bg);">
+      </div>
+      <div class="field">
+        <label>新路径</label>
+        <input type="text" id="renameNewPath" placeholder="输入新的文件路径" style="font-family:monospace;font-size:13px;">
+      </div>
+      <div class="field">
+        <label>Commit Message（可选）</label>
+        <input type="text" id="renameCommitMsg" placeholder="留空使用默认" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeRenameModal()">取消</button>
+        <button class="btn btn-primary" id="renameBtn" onclick="confirmRename()">确认重命名</button>
       </div>
     </div>
   </div>
@@ -2779,7 +2867,10 @@
     }
 
     // ===== 文件在线浏览 =====
+    var currentBrowseRepoId = null;
+
     async function openFileBrowser(id) {
+      currentBrowseRepoId = id;
       var r = repos.find(function(x) { return String(x.id) === String(id); });
       if (!r) return;
       document.getElementById('fileBrowserTitle').textContent = r.name + ' 文件浏览';
@@ -2788,8 +2879,80 @@
       document.getElementById('fileViewerContent').style.display = 'none';
       document.getElementById('fileBrowserLoading').style.display = 'block';
       document.getElementById('fileBrowserModal').classList.add('show');
+      await loadFileBrowserList(id, '');
+    }
+
+    async function loadFileBrowserList(repoId, dirPath) {
+      document.getElementById('fileBrowserAlert').innerHTML = '';
+      document.getElementById('fileBrowserContent').style.display = 'none';
+      document.getElementById('fileViewerContent').style.display = 'none';
+      document.getElementById('fileBrowserLoading').style.display = 'block';
       try {
-        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: id }) });
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'list-dir', repoId: repoId, path: dirPath || '' }) });
+        var data = await res.json();
+        document.getElementById('fileBrowserLoading').style.display = 'none';
+        if (data.ok) {
+          var items = data.items || [];
+          var html = '';
+          // 面包屑导航
+          if (dirPath) {
+            var parts = dirPath.split('/');
+            var crumbs = '<div style="padding:6px 0;font-size:13px;color:var(--text2);">';
+            crumbs += '<a href="javascript:void(0)" onclick="loadFileBrowserList(' + repoId + ',\'\')" style="color:var(--primary);">根目录</a>';
+            var acc = '';
+            for (var i = 0; i < parts.length; i++) {
+              acc += (i > 0 ? '/' : '') + parts[i];
+              var p = acc;
+              crumbs += ' / <a href="javascript:void(0)" onclick="loadFileBrowserList(' + repoId + ',\'' + escapeHtml(p).replace(/'/g, "\\'") + '\')" style="color:var(--primary);">' + escapeHtml(parts[i]) + '</a>';
+            }
+            crumbs += '</div>';
+            html += crumbs;
+          }
+          if (items.length === 0) {
+            html += '<div style="padding:20px;text-align:center;color:var(--text2);">此目录为空</div>';
+          } else {
+            items.sort(function(a, b) {
+              if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+              return a.name.localeCompare(b.name);
+            });
+            html += items.map(function(f) {
+              var icon = f.type === 'dir' ? '📁' : '📄';
+              var name = f.type === 'dir' ? f.name + '/' : f.name;
+              var actions = '';
+              if (f.type === 'dir') {
+                actions = '<a href="javascript:void(0)" onclick="event.stopPropagation();loadFileBrowserList(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;margin-left:8px;">进入</a>';
+              } else {
+                actions = '<span style="display:flex;gap:6px;align-items:center;">' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;">查看</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openFileEditor(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#2563eb;font-size:12px;">编辑</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openRenameModal(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#d97706;font-size:12px;">重命名</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--danger);font-size:12px;">删除</a>' +
+                '</span>';
+              }
+              return '<div class="file-preview-item" style="cursor:pointer;" onclick="' + (f.type === 'dir' ? 'loadFileBrowserList(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')' : 'viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')') + '">' +
+                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
+                '<span class="file-path">' + escapeHtml(name) + '</span>' +
+                '<span class="file-size">' + (f.type === 'dir' ? (f.size + ' 项') : formatSize(f.size)) + '</span>' +
+                '<span style="margin-left:auto;">' + actions + '</span>' +
+              '</div>';
+            }).join('');
+          }
+          document.getElementById('fileBrowserList').innerHTML = html;
+          document.getElementById('fileBrowserContent').style.display = 'block';
+        } else {
+          // 回退到 preview-files
+          await loadFileBrowserListFallback(repoId);
+        }
+      } catch (e) {
+        document.getElementById('fileBrowserLoading').style.display = 'none';
+        await loadFileBrowserListFallback(repoId);
+      }
+    }
+
+    // 回退方案：使用 preview-files（全树）
+    async function loadFileBrowserListFallback(repoId) {
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: repoId }) });
         var data = await res.json();
         document.getElementById('fileBrowserLoading').style.display = 'none';
         if (data.ok) {
@@ -2802,12 +2965,22 @@
               return a.path.localeCompare(b.path);
             });
             document.getElementById('fileBrowserList').innerHTML = items.map(function(f) {
-              var icon = f.type === 'tree' ? '📁' : '📄';
-              var action = f.type === 'tree' ? '' : ' onclick="viewFile(' + id + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')"';
-              return '<div class="file-preview-item" style="cursor:pointer;"' + action + '>' +
+              var isDir = f.type === 'tree';
+              var icon = isDir ? '📁' : '📄';
+              var actions = '';
+              if (!isDir) {
+                actions = '<span style="display:flex;gap:6px;align-items:center;margin-left:auto;">' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;">查看</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openFileEditor(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#2563eb;font-size:12px;">编辑</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openRenameModal(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#d97706;font-size:12px;">重命名</a>' +
+                  '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--danger);font-size:12px;">删除</a>' +
+                '</span>';
+              }
+              return '<div class="file-preview-item" style="cursor:pointer;" onclick="' + (!isDir ? 'viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')' : '') + '">' +
                 '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
                 '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
-                '<span class="file-size">' + (f.type === 'tree' ? (f.size + ' 项') : formatSize(f.size)) + '</span>' +
+                '<span class="file-size">' + (isDir ? (f.size + ' 项') : formatSize(f.size)) + '</span>' +
+                actions +
               '</div>';
             }).join('');
           }
@@ -2821,17 +2994,38 @@
       }
     }
 
+    // 删除单个文件
+    async function deleteSingleFile(repoId, path) {
+      if (!confirm('确认删除文件: ' + path + ' ?')) return;
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: repoId, files: [path] }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert('已删除文件: ' + path, true);
+          if (currentBrowseRepoId) loadFileBrowserList(currentBrowseRepoId, '');
+        } else {
+          showAlert(data.error || '删除失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
     function closeFileBrowser() { document.getElementById('fileBrowserModal').classList.remove('show'); }
 
     async function viewFile(repoId, path) {
       document.getElementById('fileViewerPath').textContent = path;
       document.getElementById('fileViewerPre').textContent = '加载中...';
       document.getElementById('fileViewerContent').style.display = 'block';
+      document.getElementById('fileViewerPath').dataset.repoId = repoId;
+      document.getElementById('fileViewerPath').dataset.filePath = path;
       try {
-        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'get-file', repoId: repoId, path: path }) });
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'file-content', repoId: repoId, path: path }) });
         var data = await res.json();
-        if (data.ok) {
+        if (data.ok && !data.isBinary) {
           document.getElementById('fileViewerPre').textContent = data.content || '(空文件)';
+        } else if (data.ok && data.isBinary) {
+          document.getElementById('fileViewerPre').textContent = '(二进制文件，无法预览)';
         } else {
           document.getElementById('fileViewerPre').textContent = '加载失败: ' + (data.error || '未知错误');
         }
@@ -2840,8 +3034,159 @@
       }
     }
 
+    function editCurrentViewingFile() {
+      var pathEl = document.getElementById('fileViewerPath');
+      var repoId = pathEl.dataset.repoId;
+      var path = pathEl.dataset.filePath;
+      if (repoId && path) {
+        closeFileViewer();
+        openFileEditor(repoId, path);
+      }
+    }
+
     function closeFileViewer() {
       document.getElementById('fileViewerContent').style.display = 'none';
+    }
+
+    // ===== 文件编辑器 =====
+    var _editorRepoId = null;
+    var _editorCurrentPath = '';
+
+    async function openFileEditor(repoId, path) {
+      _editorRepoId = repoId;
+      _editorCurrentPath = path;
+      document.getElementById('fileEditorTitle').textContent = '编辑文件: ' + path;
+      document.getElementById('fileEditorPath').value = path;
+      document.getElementById('fileEditorContent').value = '加载中...';
+      document.getElementById('fileEditorCommitMsg').value = '';
+      document.getElementById('fileEditorAlert').innerHTML = '';
+      document.getElementById('fileEditorModal').classList.add('show');
+      var btn = document.getElementById('saveFileBtn');
+      btn.disabled = true; btn.textContent = '加载中...';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'file-content', repoId: repoId, path: path }) });
+        var data = await res.json();
+        if (data.ok && !data.isBinary) {
+          document.getElementById('fileEditorContent').value = data.content || '';
+        } else if (data.ok && data.isBinary) {
+          document.getElementById('fileEditorContent').value = '(二进制文件，无法编辑)';
+          document.getElementById('fileEditorAlert').innerHTML = '<div class="alert alert-err">此文件为二进制文件，不支持在线编辑</div>';
+        } else {
+          document.getElementById('fileEditorAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '加载失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('fileEditorAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '保存文件';
+    }
+
+    function closeFileEditor() {
+      document.getElementById('fileEditorModal').classList.remove('show');
+    }
+
+    async function saveFileContent() {
+      if (!_editorRepoId) return;
+      var content = document.getElementById('fileEditorContent').value;
+      var commitMsg = document.getElementById('fileEditorCommitMsg').value.trim();
+      var btn = document.getElementById('saveFileBtn');
+      btn.disabled = true; btn.textContent = '保存中...';
+      document.getElementById('fileEditorAlert').innerHTML = '';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'save-file', repoId: _editorRepoId, path: _editorCurrentPath, content: content, commitMsg: commitMsg }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeFileEditor();
+          showAlert('文件保存成功！Commit: ' + (data.commitSha || '').substring(0, 7), true);
+          if (currentBrowseRepoId) openFileBrowser(currentBrowseRepoId);
+        } else {
+          document.getElementById('fileEditorAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '保存失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('fileEditorAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '保存文件';
+    }
+
+    // ===== 新建文件 =====
+    var _newFileRepoId = null;
+
+    function openNewFileModal(repoId) {
+      _newFileRepoId = repoId;
+      document.getElementById('newFilePath').value = '';
+      document.getElementById('newFileContent').value = '';
+      document.getElementById('newFileCommitMsg').value = '';
+      document.getElementById('newFileAlert').innerHTML = '';
+      document.getElementById('newFileModal').classList.add('show');
+    }
+
+    function closeNewFileModal() {
+      document.getElementById('newFileModal').classList.remove('show');
+    }
+
+    async function createNewFile() {
+      if (!_newFileRepoId) return;
+      var path = document.getElementById('newFilePath').value.trim();
+      var content = document.getElementById('newFileContent').value;
+      var commitMsg = document.getElementById('newFileCommitMsg').value.trim();
+      if (!path) { document.getElementById('newFileAlert').innerHTML = '<div class="alert alert-err">请输入文件路径</div>'; return; }
+      var btn = document.getElementById('createFileBtn');
+      btn.disabled = true; btn.textContent = '创建中...';
+      document.getElementById('newFileAlert').innerHTML = '';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'create-file', repoId: _newFileRepoId, path: path, content: content, commitMsg: commitMsg }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeNewFileModal();
+          showAlert('文件创建成功！Commit: ' + (data.commitSha || '').substring(0, 7), true);
+          if (currentBrowseRepoId) openFileBrowser(currentBrowseRepoId);
+        } else {
+          document.getElementById('newFileAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '创建失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('newFileAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '创建文件';
+    }
+
+    // ===== 重命名文件 =====
+    var _renameRepoId = null;
+
+    function openRenameModal(repoId, oldPath) {
+      _renameRepoId = repoId;
+      document.getElementById('renameOldPath').value = oldPath;
+      document.getElementById('renameNewPath').value = oldPath;
+      document.getElementById('renameCommitMsg').value = '';
+      document.getElementById('renameAlert').innerHTML = '';
+      document.getElementById('renameFileModal').classList.add('show');
+    }
+
+    function closeRenameModal() {
+      document.getElementById('renameFileModal').classList.remove('show');
+    }
+
+    async function confirmRename() {
+      if (!_renameRepoId) return;
+      var oldPath = document.getElementById('renameOldPath').value;
+      var newPath = document.getElementById('renameNewPath').value.trim();
+      var commitMsg = document.getElementById('renameCommitMsg').value.trim();
+      if (!newPath || newPath === oldPath) { document.getElementById('renameAlert').innerHTML = '<div class="alert alert-err">请输入不同的新路径</div>'; return; }
+      var btn = document.getElementById('renameBtn');
+      btn.disabled = true; btn.textContent = '处理中...';
+      document.getElementById('renameAlert').innerHTML = '';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'rename-file', repoId: _renameRepoId, oldPath: oldPath, newPath: newPath, commitMsg: commitMsg }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeRenameModal();
+          showAlert('文件已重命名/移动', true);
+          if (currentBrowseRepoId) openFileBrowser(currentBrowseRepoId);
+        } else {
+          document.getElementById('renameAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '重命名失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('renameAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '确认重命名';
     }
 
     // ===== Token 状态检测 =====

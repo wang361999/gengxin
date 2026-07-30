@@ -37,6 +37,10 @@
     .modal-overlay.show { display: flex; }
     .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto; }
     .modal h3 { margin-bottom: 20px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .modal-header h3 { margin: 0; }
+    .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text2); padding: 0; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
     .btn-sm { padding: 4px 12px; font-size: 13px; border-radius: 6px; }
     .badge-blue { background: #dbeafe; color: #1e40af; }
     .badge-green { background: #d1fae5; color: #065f46; }
@@ -279,6 +283,7 @@
       <div class="tab-item" onclick="switchTab(event,'orders')">订单管理</div>
       <div class="tab-item" onclick="switchTab(event,'plans')">套餐管理</div>
       <div class="tab-item" onclick="switchTab(event,'broadcast')">通知广播</div>
+      <div class="tab-item" onclick="switchTab(event,'vercel')">Vercel 部署</div>
       <div class="tab-item" onclick="switchTab(event,'settings')">系统设置</div>
     </div>
 
@@ -533,6 +538,105 @@
           <textarea id="broadcastContent" placeholder="输入通知内容（可选）" rows="4" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
         </div>
         <button class="btn btn-primary" id="broadcastBtn" onclick="sendBroadcast()">发送通知</button>
+      </div>
+    </div>
+
+    <!-- Vercel 部署状态 -->
+    <div class="tab-content" id="tab-vercel">
+      <!-- 配置区 -->
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="margin-bottom:16px;">Vercel API 配置</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 Vercel Token 和 Project ID 后，可查看项目部署状态、构建日志、环境变量等信息。<br>请在 <a href="https://vercel.com/account/tokens" target="_blank" style="color:var(--blue);">Vercel Tokens</a> 创建 Token，Project ID 在项目 Settings → General 中查看。</p>
+        <div class="field" style="margin-bottom:12px;">
+          <label>Vercel Token</label>
+          <input type="password" id="setVercelToken" placeholder="vercel_xxx..." style="max-width:400px;">
+        </div>
+        <div class="field" style="margin-bottom:12px;">
+          <label>Vercel Project ID（可选，留空则查询账号下所有部署）</label>
+          <input type="text" id="setVercelProjectId" placeholder="prj_xxx..." style="max-width:400px;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="saveVercelConfig()">保存配置</button>
+          <button class="btn btn-outline" onclick="loadVercelStatus()">刷新状态</button>
+        </div>
+        <div id="vercelConfigAlert" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- 状态总览 -->
+      <div id="vercelStatusContent" style="display:none;">
+        <!-- 项目信息卡片 -->
+        <div class="analytics-grid" id="vercelSummaryGrid" style="margin-bottom:20px;">
+          <div class="analytics-card">
+            <div class="stat-icon icon-blue">📦</div>
+            <div class="stat-num" id="vercelProjectName">-</div>
+            <div class="stat-name">项目名称</div>
+          </div>
+          <div class="analytics-card">
+            <div class="stat-icon icon-green">🚀</div>
+            <div class="stat-num" id="vercelLatestState">-</div>
+            <div class="stat-name">最新部署状态</div>
+          </div>
+          <div class="analytics-card">
+            <div class="stat-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">⏱</div>
+            <div class="stat-num" id="vercelTotalDeploys" style="font-size:28px;">-</div>
+            <div class="stat-name">部署总数</div>
+          </div>
+          <div class="analytics-card">
+            <div class="stat-icon" style="background:rgba(234,179,8,0.1);color:#eab308;">🔗</div>
+            <div class="stat-num" id="vercelDomainCount" style="font-size:28px;">-</div>
+            <div class="stat-name">绑定域名</div>
+          </div>
+        </div>
+
+        <!-- 最近部署列表 -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">
+            <h3>最近部署</h3>
+            <button class="btn btn-outline btn-sm" onclick="loadVercelStatus()">刷新</button>
+          </div>
+          <div id="vercelDeployList" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="text-align:center;color:var(--text2);padding:20px;">加载中...</div>
+          </div>
+        </div>
+
+        <!-- 环境变量 -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="section-title">
+            <h3>环境变量</h3>
+            <span style="font-size:13px;color:var(--text2);">仅显示变量名，不显示值</span>
+          </div>
+          <div id="vercelEnvList" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <div style="color:var(--text2);">加载中...</div>
+          </div>
+        </div>
+
+        <!-- 域名绑定 -->
+        <div class="card">
+          <div class="section-title">
+            <h3>域名绑定</h3>
+          </div>
+          <div id="vercelDomainList" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="color:var(--text2);">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 未配置提示 -->
+      <div id="vercelNotConfigured" class="card" style="text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:12px;">⚙️</div>
+        <h3 style="margin-bottom:8px;">Vercel 未配置</h3>
+        <p style="color:var(--text2);">请在上方填写 Vercel Token 和 Project ID，然后点击保存配置</p>
+      </div>
+
+      <!-- 构建日志弹窗 -->
+      <div class="modal-overlay" id="vercelLogsModal">
+        <div class="modal" style="max-width:800px;">
+          <div class="modal-header">
+            <h3 style="margin:0;">构建日志</h3>
+            <button class="modal-close" onclick="closeVercelLogsModal()">&times;</button>
+          </div>
+          <div id="vercelLogsContent" style="max-height:500px;overflow:auto;background:#1a1a1a;color:#e0e0e0;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
       </div>
     </div>
 
@@ -1027,6 +1131,7 @@
       e.target.classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'analytics') loadAnalytics();
+      if (name === 'vercel') loadVercelStatus();
     }
 
     async function loadStats() {
@@ -1689,6 +1794,213 @@
     checkNeedChangePassword();
     // 显示 OAuth 回调 URL
     document.getElementById('oauthCallbackHint').textContent = window.location.origin + '/api/oauth/callback';
+
+    // ===== Vercel 部署管理 =====
+    async function loadVercelStatus() {
+      document.getElementById('vercelStatusContent').style.display = 'none';
+      document.getElementById('vercelNotConfigured').style.display = 'none';
+      try {
+        var data = await apiFetch('/api/admin/vercel-status');
+        if (!data) return;
+        if (data.configured === false) {
+          document.getElementById('vercelNotConfigured').style.display = 'block';
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+          return;
+        }
+        if (data.ok === false) {
+          document.getElementById('vercelNotConfigured').style.display = 'block';
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '获取状态失败') + '</div>';
+          return;
+        }
+        document.getElementById('vercelStatusContent').style.display = 'block';
+        document.getElementById('vercelConfigAlert').innerHTML = '';
+
+        // 填充配置表单
+        if (data.configured) {
+          // 从配置中读取 Token 和 ProjectId（隐藏 Token 值）
+          // 只在首次加载时设置
+          if (document.getElementById('setVercelToken').value === '') {
+            document.getElementById('setVercelToken').placeholder = data.configured ? '已配置（如需修改请重新输入）' : 'vercel_xxx...';
+          }
+        }
+
+        // 项目信息
+        if (data.project) {
+          document.getElementById('vercelProjectName').textContent = data.project.name || '-';
+          document.getElementById('vercelProjectName').style.fontSize = '16px';
+        } else {
+          document.getElementById('vercelProjectName').textContent = data.hasProjectId ? '（无法获取）' : '未指定';
+          document.getElementById('vercelProjectName').style.fontSize = '16px';
+        }
+
+        // 最新部署状态
+        if (data.latestDeployment) {
+          var state = data.latestDeployment.state || data.latestDeployment.ready || 'UNKNOWN';
+          var stateColor = state === 'READY' ? '#22c55e' : (state === 'ERROR' ? '#ef4444' : '#f59e0b');
+          document.getElementById('vercelLatestState').innerHTML = '<span style="color:' + stateColor + ';font-weight:600;font-size:16px;">' + state + '</span>';
+        } else {
+          document.getElementById('vercelLatestState').textContent = '-';
+        }
+
+        // 部署总数
+        document.getElementById('vercelTotalDeploys').textContent = (data.deployments || []).length;
+
+        // 域名数
+        document.getElementById('vercelDomainCount').textContent = (data.domains || []).length;
+
+        // 部署列表
+        renderVercelDeployments(data.deployments || []);
+
+        // 环境变量
+        renderVercelEnvVars(data.envVars || []);
+
+        // 域名
+        renderVercelDomains(data.domains || []);
+
+      } catch (e) {
+        document.getElementById('vercelNotConfigured').style.display = 'block';
+      }
+    }
+
+    function renderVercelDeployments(deployments) {
+      var container = document.getElementById('vercelDeployList');
+      if (deployments.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">暂无部署记录</div>';
+        return;
+      }
+      container.innerHTML = deployments.map(function(d) {
+        var state = d.state || d.ready || 'UNKNOWN';
+        var stateColor = state === 'READY' ? '#22c55e' : (state === 'ERROR' ? '#ef4444' : '#f59e0b');
+        var date = d.createdAt ? new Date(d.createdAt) : (d.created ? new Date(d.created * 1000) : null);
+        var dateStr = date ? date.toLocaleString('zh-CN') : '-';
+        var branch = d.meta && d.meta.githubCommitRef ? d.meta.githubCommitRef : (d.meta && d.meta.branch ? d.meta.branch : 'main');
+        var commitMsg = d.meta && d.meta.githubCommitMessage ? d.meta.githubCommitMessage : '';
+        var commitSha = d.meta && d.meta.githubCommitSha ? d.meta.githubCommitSha.substring(0, 7) : '';
+        var url = d.url ? 'https://' + d.url : '';
+        var target = d.target === 'production' ? '<span style="background:#22c55e;color:white;padding:2px 8px;border-radius:4px;font-size:11px;">Production</span>' : '<span style="background:#6b7280;color:white;padding:2px 8px;border-radius:4px;font-size:11px;">Preview</span>';
+
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
+            '<div style="display:flex;gap:8px;align-items:center;">' +
+              '<span style="font-weight:600;">' + escapeHtml(d.name || '部署') + '</span>' +
+              '<span style="color:' + stateColor + ';font-weight:600;font-size:13px;">' + state + '</span>' +
+              target +
+            '</div>' +
+            '<div style="display:flex;gap:6px;">' +
+              (url ? '<a href="' + url + '" target="_blank" style="color:var(--blue);font-size:12px;">访问</a>' : '') +
+              '<a href="javascript:void(0)" onclick="loadVercelLogs(\'' + d.id + '\')" style="color:var(--blue);font-size:12px;">日志</a>' +
+              '<a href="javascript:void(0)" onclick="redeployVercel(\'' + d.id + '\')" style="color:#f59e0b;font-size:12px;">重新部署</a>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--text2);">' +
+            '<span style="font-family:monospace;">' + escapeHtml(branch) + '</span>' +
+            (commitSha ? ' @ <span style="font-family:monospace;">' + commitSha + '</span>' : '') +
+            ' | ' + dateStr +
+          '</div>' +
+          (commitMsg ? '<div style="font-size:12px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(commitMsg.split('\n')[0]) + '</div>' : '') +
+          (d.errorMessage ? '<div style="font-size:12px;color:#ef4444;margin-top:4px;">' + escapeHtml(d.errorMessage) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    function renderVercelEnvVars(envVars) {
+      var container = document.getElementById('vercelEnvList');
+      if (envVars.length === 0) {
+        container.innerHTML = '<div style="color:var(--text2);">无环境变量</div>';
+        return;
+      }
+      container.innerHTML = envVars.map(function(e) {
+        var target = Array.isArray(e.target) ? e.target.join(', ') : (e.target || 'all');
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;">' +
+          '<span style="font-family:monospace;font-weight:600;">' + escapeHtml(e.key) + '</span>' +
+          '<span style="color:var(--text2);font-size:11px;margin-left:8px;">(' + target + ')</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderVercelDomains(domains) {
+      var container = document.getElementById('vercelDomainList');
+      if (!domains || domains.length === 0) {
+        container.innerHTML = '<div style="color:var(--text2);">未绑定域名</div>';
+        return;
+      }
+      container.innerHTML = domains.map(function(d) {
+        var verified = d.verified ? '<span style="color:#22c55e;">✓ 已验证</span>' : '<span style="color:#ef4444;">✗ 未验证</span>';
+        var url = 'https://' + d.name;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:6px;padding:8px 12px;">' +
+          '<div>' +
+            '<a href="' + url + '" target="_blank" style="font-family:monospace;color:var(--blue);">' + escapeHtml(d.name) + '</a>' +
+            (d.redirect ? ' → <span style="font-family:monospace;color:var(--text2);">' + escapeHtml(d.redirect) + '</span>' : '') +
+          '</div>' +
+          '<span style="font-size:12px;">' + verified + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function saveVercelConfig() {
+      var token = document.getElementById('setVercelToken').value.trim();
+      var projectId = document.getElementById('setVercelProjectId').value.trim();
+      var body = {};
+      if (token) body.vercelToken = token;
+      if (projectId !== undefined) body.vercelProjectId = projectId;
+      try {
+        var data = await apiFetch('/api/admin/vercel-status', { method: 'POST', body: JSON.stringify(body) });
+        if (data && data.ok) {
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-ok">配置已保存</div>';
+          loadVercelStatus();
+        } else {
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml((data && data.error) || '保存失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+    }
+
+    async function loadVercelLogs(deploymentId) {
+      document.getElementById('vercelLogsModal').classList.add('show');
+      document.getElementById('vercelLogsContent').textContent = '加载中...';
+      try {
+        var data = await apiFetch('/api/admin/vercel-logs', { method: 'POST', body: JSON.stringify({ deploymentId: deploymentId }) });
+        if (data && data.ok) {
+          var logs = data.logs || [];
+          if (Array.isArray(logs)) {
+            var text = logs.map(function(l) {
+              var ts = l.created ? new Date(l.created).toLocaleTimeString('en-US') : '';
+              var msg = l.text || l.payload || JSON.stringify(l);
+              return '[' + ts + '] ' + msg;
+            }).join('\n');
+            document.getElementById('vercelLogsContent').textContent = text || '（无日志）';
+          } else if (typeof logs === 'string') {
+            document.getElementById('vercelLogsContent').textContent = logs;
+          } else {
+            document.getElementById('vercelLogsContent').textContent = JSON.stringify(logs, null, 2);
+          }
+        } else {
+          document.getElementById('vercelLogsContent').textContent = '加载失败: ' + ((data && data.error) || '未知错误');
+        }
+      } catch (e) {
+        document.getElementById('vercelLogsContent').textContent = '网络错误';
+      }
+    }
+
+    function closeVercelLogsModal() {
+      document.getElementById('vercelLogsModal').classList.remove('show');
+    }
+
+    async function redeployVercel(deploymentId) {
+      if (!confirm('确认重新触发此部署？')) return;
+      try {
+        var data = await apiFetch('/api/admin/vercel-redeploy', { method: 'POST', body: JSON.stringify({ deploymentId: deploymentId }) });
+        if (data && data.ok) {
+          showAlert('已触发重新部署', true);
+          setTimeout(loadVercelStatus, 2000);
+        } else {
+          showAlert((data && data.error) || '重新部署失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
   </script>
 </body>
 </html>
