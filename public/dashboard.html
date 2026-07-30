@@ -3562,13 +3562,29 @@
     }
 
     // ===== 上传结果弹窗 =====
+    var _resultCloseCallback = null;
+    var _resultBtnText = null;
+    function showResultModal(opts) {
+      var type = opts.type === 'ok' ? 'success' : opts.type === 'err' ? 'error' : 'info';
+      var details = {};
+      if (Array.isArray(opts.details)) {
+        opts.details.forEach(function(d) {
+          if (d && d.label) details[d.label] = d.value;
+        });
+      }
+      _resultCloseCallback = opts.onClose || null;
+      _resultBtnText = opts.btnText || null;
+      showResult(type, opts.title || (type === 'success' ? '成功' : '提示'), opts.message || '', details);
+    }
+
     function showResult(type, title, message, details) {
       var overlay = document.getElementById('resultOverlay');
       var modal = overlay.querySelector('.result-modal');
       var iconClass = type === 'success' ? 'result-icon-ok' : type === 'error' ? 'result-icon-err' : 'result-icon-info';
       var icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'i';
       var btnClass = type === 'success' ? 'result-btn-ok' : 'result-btn-err';
-      var btnText = type === 'success' ? '完成' : '知道了';
+      var btnText = _resultBtnText || (type === 'success' ? '完成' : '知道了');
+      _resultBtnText = null;
 
       var html = '<div class="result-icon-wrap ' + iconClass + '">' + icon + '</div>' +
         '<div class="result-title">' + escapeHtml(title) + '</div>' +
@@ -3592,7 +3608,14 @@
       }
     }
 
-    function closeResult() { document.getElementById('resultOverlay').classList.remove('show'); }
+    function closeResult() {
+      document.getElementById('resultOverlay').classList.remove('show');
+      if (typeof _resultCloseCallback === 'function') {
+        var cb = _resultCloseCallback;
+        _resultCloseCallback = null;
+        cb();
+      }
+    }
 
     function spawnConfetti(modal) {
       var colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
