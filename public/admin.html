@@ -3,18 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#1a1a1a">
   <title>管理后台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.8.1">
+  <link rel="stylesheet" href="/style.css?v2.9.3">
   <script src="/error-tracker.js"></script>
   <style>
+    /* ===== 侧边栏深色定制 ===== */
+    .sidebar {
+      background: #1a1a1a;
+      border-right: 1px solid #2a2a2a;
+      color: #e5e5e5;
+    }
+    .sidebar-header {
+      border-bottom: 1px solid #2a2a2a;
+      background: #161616;
+    }
+    .sidebar-header .brand {
+      color: #fff;
+      font-weight: 800;
+      font-size: 17px;
+    }
+    .sidebar-header .brand .brand-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-left: 4px;
+      padding: 2px 6px;
+      background: #2a2a2a;
+      border-radius: 4px;
+    }
+    .sidebar-nav { padding: 12px; }
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 14px 12px 6px;
+    }
+    .nav-item {
+      color: #b5b5b5;
+      font-size: 13.5px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover {
+      background: #262626;
+      color: #fff;
+    }
+    .nav-item.active {
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 600;
+    }
+    .nav-item.active::before { display: none; }
+    .nav-item svg { width: 18px; height: 18px; opacity: 0.85; }
+    .nav-item.active svg { opacity: 1; }
+    .sidebar-footer {
+      border-top: 1px solid #2a2a2a;
+      background: #161616;
+    }
+    .sidebar-user { color: #e5e5e5; }
+    .sidebar-user:hover { background: #262626; }
+    .sidebar-user .user-name { color: #fff; }
+    .sidebar-user .user-plan { color: #9ca3af; }
+    .sidebar-user .avatar {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    }
+
+    /* ===== 顶栏定制 ===== */
+    .topbar {
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .topbar-title { font-size: 17px; font-weight: 700; }
+    .topbar .topbar-link {
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topbar .topbar-link:hover { background: var(--bg); color: var(--text); text-decoration: none; }
+    .topbar .topbar-link.primary { color: var(--blue); border-color: rgba(59,130,246,0.3); background: var(--blue-light); }
+    .topbar .topbar-link.primary:hover { background: #dbeafe; }
+
+    /* ===== 统计卡片 ===== */
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-    .stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s; }
-    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-    .stat-card .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
-    .stat-card .stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
+    .stats-grid-3 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s; display: flex; align-items: center; gap: 14px; }
+    .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .stat-card .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-card .stat-num { font-size: 26px; font-weight: 800; line-height: 1; }
     .stat-card .stat-name { font-size: 13px; color: var(--text2); margin-top: 4px; }
     .icon-blue { background: rgba(59,130,246,0.1); }
     .icon-green { background: rgba(16,185,129,0.1); }
@@ -22,19 +114,25 @@
     .icon-orange { background: rgba(249,115,22,0.1); }
     .icon-red { background: rgba(239,68,68,0.1); }
     .icon-yellow { background: rgba(234,179,8,0.1); }
+
     .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
     .section-title h3 { margin: 0; }
-    .tab-bar { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .tab-bar::-webkit-scrollbar { display: none; }
-    .tab-item { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text2); transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
-    .tab-item.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+
+    /* 页面切换 */
+    .page { display: none; }
+    .page.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .page-header h2 { font-size: 22px; font-weight: 800; margin: 0; }
+    .page-header .subtitle { font-size: 14px; color: var(--text2); margin-top: 2px; }
+
     .empty-state { text-align: center; padding: 32px; color: var(--text2); }
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { min-width: 500px; }
     th, td { white-space: nowrap; }
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
     .modal-overlay.show { display: flex; }
     .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto; }
     .modal h3 { margin-bottom: 20px; }
@@ -99,12 +197,10 @@
     .chart-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .chart-title h3 { margin: 0; font-size: 16px; }
 
-    /* SVG 折线图 */
     .line-chart-wrap { width: 100%; overflow-x: auto; }
     .line-chart-wrap svg { display: block; width: 100%; height: 240px; }
     .line-chart-tooltip { font-size: 11px; }
 
-    /* 柱状图 - 仓库分布 */
     .bar-chart { display: flex; flex-direction: column; gap: 12px; }
     .bar-row { display: flex; align-items: center; gap: 12px; }
     .bar-label { width: 140px; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
@@ -112,7 +208,6 @@
     .bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%); border-radius: 6px; transition: width 0.4s; }
     .bar-value { width: 50px; text-align: right; font-size: 13px; font-weight: 600; flex-shrink: 0; }
 
-    /* 饼图 - 套餐分布 */
     .pie-wrap { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
     .pie-chart { flex-shrink: 0; }
     .pie-legend { flex: 1; min-width: 180px; }
@@ -120,7 +215,6 @@
     .pie-legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
     .pie-legend-count { margin-left: auto; font-weight: 600; color: var(--text2); }
 
-    /* 转化漏斗 */
     .funnel { display: flex; flex-direction: column; gap: 4px; }
     .funnel-step { background: var(--bg); border-radius: 8px; padding: 16px 20px; position: relative; transition: all 0.2s; }
     .funnel-step.active { background: linear-gradient(90deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02)); }
@@ -131,7 +225,6 @@
     .funnel-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
     .funnel-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
 
-    /* 活跃热力图 */
     .heatmap-wrap { overflow-x: auto; padding-bottom: 8px; }
     .heatmap-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; min-width: 480px; }
     .heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: #f3f4f6; min-height: 18px; position: relative; cursor: pointer; transition: transform 0.1s; }
@@ -142,21 +235,6 @@
 
     .analytics-empty { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; }
 
-    @media (max-width: 768px) {
-      .analytics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .analytics-card { padding: 16px; }
-      .analytics-card .stat-num { font-size: 22px; }
-      .pie-wrap { flex-direction: column; gap: 16px; }
-      .bar-label { width: 100px; font-size: 12px; }
-      .heatmap-grid { grid-template-columns: repeat(10, 1fr); }
-    }
-    @media (max-width: 480px) {
-      .analytics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-      .analytics-card { padding: 14px; }
-      .analytics-card .stat-num { font-size: 20px; }
-      .bar-label { width: 80px; }
-    }
-
     /* ===== 强制修改密码弹窗 ===== */
     .force-pwd-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; }
     .force-pwd-overlay.show { display: flex; }
@@ -166,708 +244,903 @@
     .force-pwd-modal .field { margin-bottom: 14px; }
     .force-pwd-modal .btn { width: 100%; margin-top: 6px; }
 
+    /* 移动端菜单按钮 */
+    .sidebar-toggle {
+      display: none;
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--card);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      color: var(--text2);
+    }
+    .sidebar-toggle:hover { background: var(--border-light); }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 99;
+    }
+    .sidebar.mobile-open ~ .sidebar-overlay { display: block; }
+
     @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); box-shadow: 2px 0 20px rgba(0,0,0,0.3); }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .sidebar-toggle { display: flex; }
+      .analytics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .analytics-card { padding: 16px; }
+      .analytics-card .stat-num { font-size: 22px; }
+      .pie-wrap { flex-direction: column; gap: 16px; }
+      .bar-label { width: 100px; font-size: 12px; }
+      .heatmap-grid { grid-template-columns: repeat(10, 1fr); }
       .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-      .stats-grid-3 { grid-template-columns: 1fr; gap: 12px; }
+      .stats-grid-3 { grid-template-columns: repeat(2, 1fr); gap: 12px; }
       .stat-card { padding: 16px; }
       .stat-card .stat-num { font-size: 22px; }
-      .stat-card .stat-icon { width: 32px; height: 32px; font-size: 16px; margin-bottom: 8px; }
-      .container { padding: 12px; }
+      .stat-card .stat-icon { width: 38px; height: 38px; font-size: 18px; }
+      .content-area { padding: 16px; }
       .card { padding: 16px; }
       .modal { padding: 20px; }
-      .nav { padding: 12px 16px; }
-      .nav-brand a { font-size: 15px; }
-      .nav-links { gap: 10px; }
-      .nav-links a { font-size: 13px; }
       .section-title h3 { font-size: 16px; }
       .detail-stats { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 480px) {
       .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-      .stat-card { padding: 14px; }
+      .stats-grid-3 { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-card { padding: 14px; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; }
       .stat-card .stat-num { font-size: 20px; }
-      .tab-item { padding: 7px 12px; font-size: 13px; }
+      .analytics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .analytics-card { padding: 14px; }
+      .analytics-card .stat-num { font-size: 20px; }
+      .bar-label { width: 80px; }
       .modal { padding: 16px; border-radius: 10px; }
       .modal h3 { font-size: 17px; margin-bottom: 16px; }
       .setting-row { flex-direction: column; align-items: flex-start; gap: 8px; }
       .trend-bars { height: 80px; }
       .search-box { flex-direction: column; }
       .plan-select { flex-direction: column; }
+      .page-header h2 { font-size: 19px; }
     }
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-brand">
-      <a href="/" style="color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
-        管理后台
-      </a>
-    </div>
-    <div class="nav-links">
-      <a href="/dashboard" style="color:var(--blue);font-weight:600;">前台</a>
-      <a href="javascript:void(0)" onclick="openPasswordModal()">修改密码</a>
-      <a href="javascript:void(0)" onclick="logout()">退出</a>
-    </div>
-  </nav>
-  <div class="container">
-    <div id="alert"></div>
+  <div class="app-layout">
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="/" class="brand">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+          GitShip <span class="brand-sub">Admin</span>
+        </a>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <div class="nav-section-label">概览</div>
+        <a class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>仪表盘</span>
+        </a>
+        <a class="nav-item" data-page="analytics" onclick="switchPage('analytics')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>
+          <span>数据分析</span>
+        </a>
 
-    <!-- 统计面板 -->
-    <div class="stats-grid" id="statsGrid">
-      <div class="stat-card">
-        <div class="stat-icon icon-blue">👥</div>
-        <div class="stat-num" id="statUsers">-</div>
-        <div class="stat-name">总用户数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon icon-green">📤</div>
-        <div class="stat-num" id="statUploads">-</div>
-        <div class="stat-name">总上传次数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon icon-purple">📦</div>
-        <div class="stat-num" id="statFiles">-</div>
-        <div class="stat-name">总文件数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon icon-orange">🔗</div>
-        <div class="stat-num" id="statRepos">-</div>
-        <div class="stat-name">配置仓库数</div>
-      </div>
-    </div>
+        <div class="nav-section-label">用户与历史</div>
+        <a class="nav-item" data-page="users" onclick="switchPage('users')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>用户管理</span>
+        </a>
+        <a class="nav-item" data-page="history" onclick="switchPage('history')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          <span>上传历史</span>
+        </a>
 
-    <!-- 次级统计 -->
-    <div class="stats-grid-3">
-      <div class="stat-card">
-        <div class="stat-icon icon-yellow">⭐</div>
-        <div class="stat-num" id="statPaid" style="font-size:22px;">-</div>
-        <div class="stat-name">付费用户</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon icon-green">💰</div>
-        <div class="stat-num" id="statRevenue" style="font-size:22px;">-</div>
-        <div class="stat-name">总收入 (元)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon icon-blue">📅</div>
-        <div class="stat-num" id="statToday" style="font-size:22px;">-</div>
-        <div class="stat-name">今日上传</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div>
-        <div class="stat-num" id="statOnline" style="font-size:22px;color:#16a34a;">-</div>
-        <div class="stat-name">在线人数</div>
-      </div>
-    </div>
+        <div class="nav-section-label">订单与套餐</div>
+        <a class="nav-item" data-page="orders" onclick="switchPage('orders')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          <span>订单管理</span>
+        </a>
+        <a class="nav-item" data-page="plans" onclick="switchPage('plans')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></svg>
+          <span>套餐管理</span>
+        </a>
+        <a class="nav-item" data-page="broadcast" onclick="switchPage('broadcast')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          <span>通知广播</span>
+        </a>
 
-    <!-- 上传趋势 -->
-    <div class="trend-chart">
-      <div class="section-title" style="margin-bottom:0;">
-        <h3 style="font-size:16px;">最近 30 天上传趋势</h3>
-        <span id="trendSummary" style="font-size:13px;color:var(--text2);"></span>
-      </div>
-      <div class="trend-bars" id="trendBars">
-        <div style="width:100%;text-align:center;color:var(--text2);font-size:13px;align-self:center;">加载中...</div>
-      </div>
-      <div class="trend-legend">
-        <span id="trendStart">-</span>
-        <span id="trendEnd">-</span>
-      </div>
-    </div>
+        <div class="nav-section-label">运维监控</div>
+        <a class="nav-item" data-page="vercel" onclick="switchPage('vercel')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span>Vercel 部署</span>
+        </a>
+        <a class="nav-item" data-page="errors" onclick="switchPage('errors')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+          <span>错误监控</span>
+        </a>
 
-    <!-- Tab 切换 -->
-    <div class="tab-bar">
-      <div class="tab-item active" onclick="switchTab(event,'users')">用户管理</div>
-      <div class="tab-item" onclick="switchTab(event,'analytics')">数据分析</div>
-      <div class="tab-item" onclick="switchTab(event,'history')">上传历史</div>
-      <div class="tab-item" onclick="switchTab(event,'orders')">订单管理</div>
-      <div class="tab-item" onclick="switchTab(event,'plans')">套餐管理</div>
-      <div class="tab-item" onclick="switchTab(event,'broadcast')">通知广播</div>
-      <div class="tab-item" onclick="switchTab(event,'vercel')">Vercel 部署</div>
-      <div class="tab-item" onclick="switchTab(event,'errors')">错误监控</div>
-      <div class="tab-item" onclick="switchTab(event,'settings')">系统设置</div>
-    </div>
-
-    <!-- 用户管理 -->
-    <div class="tab-content active" id="tab-users">
-      <div class="card">
-        <div class="section-title">
-          <h3>用户列表 <span id="userCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
-          <button class="btn btn-outline btn-sm" onclick="exportUsers()">导出 CSV</button>
-        </div>
-        <div class="search-box">
-          <input type="text" id="userSearch" placeholder="搜索用户名或品牌名..." oninput="filterUsers()">
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>用户名</th>
-                <th>品牌名</th>
-                <th>套餐</th>
-                <th>状态</th>
-                <th>注册时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="usersBody">
-              <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 数据分析 -->
-    <div class="tab-content" id="tab-analytics">
-      <!-- 汇总卡片 -->
-      <div class="analytics-grid" id="analyticsSummary">
-        <div class="analytics-card">
-          <div class="stat-icon icon-blue">📤</div>
-          <div class="stat-num" id="anaTotalUploads">-</div>
-          <div class="stat-name">总上传次数</div>
-        </div>
-        <div class="analytics-card">
-          <div class="stat-icon icon-green">📦</div>
-          <div class="stat-num" id="anaTotalFiles">-</div>
-          <div class="stat-name">总文件数</div>
-        </div>
-        <div class="analytics-card">
-          <div class="stat-icon icon-purple">💾</div>
-          <div class="stat-num" id="anaTotalSize">-</div>
-          <div class="stat-name">总上传大小</div>
-        </div>
-        <div class="analytics-card">
-          <div class="stat-icon icon-orange">👥</div>
-          <div class="stat-num" id="anaTotalUsers">-</div>
-          <div class="stat-name">总用户数</div>
-        </div>
-      </div>
-
-      <!-- 上传趋势折线图 -->
-      <div class="chart-card">
-        <div class="chart-title">
-          <h3>最近 30 天上传趋势</h3>
-          <span id="anaTrendSummary" style="font-size:13px;color:var(--text2);"></span>
-        </div>
-        <div class="line-chart-wrap" id="anaLineChart">
-          <div class="analytics-empty">加载中...</div>
-        </div>
-      </div>
-
-      <div class="grid2" style="gap:20px;">
-        <!-- 仓库分布柱状图 -->
-        <div class="chart-card" style="margin-bottom:0;">
-          <div class="chart-title"><h3>Top 10 仓库上传次数</h3></div>
-          <div class="bar-chart" id="anaRepoChart">
-            <div class="analytics-empty">加载中...</div>
-          </div>
-        </div>
-
-        <!-- 套餐分布饼图 -->
-        <div class="chart-card" style="margin-bottom:0;">
-          <div class="chart-title"><h3>套餐分布</h3></div>
-          <div class="pie-wrap" id="anaPieChart">
-            <div class="analytics-empty">加载中...</div>
+        <div class="nav-section-label">系统</div>
+        <a class="nav-item" data-page="settings" onclick="switchPage('settings')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>系统设置</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <div class="user-name">管理员</div>
+            <div class="user-plan">v2.9.3</div>
           </div>
         </div>
       </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-      <!-- 转化漏斗 -->
-      <div class="chart-card" style="margin-top:20px;">
-        <div class="chart-title"><h3>转化漏斗</h3></div>
-        <div class="funnel" id="anaFunnel">
-          <div class="analytics-empty">加载中...</div>
+    <!-- ===== 主内容区 ===== -->
+    <div class="main-content">
+      <!-- 顶栏 -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="菜单">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          </button>
+          <span class="topbar-title" id="topbarTitle">管理后台</span>
         </div>
-      </div>
+        <div class="topbar-right">
+          <a href="/dashboard" class="topbar-link primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            前台
+          </a>
+          <a href="javascript:void(0)" class="topbar-link" onclick="openPasswordModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            修改密码
+          </a>
+          <a href="javascript:void(0)" class="topbar-link" onclick="logout()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            退出
+          </a>
+        </div>
+      </header>
 
-      <!-- 活跃热力图 -->
-      <div class="chart-card">
-        <div class="chart-title">
-          <h3>最近 30 天活跃热力图</h3>
-          <span style="font-size:13px;color:var(--text2);" id="anaHeatSummary"></span>
-        </div>
-        <div class="heatmap-wrap">
-          <div class="heatmap-grid" id="anaHeatmap">
-            <div class="analytics-empty">加载中...</div>
-          </div>
-        </div>
-        <div class="heatmap-legend">
-          <span>少</span>
-          <span class="heatmap-legend-box" style="background:#f3f4f6;"></span>
-          <span class="heatmap-legend-box" style="background:#bfdbfe;"></span>
-          <span class="heatmap-legend-box" style="background:#60a5fa;"></span>
-          <span class="heatmap-legend-box" style="background:#3b82f6;"></span>
-          <span class="heatmap-legend-box" style="background:#1d4ed8;"></span>
-          <span>多</span>
-        </div>
-      </div>
-    </div>
+      <!-- 内容区域 -->
+      <main class="content-area">
+        <div id="alert"></div>
 
-    <!-- 全局历史 -->
-    <div class="tab-content" id="tab-history">
-      <div class="card">
-        <div class="section-title">
-          <h3>全局上传历史 <span id="historyCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
-          <button class="btn btn-outline btn-sm" onclick="exportHistory()">导出 CSV</button>
-        </div>
-        <div class="search-box">
-          <input type="text" id="historySearch" placeholder="搜索用户或文件名..." oninput="filterHistory()">
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>用户</th>
-                <th>文件名</th>
-                <th>文件数</th>
-                <th>仓库</th>
-                <th>状态</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody">
-              <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+        <!-- ============ 仪表盘页 ============ -->
+        <div class="page active" id="page-dashboard">
+          <div class="page-header">
+            <div>
+              <h2>仪表盘</h2>
+              <div class="subtitle">系统整体运营概览与上传趋势</div>
+            </div>
+          </div>
+          <!-- 统计面板 -->
+          <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+              <div class="stat-icon icon-blue">👥</div>
+              <div>
+                <div class="stat-num" id="statUsers">-</div>
+                <div class="stat-name">总用户数</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-green">📤</div>
+              <div>
+                <div class="stat-num" id="statUploads">-</div>
+                <div class="stat-name">总上传次数</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-purple">📦</div>
+              <div>
+                <div class="stat-num" id="statFiles">-</div>
+                <div class="stat-name">总文件数</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-orange">🔗</div>
+              <div>
+                <div class="stat-num" id="statRepos">-</div>
+                <div class="stat-name">配置仓库数</div>
+              </div>
+            </div>
+          </div>
 
-    <!-- 套餐管理 -->
-    <div class="tab-content" id="tab-plans">
-      <div class="card">
-        <h3 style="margin-bottom:20px;">套餐定价配置</h3>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>专业版月费 (元)</h4>
-            <p>专业版套餐每月价格</p>
+          <!-- 次级统计 -->
+          <div class="stats-grid-3">
+            <div class="stat-card">
+              <div class="stat-icon icon-yellow">⭐</div>
+              <div>
+                <div class="stat-num" id="statPaid" style="font-size:22px;">-</div>
+                <div class="stat-name">付费用户</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-green">💰</div>
+              <div>
+                <div class="stat-num" id="statRevenue" style="font-size:22px;">-</div>
+                <div class="stat-name">总收入 (元)</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-blue">📅</div>
+              <div>
+                <div class="stat-num" id="statToday" style="font-size:22px;">-</div>
+                <div class="stat-name">今日上传</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div>
+              <div>
+                <div class="stat-num" id="statOnline" style="font-size:22px;color:#16a34a;">-</div>
+                <div class="stat-name">在线人数</div>
+              </div>
+            </div>
           </div>
-          <input type="number" id="setProPrice" placeholder="29" style="max-width:120px;" min="0" step="0.01">
-        </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>企业版月费 (元)</h4>
-            <p>企业版套餐每月价格</p>
-          </div>
-          <input type="number" id="setEntPrice" placeholder="99" style="max-width:120px;" min="0" step="0.01">
-        </div>
-        <div style="margin-top:20px;text-align:right;">
-          <button class="btn btn-primary" onclick="savePlanSettings()">保存套餐配置</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">套餐说明</h3>
-        <div id="planInfoList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
-          <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
-            <h4 style="font-size:16px;margin-bottom:8px;">免费版</h4>
-            <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥0<span style="font-size:13px;font-weight:400;">/月</span></div>
-            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
-              <li>每月 50 次上传</li><li>最多 3 个仓库</li><li>ZIP 最大 10MB</li>
-            </ul>
-          </div>
-          <div style="border:2px solid var(--blue);border-radius:10px;padding:16px;">
-            <h4 style="font-size:16px;margin-bottom:8px;color:var(--blue);">专业版 ⭐</h4>
-            <div style="font-size:24px;font-weight:800;color:var(--blue);margin-bottom:8px;">¥<span id="proPriceDisplay">29</span><span style="font-size:13px;font-weight:400;">/月</span></div>
-            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
-              <li>每月 500 次上传</li><li>最多 20 个仓库</li><li>ZIP 最大 50MB</li><li>优先支持</li>
-            </ul>
-          </div>
-          <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
-            <h4 style="font-size:16px;margin-bottom:8px;">企业版</h4>
-            <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥<span id="entPriceDisplay">99</span><span style="font-size:13px;font-weight:400;">/月</span></div>
-            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
-              <li>无限上传</li><li>无限仓库</li><li>ZIP 最大 100MB</li><li>专属客服 + API</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- 订单管理 -->
-    <div class="tab-content" id="tab-orders">
-      <div class="card">
-        <div class="section-title">
-          <h3>升级订单 <span id="orderCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-outline btn-sm" onclick="loadOrders()">刷新</button>
-            <button class="btn btn-red btn-sm" onclick="clearPendingOrders()">清除未支付订单</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>订单号</th>
-                <th>用户</th>
-                <th>套餐</th>
-                <th>金额</th>
-                <th>周期</th>
-                <th>付款备注</th>
-                <th>状态</th>
-                <th>时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="ordersBody">
-              <tr><td colspan="9" style="text-align:center;color:var(--text2);">加载中...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- 通知广播 -->
-    <div class="tab-content" id="tab-broadcast">
-      <div class="card">
-        <h3 style="margin-bottom:20px;">发送全站通知</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">向所有活跃用户发送通知消息，用户可在仪表盘的通知消息区查看。</p>
-        <div class="field">
-          <label>通知类型</label>
-          <select id="broadcastType">
-            <option value="info">普通通知</option>
-            <option value="success">成功消息</option>
-            <option value="warning">警告消息</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>通知标题</label>
-          <input type="text" id="broadcastTitle" placeholder="输入通知标题">
-        </div>
-        <div class="field">
-          <label>通知内容</label>
-          <textarea id="broadcastContent" placeholder="输入通知内容（可选）" rows="4" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
-        </div>
-        <button class="btn btn-primary" id="broadcastBtn" onclick="sendBroadcast()">发送通知</button>
-      </div>
-    </div>
-
-    <!-- Vercel 部署状态 -->
-    <div class="tab-content" id="tab-vercel">
-      <!-- 配置区 -->
-      <div class="card" style="margin-bottom:20px;">
-        <h3 style="margin-bottom:16px;">Vercel API 配置</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 Vercel Token 和 Project ID 后，可查看项目部署状态、构建日志、环境变量等信息。<br>请在 <a href="https://vercel.com/account/tokens" target="_blank" style="color:var(--blue);">Vercel Tokens</a> 创建 Token，Project ID 在项目 Settings → General 中查看。</p>
-        <div class="field" style="margin-bottom:12px;">
-          <label>Vercel Token</label>
-          <input type="password" id="setVercelToken" placeholder="vercel_xxx..." style="max-width:400px;">
-        </div>
-        <div class="field" style="margin-bottom:12px;">
-          <label>Vercel Project ID（可选，留空则查询账号下所有部署）</label>
-          <input type="text" id="setVercelProjectId" placeholder="prj_xxx..." style="max-width:400px;">
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary" onclick="saveVercelConfig()">保存配置</button>
-          <button class="btn btn-outline" onclick="loadVercelStatus()">刷新状态</button>
-        </div>
-        <div id="vercelConfigAlert" style="margin-top:12px;"></div>
-      </div>
-
-      <!-- 状态总览 -->
-      <div id="vercelStatusContent" style="display:none;">
-        <!-- 项目信息卡片 -->
-        <div class="analytics-grid" id="vercelSummaryGrid" style="margin-bottom:20px;">
-          <div class="analytics-card">
-            <div class="stat-icon icon-blue">📦</div>
-            <div class="stat-num" id="vercelProjectName">-</div>
-            <div class="stat-name">项目名称</div>
-          </div>
-          <div class="analytics-card">
-            <div class="stat-icon icon-green">🚀</div>
-            <div class="stat-num" id="vercelLatestState">-</div>
-            <div class="stat-name">最新部署状态</div>
-          </div>
-          <div class="analytics-card">
-            <div class="stat-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">⏱</div>
-            <div class="stat-num" id="vercelTotalDeploys" style="font-size:28px;">-</div>
-            <div class="stat-name">部署总数</div>
-          </div>
-          <div class="analytics-card">
-            <div class="stat-icon" style="background:rgba(234,179,8,0.1);color:#eab308;">🔗</div>
-            <div class="stat-num" id="vercelDomainCount" style="font-size:28px;">-</div>
-            <div class="stat-name">绑定域名</div>
+          <!-- 上传趋势 -->
+          <div class="trend-chart">
+            <div class="section-title" style="margin-bottom:0;">
+              <h3 style="font-size:16px;">最近 30 天上传趋势</h3>
+              <span id="trendSummary" style="font-size:13px;color:var(--text2);"></span>
+            </div>
+            <div class="trend-bars" id="trendBars">
+              <div style="width:100%;text-align:center;color:var(--text2);font-size:13px;align-self:center;">加载中...</div>
+            </div>
+            <div class="trend-legend">
+              <span id="trendStart">-</span>
+              <span id="trendEnd">-</span>
+            </div>
           </div>
         </div>
 
-        <!-- 最近部署列表 -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="section-title">
-            <h3>最近部署</h3>
-            <button class="btn btn-outline btn-sm" onclick="loadVercelStatus()">刷新</button>
+        <!-- ============ 数据分析页 ============ -->
+        <div class="page" id="page-analytics">
+          <div class="page-header">
+            <div>
+              <h2>数据分析</h2>
+              <div class="subtitle">上传数据、仓库分布、套餐分布与转化漏斗</div>
+            </div>
           </div>
-          <div id="vercelDeployList" style="display:flex;flex-direction:column;gap:12px;">
-            <div style="text-align:center;color:var(--text2);padding:20px;">加载中...</div>
+          <!-- 汇总卡片 -->
+          <div class="analytics-grid" id="analyticsSummary">
+            <div class="analytics-card">
+              <div class="stat-icon icon-blue">📤</div>
+              <div class="stat-num" id="anaTotalUploads">-</div>
+              <div class="stat-name">总上传次数</div>
+            </div>
+            <div class="analytics-card">
+              <div class="stat-icon icon-green">📦</div>
+              <div class="stat-num" id="anaTotalFiles">-</div>
+              <div class="stat-name">总文件数</div>
+            </div>
+            <div class="analytics-card">
+              <div class="stat-icon icon-purple">💾</div>
+              <div class="stat-num" id="anaTotalSize">-</div>
+              <div class="stat-name">总上传大小</div>
+            </div>
+            <div class="analytics-card">
+              <div class="stat-icon icon-orange">👥</div>
+              <div class="stat-num" id="anaTotalUsers">-</div>
+              <div class="stat-name">总用户数</div>
+            </div>
+          </div>
+
+          <!-- 上传趋势折线图 -->
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>最近 30 天上传趋势</h3>
+              <span id="anaTrendSummary" style="font-size:13px;color:var(--text2);"></span>
+            </div>
+            <div class="line-chart-wrap" id="anaLineChart">
+              <div class="analytics-empty">加载中...</div>
+            </div>
+          </div>
+
+          <div class="grid2" style="gap:20px;">
+            <!-- 仓库分布柱状图 -->
+            <div class="chart-card" style="margin-bottom:0;">
+              <div class="chart-title"><h3>Top 10 仓库上传次数</h3></div>
+              <div class="bar-chart" id="anaRepoChart">
+                <div class="analytics-empty">加载中...</div>
+              </div>
+            </div>
+
+            <!-- 套餐分布饼图 -->
+            <div class="chart-card" style="margin-bottom:0;">
+              <div class="chart-title"><h3>套餐分布</h3></div>
+              <div class="pie-wrap" id="anaPieChart">
+                <div class="analytics-empty">加载中...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 转化漏斗 -->
+          <div class="chart-card" style="margin-top:20px;">
+            <div class="chart-title"><h3>转化漏斗</h3></div>
+            <div class="funnel" id="anaFunnel">
+              <div class="analytics-empty">加载中...</div>
+            </div>
+          </div>
+
+          <!-- 活跃热力图 -->
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>最近 30 天活跃热力图</h3>
+              <span style="font-size:13px;color:var(--text2);" id="anaHeatSummary"></span>
+            </div>
+            <div class="heatmap-wrap">
+              <div class="heatmap-grid" id="anaHeatmap">
+                <div class="analytics-empty">加载中...</div>
+              </div>
+            </div>
+            <div class="heatmap-legend">
+              <span>少</span>
+              <span class="heatmap-legend-box" style="background:#f3f4f6;"></span>
+              <span class="heatmap-legend-box" style="background:#bfdbfe;"></span>
+              <span class="heatmap-legend-box" style="background:#60a5fa;"></span>
+              <span class="heatmap-legend-box" style="background:#3b82f6;"></span>
+              <span class="heatmap-legend-box" style="background:#1d4ed8;"></span>
+              <span>多</span>
+            </div>
           </div>
         </div>
 
-        <!-- 环境变量 -->
-        <div class="card" style="margin-bottom:20px;">
-          <div class="section-title">
-            <h3>环境变量</h3>
-            <span style="font-size:13px;color:var(--text2);">仅显示变量名，不显示值</span>
+        <!-- ============ 用户管理页 ============ -->
+        <div class="page" id="page-users">
+          <div class="page-header">
+            <div>
+              <h2>用户管理</h2>
+              <div class="subtitle">查看、编辑用户信息与套餐</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="exportUsers()">导出 CSV</button>
           </div>
-          <div id="vercelEnvList" style="display:flex;flex-wrap:wrap;gap:8px;">
-            <div style="color:var(--text2);">加载中...</div>
+          <div class="card">
+            <div class="section-title">
+              <h3>用户列表 <span id="userCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+            </div>
+            <div class="search-box">
+              <input type="text" id="userSearch" placeholder="搜索用户名或品牌名..." oninput="filterUsers()">
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>用户名</th>
+                    <th>品牌名</th>
+                    <th>套餐</th>
+                    <th>状态</th>
+                    <th>注册时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="usersBody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- 域名绑定 -->
-        <div class="card">
-          <div class="section-title">
-            <h3>域名绑定</h3>
+        <!-- ============ 上传历史页 ============ -->
+        <div class="page" id="page-history">
+          <div class="page-header">
+            <div>
+              <h2>上传历史</h2>
+              <div class="subtitle">全站上传记录总览</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="exportHistory()">导出 CSV</button>
           </div>
-          <div id="vercelDomainList" style="display:flex;flex-direction:column;gap:8px;">
-            <div style="color:var(--text2);">加载中...</div>
+          <div class="card">
+            <div class="section-title">
+              <h3>全局上传历史 <span id="historyCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+            </div>
+            <div class="search-box">
+              <input type="text" id="historySearch" placeholder="搜索用户或文件名..." oninput="filterHistory()">
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>用户</th>
+                    <th>文件名</th>
+                    <th>文件数</th>
+                    <th>仓库</th>
+                    <th>状态</th>
+                  </tr>
+                </thead>
+                <tbody id="historyBody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 未配置提示 -->
-      <div id="vercelNotConfigured" class="card" style="text-align:center;padding:40px;">
-        <div style="font-size:48px;margin-bottom:12px;">⚙️</div>
-        <h3 style="margin-bottom:8px;">Vercel 未配置</h3>
-        <p style="color:var(--text2);">请在上方填写 Vercel Token 和 Project ID，然后点击保存配置</p>
-      </div>
+        <!-- ============ 订单管理页 ============ -->
+        <div class="page" id="page-orders">
+          <div class="page-header">
+            <div>
+              <h2>订单管理</h2>
+              <div class="subtitle">升级订单审核与清理</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline btn-sm" onclick="loadOrders()">刷新</button>
+              <button class="btn btn-red btn-sm" onclick="clearPendingOrders()">清除未支付订单</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-title">
+              <h3>升级订单 <span id="orderCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>订单号</th>
+                    <th>用户</th>
+                    <th>套餐</th>
+                    <th>金额</th>
+                    <th>周期</th>
+                    <th>付款备注</th>
+                    <th>状态</th>
+                    <th>时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersBody">
+                  <tr><td colspan="9" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-      <!-- 构建日志弹窗 -->
-      <div class="modal-overlay" id="vercelLogsModal">
-        <div class="modal" style="max-width:800px;">
-          <div class="modal-header">
-            <h3 style="margin:0;">构建日志</h3>
-            <button class="modal-close" onclick="closeVercelLogsModal()">&times;</button>
+        <!-- ============ 套餐管理页 ============ -->
+        <div class="page" id="page-plans">
+          <div class="page-header">
+            <div>
+              <h2>套餐管理</h2>
+              <div class="subtitle">配置各套餐定价与说明</div>
+            </div>
           </div>
-          <div id="vercelLogsContent" style="max-height:500px;overflow:auto;background:#1a1a1a;color:#e0e0e0;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;"></div>
+          <div class="card">
+            <h3 style="margin-bottom:20px;">套餐定价配置</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>专业版月费 (元)</h4>
+                <p>专业版套餐每月价格</p>
+              </div>
+              <input type="number" id="setProPrice" placeholder="29" style="max-width:120px;" min="0" step="0.01">
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>企业版月费 (元)</h4>
+                <p>企业版套餐每月价格</p>
+              </div>
+              <input type="number" id="setEntPrice" placeholder="99" style="max-width:120px;" min="0" step="0.01">
+            </div>
+            <div style="margin-top:20px;text-align:right;">
+              <button class="btn btn-primary" onclick="savePlanSettings()">保存套餐配置</button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">套餐说明</h3>
+            <div id="planInfoList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+              <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <h4 style="font-size:16px;margin-bottom:8px;">免费版</h4>
+                <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥0<span style="font-size:13px;font-weight:400;">/月</span></div>
+                <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+                  <li>每月 50 次上传</li><li>最多 3 个仓库</li><li>ZIP 最大 10MB</li>
+                </ul>
+              </div>
+              <div style="border:2px solid var(--blue);border-radius:10px;padding:16px;">
+                <h4 style="font-size:16px;margin-bottom:8px;color:var(--blue);">专业版 ⭐</h4>
+                <div style="font-size:24px;font-weight:800;color:var(--blue);margin-bottom:8px;">¥<span id="proPriceDisplay">29</span><span style="font-size:13px;font-weight:400;">/月</span></div>
+                <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+                  <li>每月 500 次上传</li><li>最多 20 个仓库</li><li>ZIP 最大 50MB</li><li>优先支持</li>
+                </ul>
+              </div>
+              <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <h4 style="font-size:16px;margin-bottom:8px;">企业版</h4>
+                <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥<span id="entPriceDisplay">99</span><span style="font-size:13px;font-weight:400;">/月</span></div>
+                <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+                  <li>无限上传</li><li>无限仓库</li><li>ZIP 最大 100MB</li><li>专属客服 + API</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- 错误监控 -->
-    <div class="tab-content" id="tab-errors">
-      <!-- 汇总卡片 -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon icon-red">⚠️</div>
-          <div class="stat-num" id="errStatTotal">-</div>
-          <div class="stat-name">总错误数</div>
+        <!-- ============ 通知广播页 ============ -->
+        <div class="page" id="page-broadcast">
+          <div class="page-header">
+            <div>
+              <h2>通知广播</h2>
+              <div class="subtitle">向所有活跃用户发送站内通知</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:20px;">发送全站通知</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">向所有活跃用户发送通知消息，用户可在仪表盘的通知消息区查看。</p>
+            <div class="field">
+              <label>通知类型</label>
+              <select id="broadcastType">
+                <option value="info">普通通知</option>
+                <option value="success">成功消息</option>
+                <option value="warning">警告消息</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>通知标题</label>
+              <input type="text" id="broadcastTitle" placeholder="输入通知标题">
+            </div>
+            <div class="field">
+              <label>通知内容</label>
+              <textarea id="broadcastContent" placeholder="输入通知内容（可选）" rows="4" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
+            </div>
+            <button class="btn btn-primary" id="broadcastBtn" onclick="sendBroadcast()">发送通知</button>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon icon-orange">🌐</div>
-          <div class="stat-num" id="errStatApi">-</div>
-          <div class="stat-name">API 错误</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon icon-yellow">🐞</div>
-          <div class="stat-num" id="errStatJs">-</div>
-          <div class="stat-name">JS 错误</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon icon-blue">📅</div>
-          <div class="stat-num" id="errStatToday">-</div>
-          <div class="stat-name">今日错误</div>
-        </div>
-      </div>
 
-      <!-- 错误列表 -->
-      <div class="card">
-        <div class="section-title">
-          <h3>错误列表 <span id="errCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <select id="errTypeFilter" onchange="filterErrorLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-              <option value="">全部类型</option>
-              <option value="API Error">API Error</option>
-              <option value="JavaScript Error">JavaScript Error</option>
-              <option value="Unhandled Promise Rejection">Unhandled Promise Rejection</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="loadErrorLogs()">刷新</button>
-            <button class="btn btn-outline btn-sm" onclick="loadErrorStats()">统计</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" onclick="clearErrors()">清空全部</button>
+        <!-- ============ Vercel 部署页 ============ -->
+        <div class="page" id="page-vercel">
+          <div class="page-header">
+            <div>
+              <h2>Vercel 部署</h2>
+              <div class="subtitle">查看部署状态、构建日志与环境变量</div>
+            </div>
           </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>类型</th>
-                <th>错误信息</th>
-                <th>页面 URL</th>
-                <th>状态码</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="errorsBody">
-              <tr><td colspan="6" style="text-align:center;color:var(--text2);">切换到此标签页以加载错误数据</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <!-- 配置区 -->
+          <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin-bottom:16px;">Vercel API 配置</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 Vercel Token 和 Project ID 后，可查看项目部署状态、构建日志、环境变量等信息。<br>请在 <a href="https://vercel.com/account/tokens" target="_blank" style="color:var(--blue);">Vercel Tokens</a> 创建 Token，Project ID 在项目 Settings → General 中查看。</p>
+            <div class="field" style="margin-bottom:12px;">
+              <label>Vercel Token</label>
+              <input type="password" id="setVercelToken" placeholder="vercel_xxx..." style="max-width:400px;">
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label>Vercel Project ID（可选，留空则查询账号下所有部署）</label>
+              <input type="text" id="setVercelProjectId" placeholder="prj_xxx..." style="max-width:400px;">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="saveVercelConfig()">保存配置</button>
+              <button class="btn btn-outline" onclick="loadVercelStatus()">刷新状态</button>
+            </div>
+            <div id="vercelConfigAlert" style="margin-top:12px;"></div>
+          </div>
 
-      <!-- 错误详情弹窗 -->
-      <div class="modal-overlay" id="errorDetailModal">
-        <div class="modal" style="max-width:760px;">
-          <div class="modal-header">
-            <h3 style="margin:0;">错误详情</h3>
-            <button class="modal-close" onclick="closeErrorDetailModal()">&times;</button>
-          </div>
-          <div id="errorDetailContent"></div>
-        </div>
-      </div>
-    </div>
+          <!-- 状态总览 -->
+          <div id="vercelStatusContent" style="display:none;">
+            <!-- 项目信息卡片 -->
+            <div class="analytics-grid" id="vercelSummaryGrid" style="margin-bottom:20px;">
+              <div class="analytics-card">
+                <div class="stat-icon icon-blue">📦</div>
+                <div class="stat-num" id="vercelProjectName">-</div>
+                <div class="stat-name">项目名称</div>
+              </div>
+              <div class="analytics-card">
+                <div class="stat-icon icon-green">🚀</div>
+                <div class="stat-num" id="vercelLatestState">-</div>
+                <div class="stat-name">最新部署状态</div>
+              </div>
+              <div class="analytics-card">
+                <div class="stat-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">⏱</div>
+                <div class="stat-num" id="vercelTotalDeploys" style="font-size:28px;">-</div>
+                <div class="stat-name">部署总数</div>
+              </div>
+              <div class="analytics-card">
+                <div class="stat-icon" style="background:rgba(234,179,8,0.1);color:#eab308;">🔗</div>
+                <div class="stat-num" id="vercelDomainCount" style="font-size:28px;">-</div>
+                <div class="stat-name">绑定域名</div>
+              </div>
+            </div>
 
-    <!-- 系统设置 -->
-    <div class="tab-content" id="tab-settings">
-      <div class="card">
-        <h3 style="margin-bottom:20px;">系统设置</h3>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>站点名称</h4>
-            <p>显示在导航栏和页面的站点名称</p>
-          </div>
-          <input type="text" id="setSiteName" placeholder="GitShip" style="max-width:200px;">
-        </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>允许注册</h4>
-            <p>关闭后新用户将无法注册，只能由管理员创建</p>
-          </div>
-          <div class="toggle" id="setAllowRegister" onclick="toggleRegister()"></div>
-        </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>免费上传次数限制</h4>
-            <p>免费用户每月上传次数上限</p>
-          </div>
-          <input type="number" id="setUploadLimit" placeholder="50" style="max-width:100px;" min="0">
-        </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>公告通知</h4>
-            <p>显示在用户仪表盘顶部的公告内容（留空则不显示）</p>
-          </div>
-          <input type="text" id="setAnnouncement" placeholder="输入公告内容..." style="max-width:300px;">
-        </div>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>开启套餐付费</h4>
-            <p>开启后用户可看到付费套餐并进行升级。关闭后所有用户免费使用，适合前期推广。</p>
-          </div>
-          <div class="toggle" id="setPlansEnabled" onclick="togglePlansEnabled()"></div>
-        </div>
-        <div style="margin-top:20px;text-align:right;">
-          <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
-        </div>
-      </div>
+            <!-- 最近部署列表 -->
+            <div class="card" style="margin-bottom:20px;">
+              <div class="section-title">
+                <h3>最近部署</h3>
+                <button class="btn btn-outline btn-sm" onclick="loadVercelStatus()">刷新</button>
+              </div>
+              <div id="vercelDeployList" style="display:flex;flex-direction:column;gap:12px;">
+                <div style="text-align:center;color:var(--text2);padding:20px;">加载中...</div>
+              </div>
+            </div>
 
-      <!-- 收款码上传 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:20px;">收款码管理</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">上传支付宝/微信收款码，用户升级套餐时会展示扫码支付。请上传图片 URL 或 Base64 数据。</p>
-        <div class="grid2">
-          <div class="field">
-            <label>支付宝收款码（图片 URL 或 Base64）</label>
-            <input type="text" id="setAlipayQrcode" placeholder="https://... 或 data:image/...">
-            <div id="alipayPreview" style="margin-top:8px;text-align:center;"></div>
-          </div>
-          <div class="field">
-            <label>微信收款码（图片 URL 或 Base64）</label>
-            <input type="text" id="setWechatQrcode" placeholder="https://... 或 data:image/...">
-            <div id="wechatPreview" style="margin-top:8px;text-align:center;"></div>
-          </div>
-        </div>
-        <div class="field">
-          <label>付款说明（展示给用户看）</label>
-          <input type="text" id="setPaymentInstructions" placeholder="请在付款备注中填写订单号后6位" style="max-width:400px;">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button class="btn btn-outline" onclick="loadPaymentQrcodes()">预览收款码</button>
-          <button class="btn btn-primary" onclick="savePaymentQrcodes()">保存收款码</button>
-        </div>
-      </div>
+            <!-- 环境变量 -->
+            <div class="card" style="margin-bottom:20px;">
+              <div class="section-title">
+                <h3>环境变量</h3>
+                <span style="font-size:13px;color:var(--text2);">仅显示变量名，不显示值</span>
+              </div>
+              <div id="vercelEnvList" style="display:flex;flex-wrap:wrap;gap:8px;">
+                <div style="color:var(--text2);">加载中...</div>
+              </div>
+            </div>
 
-      <!-- 上传收款码图片 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">上传收款码图片</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">直接选择本地收款码图片上传，自动转为 Base64 存储。</p>
-        <div class="grid2">
-          <div>
-            <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">支付宝收款码</label>
-            <input type="file" id="alipayFile" accept="image/*" onchange="uploadQrcode('alipay')">
+            <!-- 域名绑定 -->
+            <div class="card">
+              <div class="section-title">
+                <h3>域名绑定</h3>
+              </div>
+              <div id="vercelDomainList" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="color:var(--text2);">加载中...</div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">微信收款码</label>
-            <input type="file" id="wechatFile" accept="image/*" onchange="uploadQrcode('wechat')">
-          </div>
-        </div>
-      </div>
 
-      <!-- 打赏功能 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">打赏功能</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">开启后用户仪表盘会显示打赏入口，展示打赏文案与收款二维码（复用上方收款码）。</p>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>开启打赏功能</h4>
-            <p>关闭后用户仪表盘不显示打赏入口</p>
+          <!-- 未配置提示 -->
+          <div id="vercelNotConfigured" class="card" style="text-align:center;padding:40px;">
+            <div style="font-size:48px;margin-bottom:12px;">⚙️</div>
+            <h3 style="margin-bottom:8px;">Vercel 未配置</h3>
+            <p style="color:var(--text2);">请在上方填写 Vercel Token 和 Project ID，然后点击保存配置</p>
           </div>
-          <div class="toggle" id="setDonationEnabled" onclick="toggleDonationEnabled()"></div>
-        </div>
-        <div class="field">
-          <label>打赏标题</label>
-          <input type="text" id="setDonationTitle" placeholder="支持开发者" style="max-width:400px;">
-        </div>
-        <div class="field">
-          <label>打赏文案</label>
-          <textarea id="setDonationMessage" placeholder="如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕" rows="3" style="width:100%;max-width:600px;resize:vertical;"></textarea>
-        </div>
-        <div style="margin-top:12px;text-align:right;">
-          <button class="btn btn-primary" onclick="saveDonationSettings()">保存打赏设置</button>
-        </div>
-      </div>
 
-      <!-- 版本管理 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">版本管理</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">更新版本号后，所有用户下次访问时会自动检测到新版本并强制刷新页面，确保加载最新代码。</p>
-        <div class="setting-row">
-          <div class="setting-info">
-            <h4>当前版本号</h4>
-            <p id="currentVersionDisplay" style="font-family:monospace;font-size:16px;font-weight:600;color:var(--blue);">加载中...</p>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="text" id="newVersionInput" placeholder="v2.6.1" style="max-width:150px;">
-            <button class="btn btn-primary" onclick="updateVersion()">更新版本</button>
+          <!-- 构建日志弹窗 -->
+          <div class="modal-overlay" id="vercelLogsModal">
+            <div class="modal" style="max-width:800px;">
+              <div class="modal-header">
+                <h3 style="margin:0;">构建日志</h3>
+                <button class="modal-close" onclick="closeVercelLogsModal()">&times;</button>
+              </div>
+              <div id="vercelLogsContent" style="max-height:500px;overflow:auto;background:#1a1a1a;color:#e0e0e0;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- GitHub OAuth 配置 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">GitHub OAuth 配置</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以通过 GitHub 弹窗授权一键导入仓库，无需手动填写 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
-        <div class="field">
-          <label>GitHub OAuth Client ID</label>
-          <input type="text" id="setOauthClientId" placeholder="Iv1.xxxxxxxxxxxxxxxx" style="max-width:400px;">
-        </div>
-        <div class="field">
-          <label>GitHub OAuth Client Secret</label>
-          <input type="password" id="setOauthClientSecret" placeholder="GitHub OAuth App 的 Secret" style="max-width:400px;">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <button class="btn btn-primary" onclick="saveOauthConfig()">保存 OAuth 配置</button>
-          <button class="btn btn-outline" onclick="testOauthConfig()">测试 OAuth 是否可用</button>
-        </div>
-        <div id="oauthTestResult" style="margin-top:12px;"></div>
-      </div>
+        <!-- ============ 错误监控页 ============ -->
+        <div class="page" id="page-errors">
+          <div class="page-header">
+            <div>
+              <h2>错误监控</h2>
+              <div class="subtitle">前端错误日志收集与统计</div>
+            </div>
+          </div>
+          <!-- 汇总卡片 -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon icon-red">⚠️</div>
+              <div>
+                <div class="stat-num" id="errStatTotal">-</div>
+                <div class="stat-name">总错误数</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-orange">🌐</div>
+              <div>
+                <div class="stat-num" id="errStatApi">-</div>
+                <div class="stat-name">API 错误</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-yellow">🐞</div>
+              <div>
+                <div class="stat-num" id="errStatJs">-</div>
+                <div class="stat-name">JS 错误</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon icon-blue">📅</div>
+              <div>
+                <div class="stat-num" id="errStatToday">-</div>
+                <div class="stat-name">今日错误</div>
+              </div>
+            </div>
+          </div>
 
-      <!-- 系统健康检查 -->
-      <div class="card" style="margin-top:20px;">
-        <h3 style="margin-bottom:16px;">系统健康检查</h3>
-        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">检查数据库连接、环境变量和系统配置状态。</p>
-        <div id="healthCheckResult" style="display:flex;flex-direction:column;gap:12px;">
-          <button class="btn btn-outline" onclick="runHealthCheck()" style="align-self:flex-start;">运行健康检查</button>
+          <!-- 错误列表 -->
+          <div class="card">
+            <div class="section-title">
+              <h3>错误列表 <span id="errCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <select id="errTypeFilter" onchange="filterErrorLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                  <option value="">全部类型</option>
+                  <option value="API Error">API Error</option>
+                  <option value="JavaScript Error">JavaScript Error</option>
+                  <option value="Unhandled Promise Rejection">Unhandled Promise Rejection</option>
+                </select>
+                <button class="btn btn-outline btn-sm" onclick="loadErrorLogs()">刷新</button>
+                <button class="btn btn-outline btn-sm" onclick="loadErrorStats()">统计</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" onclick="clearErrors()">清空全部</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>类型</th>
+                    <th>错误信息</th>
+                    <th>页面 URL</th>
+                    <th>状态码</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="errorsBody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text2);">切换到此标签页以加载错误数据</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 错误详情弹窗 -->
+          <div class="modal-overlay" id="errorDetailModal">
+            <div class="modal" style="max-width:760px;">
+              <div class="modal-header">
+                <h3 style="margin:0;">错误详情</h3>
+                <button class="modal-close" onclick="closeErrorDetailModal()">&times;</button>
+              </div>
+              <div id="errorDetailContent"></div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <!-- ============ 系统设置页 ============ -->
+        <div class="page" id="page-settings">
+          <div class="page-header">
+            <div>
+              <h2>系统设置</h2>
+              <div class="subtitle">站点、注册、收款码、OAuth 与版本管理</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin-bottom:20px;">系统设置</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>站点名称</h4>
+                <p>显示在导航栏和页面的站点名称</p>
+              </div>
+              <input type="text" id="setSiteName" placeholder="GitShip" style="max-width:200px;">
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>允许注册</h4>
+                <p>关闭后新用户将无法注册，只能由管理员创建</p>
+              </div>
+              <div class="toggle" id="setAllowRegister" onclick="toggleRegister()"></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>免费上传次数限制</h4>
+                <p>免费用户每月上传次数上限</p>
+              </div>
+              <input type="number" id="setUploadLimit" placeholder="50" style="max-width:100px;" min="0">
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>公告通知</h4>
+                <p>显示在用户仪表盘顶部的公告内容（留空则不显示）</p>
+              </div>
+              <input type="text" id="setAnnouncement" placeholder="输入公告内容..." style="max-width:300px;">
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>开启套餐付费</h4>
+                <p>开启后用户可看到付费套餐并进行升级。关闭后所有用户免费使用，适合前期推广。</p>
+              </div>
+              <div class="toggle" id="setPlansEnabled" onclick="togglePlansEnabled()"></div>
+            </div>
+            <div style="margin-top:20px;text-align:right;">
+              <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+            </div>
+          </div>
+
+          <!-- 收款码上传 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:20px;">收款码管理</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">上传支付宝/微信收款码，用户升级套餐时会展示扫码支付。请上传图片 URL 或 Base64 数据。</p>
+            <div class="grid2">
+              <div class="field">
+                <label>支付宝收款码（图片 URL 或 Base64）</label>
+                <input type="text" id="setAlipayQrcode" placeholder="https://... 或 data:image/...">
+                <div id="alipayPreview" style="margin-top:8px;text-align:center;"></div>
+              </div>
+              <div class="field">
+                <label>微信收款码（图片 URL 或 Base64）</label>
+                <input type="text" id="setWechatQrcode" placeholder="https://... 或 data:image/...">
+                <div id="wechatPreview" style="margin-top:8px;text-align:center;"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label>付款说明（展示给用户看）</label>
+              <input type="text" id="setPaymentInstructions" placeholder="请在付款备注中填写订单号后6位" style="max-width:400px;">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-outline" onclick="loadPaymentQrcodes()">预览收款码</button>
+              <button class="btn btn-primary" onclick="savePaymentQrcodes()">保存收款码</button>
+            </div>
+          </div>
+
+          <!-- 上传收款码图片 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">上传收款码图片</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">直接选择本地收款码图片上传，自动转为 Base64 存储。</p>
+            <div class="grid2">
+              <div>
+                <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">支付宝收款码</label>
+                <input type="file" id="alipayFile" accept="image/*" onchange="uploadQrcode('alipay')">
+              </div>
+              <div>
+                <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">微信收款码</label>
+                <input type="file" id="wechatFile" accept="image/*" onchange="uploadQrcode('wechat')">
+              </div>
+            </div>
+          </div>
+
+          <!-- 打赏功能 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">打赏功能</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">开启后用户仪表盘会显示打赏入口，展示打赏文案与收款二维码（复用上方收款码）。</p>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>开启打赏功能</h4>
+                <p>关闭后用户仪表盘不显示打赏入口</p>
+              </div>
+              <div class="toggle" id="setDonationEnabled" onclick="toggleDonationEnabled()"></div>
+            </div>
+            <div class="field">
+              <label>打赏标题</label>
+              <input type="text" id="setDonationTitle" placeholder="支持开发者" style="max-width:400px;">
+            </div>
+            <div class="field">
+              <label>打赏文案</label>
+              <textarea id="setDonationMessage" placeholder="如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕" rows="3" style="width:100%;max-width:600px;resize:vertical;"></textarea>
+            </div>
+            <div style="margin-top:12px;text-align:right;">
+              <button class="btn btn-primary" onclick="saveDonationSettings()">保存打赏设置</button>
+            </div>
+          </div>
+
+          <!-- 版本管理 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">版本管理</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">更新版本号后，所有用户下次访问时会自动检测到新版本并强制刷新页面，确保加载最新代码。</p>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>当前版本号</h4>
+                <p id="currentVersionDisplay" style="font-family:monospace;font-size:16px;font-weight:600;color:var(--blue);">加载中...</p>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="text" id="newVersionInput" placeholder="v2.6.1" style="max-width:150px;">
+                <button class="btn btn-primary" onclick="updateVersion()">更新版本</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GitHub OAuth 配置 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">GitHub OAuth 配置</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以通过 GitHub 弹窗授权一键导入仓库，无需手动填写 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
+            <div class="field">
+              <label>GitHub OAuth Client ID</label>
+              <input type="text" id="setOauthClientId" placeholder="Iv1.xxxxxxxxxxxxxxxx" style="max-width:400px;">
+            </div>
+            <div class="field">
+              <label>GitHub OAuth Client Secret</label>
+              <input type="password" id="setOauthClientSecret" placeholder="GitHub OAuth App 的 Secret" style="max-width:400px;">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" onclick="saveOauthConfig()">保存 OAuth 配置</button>
+              <button class="btn btn-outline" onclick="testOauthConfig()">测试 OAuth 是否可用</button>
+            </div>
+            <div id="oauthTestResult" style="margin-top:12px;"></div>
+          </div>
+
+          <!-- 系统健康检查 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">系统健康检查</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">检查数据库连接、环境变量和系统配置状态。</p>
+            <div id="healthCheckResult" style="display:flex;flex-direction:column;gap:12px;">
+              <button class="btn btn-outline" onclick="runHealthCheck()" style="align-self:flex-start;">运行健康检查</button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   </div>
 
@@ -1028,6 +1301,52 @@
     var setPlanUserId = null;
     var selectedPlan = null;
     var analyticsLoaded = false;
+    var currentPage = 'dashboard';
+
+    // ===== 页面切换 =====
+    var pageTitles = {
+      dashboard: '仪表盘',
+      analytics: '数据分析',
+      users: '用户管理',
+      history: '上传历史',
+      orders: '订单管理',
+      plans: '套餐管理',
+      broadcast: '通知广播',
+      vercel: 'Vercel 部署',
+      errors: '错误监控',
+      settings: '系统设置'
+    };
+
+    function switchPage(page) {
+      currentPage = page;
+      document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+      var navEl = document.querySelector('.nav-item[data-page="' + page + '"]');
+      if (navEl) navEl.classList.add('active');
+      var pageEl = document.getElementById('page-' + page);
+      if (pageEl) pageEl.classList.add('active');
+      document.getElementById('topbarTitle').textContent = pageTitles[page] || '管理后台';
+      // 按需加载数据
+      if (page === 'analytics') loadAnalytics();
+      if (page === 'vercel') loadVercelStatus();
+      if (page === 'errors') { loadErrorStats(); loadErrorLogs(); }
+      // 移动端关闭侧边栏
+      closeSidebar();
+      // 滚动到顶部
+      window.scrollTo(0, 0);
+    }
+
+    function toggleSidebar() {
+      var sidebar = document.getElementById('sidebar');
+      if (sidebar.classList.contains('mobile-open')) {
+        closeSidebar();
+      } else {
+        sidebar.classList.add('mobile-open');
+      }
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('mobile-open');
+    }
 
     // ===== 数据分析 =====
     async function loadAnalytics() {
@@ -1229,16 +1548,6 @@
       }).join('');
       wrap.innerHTML = cells;
       document.getElementById('anaHeatSummary').textContent = '30 天累计活跃 ' + totalActive + ' 人次';
-    }
-
-    function switchTab(e, name) {
-      document.querySelectorAll('.tab-item').forEach(function(el) { el.classList.remove('active'); });
-      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
-      e.target.classList.add('active');
-      document.getElementById('tab-' + name).classList.add('active');
-      if (name === 'analytics') loadAnalytics();
-      if (name === 'vercel') loadVercelStatus();
-      if (name === 'errors') { loadErrorStats(); loadErrorLogs(); }
     }
 
     async function loadStats() {
@@ -1907,379 +2216,112 @@
 
     // ===== 第二阶段：通知广播 =====
     async function sendBroadcast() {
+      var type = document.getElementById('broadcastType').value;
       var title = document.getElementById('broadcastTitle').value.trim();
       var content = document.getElementById('broadcastContent').value.trim();
-      var type = document.getElementById('broadcastType').value;
       if (!title) { showAlert('请输入通知标题', false); return; }
       var btn = document.getElementById('broadcastBtn');
       btn.disabled = true; btn.textContent = '发送中...';
       try {
-        var data = await apiFetch('/api/admin/broadcast', {
-          method: 'POST', headers: authHeader(),
-          body: JSON.stringify({ title: title, content: content, type: type })
-        });
+        var data = await apiFetch('/api/admin/broadcast', { method: 'POST', headers: authHeader(), body: JSON.stringify({ type: type, title: title, content: content }) });
         if (!data) return;
         if (data.ok) {
-          showAlert(data.message, true);
+          showAlert(data.message || '通知发送成功', true);
           document.getElementById('broadcastTitle').value = '';
           document.getElementById('broadcastContent').value = '';
         } else {
-          showAlert(data.error, false);
-        }
-      } catch (e) { showAlert('网络错误', false); }
-      btn.disabled = false; btn.textContent = '发送通知';
-    }
-
-    document.getElementById('passwordModal').addEventListener('click', function(e) { if (e.target === this) closePasswordModal(); });
-    document.getElementById('userDetailModal').addEventListener('click', function(e) { if (e.target === this) closeUserDetail(); });
-    document.getElementById('setPlanModal').addEventListener('click', function(e) { if (e.target === this) closeSetPlanModal(); });
-
-    loadStats();
-    loadTrend();
-    loadUsers();
-    loadHistory();
-    loadSettings();
-    loadOrders();
-    loadCurrentVersion();
-    checkNeedChangePassword();
-    // 显示 OAuth 回调 URL
-    document.getElementById('oauthCallbackHint').textContent = window.location.origin + '/api/oauth/callback';
-
-    // ===== Vercel 部署管理 =====
-    async function loadVercelStatus() {
-      document.getElementById('vercelStatusContent').style.display = 'none';
-      document.getElementById('vercelNotConfigured').style.display = 'none';
-      try {
-        var data = await apiFetch('/api/admin/vercel-status');
-        if (!data) return;
-        if (data.configured === false) {
-          document.getElementById('vercelNotConfigured').style.display = 'block';
-          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
-          return;
-        }
-        if (data.ok === false) {
-          document.getElementById('vercelNotConfigured').style.display = 'block';
-          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '获取状态失败') + '</div>';
-          return;
-        }
-        document.getElementById('vercelStatusContent').style.display = 'block';
-        document.getElementById('vercelConfigAlert').innerHTML = '';
-
-        // 填充配置表单
-        if (data.configured) {
-          // 从配置中读取 Token 和 ProjectId（隐藏 Token 值）
-          // 只在首次加载时设置
-          if (document.getElementById('setVercelToken').value === '') {
-            document.getElementById('setVercelToken').placeholder = data.configured ? '已配置（如需修改请重新输入）' : 'vercel_xxx...';
-          }
-        }
-
-        // 项目信息
-        if (data.project) {
-          document.getElementById('vercelProjectName').textContent = data.project.name || '-';
-          document.getElementById('vercelProjectName').style.fontSize = '16px';
-        } else {
-          document.getElementById('vercelProjectName').textContent = data.hasProjectId ? '（无法获取）' : '未指定';
-          document.getElementById('vercelProjectName').style.fontSize = '16px';
-        }
-
-        // 最新部署状态
-        if (data.latestDeployment) {
-          var state = data.latestDeployment.state || data.latestDeployment.ready || 'UNKNOWN';
-          var stateColor = state === 'READY' ? '#22c55e' : (state === 'ERROR' ? '#ef4444' : '#f59e0b');
-          document.getElementById('vercelLatestState').innerHTML = '<span style="color:' + stateColor + ';font-weight:600;font-size:16px;">' + state + '</span>';
-        } else {
-          document.getElementById('vercelLatestState').textContent = '-';
-        }
-
-        // 部署总数
-        document.getElementById('vercelTotalDeploys').textContent = (data.deployments || []).length;
-
-        // 域名数
-        document.getElementById('vercelDomainCount').textContent = (data.domains || []).length;
-
-        // 部署列表
-        renderVercelDeployments(data.deployments || []);
-
-        // 环境变量
-        renderVercelEnvVars(data.envVars || []);
-
-        // 域名
-        renderVercelDomains(data.domains || []);
-
-      } catch (e) {
-        document.getElementById('vercelNotConfigured').style.display = 'block';
-      }
-    }
-
-    function renderVercelDeployments(deployments) {
-      var container = document.getElementById('vercelDeployList');
-      if (deployments.length === 0) {
-        container.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">暂无部署记录</div>';
-        return;
-      }
-      container.innerHTML = deployments.map(function(d) {
-        var state = d.state || d.ready || 'UNKNOWN';
-        var stateColor = state === 'READY' ? '#22c55e' : (state === 'ERROR' ? '#ef4444' : '#f59e0b');
-        var date = d.createdAt ? new Date(d.createdAt) : (d.created ? new Date(d.created * 1000) : null);
-        var dateStr = date ? date.toLocaleString('zh-CN') : '-';
-        var branch = d.meta && d.meta.githubCommitRef ? d.meta.githubCommitRef : (d.meta && d.meta.branch ? d.meta.branch : 'main');
-        var commitMsg = d.meta && d.meta.githubCommitMessage ? d.meta.githubCommitMessage : '';
-        var commitSha = d.meta && d.meta.githubCommitSha ? d.meta.githubCommitSha.substring(0, 7) : '';
-        var url = d.url ? 'https://' + d.url : '';
-        var target = d.target === 'production' ? '<span style="background:#22c55e;color:white;padding:2px 8px;border-radius:4px;font-size:11px;">Production</span>' : '<span style="background:#6b7280;color:white;padding:2px 8px;border-radius:4px;font-size:11px;">Preview</span>';
-
-        return '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
-            '<div style="display:flex;gap:8px;align-items:center;">' +
-              '<span style="font-weight:600;">' + escapeHtml(d.name || '部署') + '</span>' +
-              '<span style="color:' + stateColor + ';font-weight:600;font-size:13px;">' + state + '</span>' +
-              target +
-            '</div>' +
-            '<div style="display:flex;gap:6px;">' +
-              (url ? '<a href="' + url + '" target="_blank" style="color:var(--blue);font-size:12px;">访问</a>' : '') +
-              '<a href="javascript:void(0)" onclick="loadVercelLogs(\'' + d.id + '\')" style="color:var(--blue);font-size:12px;">日志</a>' +
-              '<a href="javascript:void(0)" onclick="redeployVercel(\'' + d.id + '\')" style="color:#f59e0b;font-size:12px;">重新部署</a>' +
-            '</div>' +
-          '</div>' +
-          '<div style="font-size:12px;color:var(--text2);">' +
-            '<span style="font-family:monospace;">' + escapeHtml(branch) + '</span>' +
-            (commitSha ? ' @ <span style="font-family:monospace;">' + commitSha + '</span>' : '') +
-            ' | ' + dateStr +
-          '</div>' +
-          (commitMsg ? '<div style="font-size:12px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(commitMsg.split('\n')[0]) + '</div>' : '') +
-          (d.errorMessage ? '<div style="font-size:12px;color:#ef4444;margin-top:4px;">' + escapeHtml(d.errorMessage) + '</div>' : '') +
-        '</div>';
-      }).join('');
-    }
-
-    function renderVercelEnvVars(envVars) {
-      var container = document.getElementById('vercelEnvList');
-      if (envVars.length === 0) {
-        container.innerHTML = '<div style="color:var(--text2);">无环境变量</div>';
-        return;
-      }
-      container.innerHTML = envVars.map(function(e) {
-        var target = Array.isArray(e.target) ? e.target.join(', ') : (e.target || 'all');
-        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:13px;">' +
-          '<span style="font-family:monospace;font-weight:600;">' + escapeHtml(e.key) + '</span>' +
-          '<span style="color:var(--text2);font-size:11px;margin-left:8px;">(' + target + ')</span>' +
-        '</div>';
-      }).join('');
-    }
-
-    function renderVercelDomains(domains) {
-      var container = document.getElementById('vercelDomainList');
-      if (!domains || domains.length === 0) {
-        container.innerHTML = '<div style="color:var(--text2);">未绑定域名</div>';
-        return;
-      }
-      container.innerHTML = domains.map(function(d) {
-        var verified = d.verified ? '<span style="color:#22c55e;">✓ 已验证</span>' : '<span style="color:#ef4444;">✗ 未验证</span>';
-        var url = 'https://' + d.name;
-        return '<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:6px;padding:8px 12px;">' +
-          '<div>' +
-            '<a href="' + url + '" target="_blank" style="font-family:monospace;color:var(--blue);">' + escapeHtml(d.name) + '</a>' +
-            (d.redirect ? ' → <span style="font-family:monospace;color:var(--text2);">' + escapeHtml(d.redirect) + '</span>' : '') +
-          '</div>' +
-          '<span style="font-size:12px;">' + verified + '</span>' +
-        '</div>';
-      }).join('');
-    }
-
-    async function saveVercelConfig() {
-      var token = document.getElementById('setVercelToken').value.trim();
-      var projectId = document.getElementById('setVercelProjectId').value.trim();
-      var body = {};
-      if (token) body.vercelToken = token;
-      if (projectId !== undefined) body.vercelProjectId = projectId;
-      try {
-        var data = await apiFetch('/api/admin/vercel-status', { method: 'POST', body: JSON.stringify(body) });
-        if (data && data.ok) {
-          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-ok">配置已保存</div>';
-          loadVercelStatus();
-        } else {
-          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml((data && data.error) || '保存失败') + '</div>';
-        }
-      } catch (e) {
-        document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
-      }
-    }
-
-    async function loadVercelLogs(deploymentId) {
-      document.getElementById('vercelLogsModal').classList.add('show');
-      document.getElementById('vercelLogsContent').textContent = '加载中...';
-      try {
-        var data = await apiFetch('/api/admin/vercel-logs', { method: 'POST', body: JSON.stringify({ deploymentId: deploymentId }) });
-        if (data && data.ok) {
-          var logs = data.logs || [];
-          if (Array.isArray(logs)) {
-            var text = logs.map(function(l) {
-              var ts = l.created ? new Date(l.created).toLocaleTimeString('en-US') : '';
-              var msg = l.text || l.payload || JSON.stringify(l);
-              return '[' + ts + '] ' + msg;
-            }).join('\n');
-            document.getElementById('vercelLogsContent').textContent = text || '（无日志）';
-          } else if (typeof logs === 'string') {
-            document.getElementById('vercelLogsContent').textContent = logs;
-          } else {
-            document.getElementById('vercelLogsContent').textContent = JSON.stringify(logs, null, 2);
-          }
-        } else {
-          document.getElementById('vercelLogsContent').textContent = '加载失败: ' + ((data && data.error) || '未知错误');
-        }
-      } catch (e) {
-        document.getElementById('vercelLogsContent').textContent = '网络错误';
-      }
-    }
-
-    function closeVercelLogsModal() {
-      document.getElementById('vercelLogsModal').classList.remove('show');
-    }
-
-    async function redeployVercel(deploymentId) {
-      if (!confirm('确认重新触发此部署？')) return;
-      try {
-        var data = await apiFetch('/api/admin/vercel-redeploy', { method: 'POST', body: JSON.stringify({ deploymentId: deploymentId }) });
-        if (data && data.ok) {
-          showAlert('已触发重新部署', true);
-          setTimeout(loadVercelStatus, 2000);
-        } else {
-          showAlert((data && data.error) || '重新部署失败', false);
+          showAlert(data.error || '发送失败', false);
         }
       } catch (e) {
         showAlert('网络错误', false);
+      } finally {
+        btn.disabled = false; btn.textContent = '发送通知';
       }
     }
 
-    // ===== 错误监控 =====
-    var errorLogsCache = [];
-
-    async function loadErrorLogs() {
-      var typeFilter = document.getElementById('errTypeFilter').value;
-      var url = '/api/admin/error-logs?limit=100';
-      if (typeFilter) url += '&type=' + encodeURIComponent(typeFilter);
-      try {
-        var data = await apiFetch(url);
-        if (!data) return;
-        if (data.ok) {
-          errorLogsCache = data.logs || [];
-          renderErrorLogs(errorLogsCache);
-        } else {
-          document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">' + escapeHtml((data && data.error) || '加载失败') + '</td></tr>';
-        }
-      } catch (e) {
-        document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">网络错误</td></tr>';
-      }
-    }
-
-    function renderErrorLogs(logs) {
-      var body = document.getElementById('errorsBody');
-      document.getElementById('errCount').textContent = '(' + logs.length + ' 条)';
-      if (!logs || logs.length === 0) {
-        body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);">暂无错误记录</td></tr>';
-        return;
-      }
-      body.innerHTML = logs.map(function(l) {
-        var time = l.createdAt ? new Date(l.createdAt).toLocaleString('zh-CN') : '-';
-        var typeBadge = renderErrorTypeBadge(l.errorType);
-        var msg = escapeHtml((l.errorMessage || '').slice(0, 120));
-        if (l.errorMessage && l.errorMessage.length > 120) msg += '...';
-        var pageUrl = escapeHtml((l.pageUrl || '').slice(0, 50));
-        if (l.pageUrl && l.pageUrl.length > 50) pageUrl = pageUrl.slice(0, 50) + '...';
-        var statusCode = l.statusCode != null ? escapeHtml(String(l.statusCode)) : '<span style="color:var(--text2);">-</span>';
-        return '<tr>' +
-          '<td style="font-size:12px;">' + escapeHtml(time) + '</td>' +
-          '<td>' + typeBadge + '</td>' +
-          '<td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(l.errorMessage || '') + '">' + msg + '</td>' +
-          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:12px;" title="' + escapeHtml(l.pageUrl || '') + '">' + pageUrl + '</td>' +
-          '<td>' + statusCode + '</td>' +
-          '<td><button class="btn btn-outline btn-sm" onclick="viewErrorDetail(' + l.id + ')">详情</button></td>' +
-          '</tr>';
-      }).join('');
-    }
-
-    function renderErrorTypeBadge(type) {
-      var t = type || 'unknown';
-      var cls = 'badge-gray';
-      if (t === 'API Error') cls = 'badge-red';
-      else if (t === 'JavaScript Error') cls = 'badge-yellow';
-      else if (t === 'Unhandled Promise Rejection') cls = 'badge-purple';
-      else if (t === 'unknown') cls = 'badge-gray';
-      return '<span class="badge ' + cls + '">' + escapeHtml(t) + '</span>';
-    }
-
-    function filterErrorLogs() {
-      loadErrorLogs();
-    }
-
+    // ===== 第三阶段：错误监控 =====
     async function loadErrorStats() {
       try {
         var data = await apiFetch('/api/admin/error-stats');
-        if (!data) return;
-        if (data.ok && data.stats) {
-          var s = data.stats;
-          document.getElementById('errStatTotal').textContent = s.total != null ? s.total : '-';
-          document.getElementById('errStatApi').textContent = s.apiErrors != null ? s.apiErrors : '-';
-          document.getElementById('errStatJs').textContent = s.jsErrors != null ? s.jsErrors : '-';
-          document.getElementById('errStatToday').textContent = s.today != null ? s.today : '-';
-        }
+        if (!data || !data.ok) return;
+        var s = data.stats || {};
+        document.getElementById('errStatTotal').textContent = s.total || 0;
+        document.getElementById('errStatApi').textContent = s.apiErrors || 0;
+        document.getElementById('errStatJs').textContent = s.jsErrors || 0;
+        document.getElementById('errStatToday').textContent = s.today || 0;
       } catch (e) {}
     }
 
+    var allErrorLogs = [];
+    async function loadErrorLogs() {
+      try {
+        var data = await apiFetch('/api/admin/error-logs?limit=100');
+        if (!data || !data.ok) return;
+        allErrorLogs = data.logs || [];
+        renderErrorLogs(allErrorLogs);
+        document.getElementById('errCount').textContent = '(共 ' + allErrorLogs.length + ' 条)';
+      } catch (e) {}
+    }
+
+    function renderErrorLogs(logs) {
+      var tbody = document.getElementById('errorsBody');
+      if (!logs.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无错误记录</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logs.map(function(e) {
+        var time = new Date(e.createdAt).toLocaleString('zh-CN');
+        var typeBadge = e.errorType === 'API Error' ? '<span class="badge badge-blue">API</span>' :
+                        e.errorType === 'JavaScript Error' ? '<span class="badge badge-yellow">JS</span>' :
+                        '<span class="badge badge-gray">' + escapeHtml(e.errorType || '') + '</span>';
+        var statusCode = e.statusCode ? '<span style="font-family:monospace;font-size:12px;color:var(--red);">' + e.statusCode + '</span>' : '-';
+        return '<tr><td style="white-space:nowrap;font-size:12px;">' + time + '</td><td>' + typeBadge + '</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(e.errorMessage || '') + '">' + escapeHtml(e.errorMessage || '') + '</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;">' + escapeHtml(e.pageUrl || '') + '</td><td>' + statusCode + '</td><td><button class="btn btn-outline btn-sm" onclick="viewErrorDetail(' + e.id + ')">详情</button></td></tr>';
+      }).join('');
+    }
+
+    function filterErrorLogs() {
+      var type = document.getElementById('errTypeFilter').value;
+      if (!type) {
+        renderErrorLogs(allErrorLogs);
+        document.getElementById('errCount').textContent = '(共 ' + allErrorLogs.length + ' 条)';
+        return;
+      }
+      var filtered = allErrorLogs.filter(function(e) { return e.errorType === type; });
+      renderErrorLogs(filtered);
+      document.getElementById('errCount').textContent = '(共 ' + filtered.length + ' 条)';
+    }
+
     function viewErrorDetail(id) {
-      var l = null;
-      for (var i = 0; i < errorLogsCache.length; i++) {
-        if (errorLogsCache[i].id === id) { l = errorLogsCache[i]; break; }
+      var err = allErrorLogs.find(function(e) { return e.id === id; });
+      if (!err) return;
+      var time = new Date(err.createdAt).toLocaleString('zh-CN');
+      var html = '<div style="display:grid;gap:12px;">';
+      html += '<div><strong>时间:</strong> ' + escapeHtml(time) + '</div>';
+      html += '<div><strong>类型:</strong> ' + escapeHtml(err.errorType || '') + '</div>';
+      html += '<div><strong>错误信息:</strong> ' + escapeHtml(err.errorMessage || '') + '</div>';
+      if (err.pageUrl) html += '<div><strong>页面 URL:</strong> ' + escapeHtml(err.pageUrl) + '</div>';
+      if (err.sourceUrl) html += '<div><strong>来源 URL:</strong> ' + escapeHtml(err.sourceUrl) + '</div>';
+      if (err.lineNumber) html += '<div><strong>行号:</strong> ' + err.lineNumber + (err.columnNumber ? ':' + err.columnNumber : '') + '</div>';
+      if (err.statusCode) html += '<div><strong>状态码:</strong> ' + err.statusCode + '</div>';
+      if (err.requestUrl) html += '<div><strong>请求 URL:</strong> ' + escapeHtml(err.requestMethod || '') + ' ' + escapeHtml(err.requestUrl) + '</div>';
+      if (err.userAgent) html += '<div><strong>User Agent:</strong> ' + escapeHtml(err.userAgent) + '</div>';
+      if (err.ipAddress) html += '<div><strong>IP 地址:</strong> ' + escapeHtml(err.ipAddress) + '</div>';
+      if (err.stackTrace) {
+        html += '<div><strong>堆栈跟踪:</strong><pre style="background:#1a1a1a;color:#e0e0e0;padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;margin-top:4px;">' + escapeHtml(err.stackTrace) + '</pre></div>';
       }
-      if (!l) { showAlert('未找到该错误记录', false); return; }
-      var time = l.createdAt ? new Date(l.createdAt).toLocaleString('zh-CN') : '-';
-      var html = '<div class="detail-section">' +
-        '<div class="detail-stats" style="grid-template-columns:1fr 1fr;">' +
-          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(l.errorType || '-') + '</div><div class="label">错误类型</div></div>' +
-          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + (l.statusCode != null ? escapeHtml(String(l.statusCode)) : '-') + '</div><div class="label">状态码</div></div>' +
-          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(time) + '</div><div class="label">发生时间</div></div>' +
-          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(l.requestMethod || '-') + '</div><div class="label">请求方法</div></div>' +
-        '</div>' +
-        '</div>';
-      html += '<div class="detail-section"><h4>错误信息</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-word;">' + escapeHtml(l.errorMessage || '-') + '</div></div>';
-      if (l.stackTrace) {
-        html += '<div class="detail-section"><h4>堆栈跟踪</h4><div style="background:#1a1a1a;color:#e0e0e0;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:300px;overflow:auto;">' + escapeHtml(l.stackTrace) + '</div></div>';
-      }
-      if (l.pageUrl) {
-        html += '<div class="detail-section"><h4>页面 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.pageUrl) + '</div></div>';
-      }
-      if (l.requestUrl) {
-        html += '<div class="detail-section"><h4>请求 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.requestUrl) + '</div></div>';
-      }
-      if (l.sourceUrl) {
-        html += '<div class="detail-section"><h4>源 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.sourceUrl) + '</div></div>';
-      }
-      if (l.lineNumber != null || l.columnNumber != null) {
-        html += '<div class="detail-section"><h4>位置</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;">行: ' + escapeHtml(l.lineNumber != null ? String(l.lineNumber) : '-') + ' / 列: ' + escapeHtml(l.columnNumber != null ? String(l.columnNumber) : '-') + '</div></div>';
-      }
-      if (l.userAgent) {
-        html += '<div class="detail-section"><h4>User Agent</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:12px;word-break:break-all;">' + escapeHtml(l.userAgent) + '</div></div>';
-      }
-      if (l.userId) {
-        html += '<div class="detail-section"><h4>用户 ID</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.userId) + '</div></div>';
-      }
-      if (l.ipAddress) {
-        html += '<div class="detail-section"><h4>IP 地址</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.ipAddress) + '</div></div>';
-      }
+      html += '</div>';
       document.getElementById('errorDetailContent').innerHTML = html;
       document.getElementById('errorDetailModal').classList.add('show');
     }
 
-    function closeErrorDetailModal() {
-      document.getElementById('errorDetailModal').classList.remove('show');
-    }
+    function closeErrorDetailModal() { document.getElementById('errorDetailModal').classList.remove('show'); }
 
     async function clearErrors() {
       if (!confirm('确认清空所有错误日志？此操作不可恢复。')) return;
       try {
-        var data = await apiFetch('/api/admin/clear-errors', { method: 'POST', body: JSON.stringify({}) });
-        if (data && data.ok) {
+        var data = await apiFetch('/api/admin/clear-errors', { method: 'POST', headers: authHeader(), body: JSON.stringify({}) });
+        if (!data) return;
+        if (data.ok) {
           showAlert(data.message || '已清空错误日志', true);
           loadErrorStats();
           loadErrorLogs();
@@ -2290,6 +2332,165 @@
         showAlert('网络错误', false);
       }
     }
+
+    // ===== 第四阶段：Vercel 部署 =====
+    async function loadVercelStatus() {
+      var statusContent = document.getElementById('vercelStatusContent');
+      var notConfigured = document.getElementById('vercelNotConfigured');
+      try {
+        var data = await apiFetch('/api/admin/vercel-status');
+        if (!data) return;
+        if (data.ok && data.configured) {
+          notConfigured.style.display = 'none';
+          statusContent.style.display = 'block';
+          renderVercelStatus(data);
+        } else {
+          statusContent.style.display = 'none';
+          notConfigured.style.display = 'block';
+          if (data.error) {
+            document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-warn">' + escapeHtml(data.error) + '</div>';
+          }
+        }
+      } catch (e) {
+        statusContent.style.display = 'none';
+        notConfigured.style.display = 'block';
+      }
+    }
+
+    function renderVercelStatus(data) {
+      var project = data.project || {};
+      var user = data.user || {};
+      var projectName = project.name || (user.username ? user.username + '/project' : '-');
+      document.getElementById('vercelProjectName').textContent = projectName;
+      var latest = data.latestDeployment || {};
+      var latestState = latest.state || latest.ready || '-';
+      document.getElementById('vercelLatestState').textContent = latestState;
+      document.getElementById('vercelTotalDeploys').textContent = (data.deployments || []).length;
+      document.getElementById('vercelDomainCount').textContent = (data.domains || []).length;
+
+      // 部署列表
+      var deployList = document.getElementById('vercelDeployList');
+      var deployments = data.deployments || [];
+      if (!deployments.length) {
+        deployList.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">暂无部署记录</div>';
+      } else {
+        deployList.innerHTML = deployments.map(function(d) {
+          var time = new Date(d.created || d.createdAt).toLocaleString('zh-CN');
+          var stateBadge = d.state === 'READY' ? '<span class="badge badge-green">READY</span>' :
+                           d.state === 'ERROR' ? '<span class="badge badge-red" style="background:#fee2e2;color:#991b1b;">ERROR</span>' :
+                           d.state === 'QUEUED' ? '<span class="badge badge-yellow">QUEUED</span>' :
+                           d.state === 'BUILDING' ? '<span class="badge badge-blue">BUILDING</span>' :
+                           '<span class="badge badge-gray">' + escapeHtml(d.state || '-') + '</span>';
+          var target = d.target === 'production' ? '<span class="badge badge-blue">生产</span>' : '<span class="badge badge-gray">预览</span>';
+          var url = d.url ? '<a href="https://' + escapeHtml(d.url) + '" target="_blank" style="color:var(--blue);font-size:13px;">' + escapeHtml(d.url) + '</a>' : '-';
+          var logsBtn = '<button class="btn btn-outline btn-sm" onclick="loadVercelLogs(\'' + d.id + '\')">构建日志</button>';
+          var redeployBtn = '<button class="btn btn-outline btn-sm" style="color:var(--blue);border-color:var(--blue);" onclick="redeployVercel(\'' + d.id + '\')">重新部署</button>';
+          return '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                 '<div style="flex:1;min-width:200px;"><div style="font-weight:600;margin-bottom:4px;">' + escapeHtml(d.name || '-') + ' ' + target + '</div>' +
+                 '<div style="font-size:12px;color:var(--text2);">' + time + '</div>' +
+                 '<div style="font-size:13px;margin-top:4px;">' + url + '</div></div>' +
+                 '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' + stateBadge + logsBtn + redeployBtn + '</div></div>';
+        }).join('');
+      }
+
+      // 环境变量
+      var envList = document.getElementById('vercelEnvList');
+      var envVars = data.envVars || [];
+      if (!envVars.length) {
+        envList.innerHTML = '<span style="color:var(--text2);">无环境变量</span>';
+      } else {
+        envList.innerHTML = envVars.map(function(e) {
+          return '<span class="badge badge-gray" style="padding:4px 10px;font-size:12px;">' + escapeHtml(e.key || '') + '</span>';
+        }).join('');
+      }
+
+      // 域名绑定
+      var domainList = document.getElementById('vercelDomainList');
+      var domains = data.domains || [];
+      if (!domains.length) {
+        domainList.innerHTML = '<span style="color:var(--text2);">无绑定域名</span>';
+      } else {
+        domainList.innerHTML = domains.map(function(d) {
+          return '<div style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:8px;"><span style="font-family:monospace;font-size:13px;">' + escapeHtml(d.name || '') + '</span>' + (d.verified ? '<span class="badge badge-green">已验证</span>' : '<span class="badge badge-yellow">未验证</span>') + '</div>';
+        }).join('');
+      }
+    }
+
+    async function loadVercelLogs(deploymentId) {
+      var content = document.getElementById('vercelLogsContent');
+      content.textContent = '加载中...';
+      document.getElementById('vercelLogsModal').classList.add('show');
+      try {
+        var data = await apiFetch('/api/admin/vercel-logs', { method: 'POST', headers: authHeader(), body: JSON.stringify({ deploymentId: deploymentId }) });
+        if (!data) return;
+        if (data.ok && data.logs) {
+          var logs = Array.isArray(data.logs) ? data.logs : [data.logs];
+          var text = logs.map(function(l) {
+            if (typeof l === 'string') return l;
+            if (l.text) return l.text;
+            if (l.message) return '[' + (l.type || 'info') + '] ' + l.message;
+            return JSON.stringify(l, null, 2);
+          }).join('\n');
+          content.textContent = text || '无日志输出';
+        } else {
+          content.textContent = '获取日志失败: ' + ((data && data.error) || '未知错误');
+        }
+      } catch (e) {
+        content.textContent = '网络错误: ' + (e.message || '');
+      }
+    }
+
+    function closeVercelLogsModal() { document.getElementById('vercelLogsModal').classList.remove('show'); }
+
+    async function saveVercelConfig() {
+      var token = document.getElementById('setVercelToken').value.trim();
+      var projectId = document.getElementById('setVercelProjectId').value.trim();
+      var body = {};
+      if (token) body.vercelToken = token;
+      if (projectId !== undefined) body.vercelProjectId = projectId;
+      try {
+        var data = await apiFetch('/api/admin/vercel-status', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) {
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-ok">配置已保存</div>';
+          loadVercelStatus();
+        } else {
+          document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml((data && data.error) || '保存失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('vercelConfigAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+    }
+
+    async function redeployVercel(deploymentId) {
+      if (!confirm('确认重新部署此版本？')) return;
+      try {
+        var data = await apiFetch('/api/admin/vercel-redeploy', { method: 'POST', headers: authHeader(), body: JSON.stringify({ deploymentId: deploymentId }) });
+        if (!data) return;
+        if (data.ok) {
+          showAlert(data.message || '已触发重新部署', true);
+          loadVercelStatus();
+        } else {
+          showAlert((data && data.error) || '重新部署失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
+    // ===== 页面初始化 =====
+    // OAuth callback URL 提示
+    document.getElementById('oauthCallbackHint').textContent = window.location.origin + '/api/oauth/callback';
+
+    // 页面加载时调用
+    loadStats();
+    loadTrend();
+    loadUsers();
+    loadHistory();
+    loadSettings();
+    loadOrders();
+    loadCurrentVersion();
+    checkNeedChangePassword();
   </script>
 </body>
 </html>
