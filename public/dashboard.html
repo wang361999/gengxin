@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>控制台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.8.1">
+  <link rel="stylesheet" href="/style.css?v=2.9.0">
   <script src="/error-tracker.js"></script>
   <style>
     /* ===== 页面特有样式 ===== */
@@ -677,31 +677,6 @@
     </div>
   </div>
 
-  <!-- 删除文件弹窗 -->
-  <div class="modal-overlay" id="deleteFilesModal">
-    <div class="modal" style="max-width:640px;">
-      <div class="modal-header">
-        <h3>删除仓库文件</h3>
-        <button class="modal-close" onclick="closeDeleteFilesModal()">&times;</button>
-      </div>
-      <div id="deleteFilesAlert"></div>
-      <div id="deleteFilesRepoInfo" style="background:var(--bg);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);"></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(true)">全选</button>
-        <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(false)">取消全选</button>
-        <span id="deleteFilesSelectedCount" style="font-size:12px;color:var(--text2);margin-left:auto;">已选 0 项</span>
-      </div>
-      <div id="deleteFilesLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
-        <div class="spinner" style="margin-bottom:8px;"></div>
-        <div>正在获取文件列表...</div>
-      </div>
-      <div id="deleteFilesPreview" style="display:none;">
-        <div class="file-preview-list" id="deleteFilesList" style="max-height:400px;"></div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeDeleteFilesModal()">取消</button><button class="btn btn-red" id="deleteFilesBtn" onclick="deleteSelectedFiles()" disabled>删除选中</button></div>
-    </div>
-  </div>
-
   <!-- 团队创建弹窗 -->
   <div class="modal-overlay" id="teamModal">
     <div class="modal">
@@ -875,6 +850,13 @@
         </div>
       </div>
       <div id="fileBrowserAlert"></div>
+      <!-- 批量操作工具栏 -->
+      <div id="fileBrowserToolbar" style="display:none;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px;">
+        <button class="btn btn-outline btn-sm" onclick="browserSelectAll(true)">全选</button>
+        <button class="btn btn-outline btn-sm" onclick="browserSelectAll(false)">取消全选</button>
+        <span id="browserSelectedCount" style="font-size:12px;color:var(--text2);margin-left:auto;">已选 0 项</span>
+        <button class="btn btn-red btn-sm" id="browserDeleteBtn" onclick="browserDeleteSelected()" disabled>删除选中</button>
+      </div>
       <div id="fileBrowserLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
         <div class="spinner" style="margin-bottom:8px;"></div>
         <div>正在获取文件列表...</div>
@@ -1439,7 +1421,6 @@
               '<button class="btn btn-outline btn-sm" onclick="checkTokenStatus(' + r.id + ')" id="tokenBtn_' + r.id + '">Token</button>' +
               '<button class="btn btn-outline btn-sm" onclick="openEditRepo(' + r.id + ')">编辑</button>' +
               '<button class="btn btn-blue btn-sm" onclick="downloadRepo(' + r.id + ')" id="downloadBtn_' + r.id + '">下载</button>' +
-              '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.3);" onclick="openDeleteFilesModal(' + r.id + ')">删文件</button>' +
               '<button class="btn btn-red btn-sm" onclick="openClearRepoModal(' + r.id + ')">清空</button>' +
               '<button class="btn btn-red btn-sm" onclick="removeRepo(' + r.id + ')">删除</button>' +
             '</div>' +
@@ -1656,140 +1637,6 @@
         alertEl.innerHTML = '<div class="alert alert-err">网络错误</div>';
       }
       btn.disabled = false; btn.textContent = '确认清空';
-    }
-
-    // ===== 删除指定文件 =====
-    var deleteFilesRepoId = null;
-    var deleteFilesData = [];
-
-    async function openDeleteFilesModal(id) {
-      var r = repos.find(function(x) { return String(x.id) === String(id); });
-      if (!r) return;
-      deleteFilesRepoId = id;
-      deleteFilesData = [];
-      document.getElementById('deleteFilesAlert').innerHTML = '';
-      document.getElementById('deleteFilesRepoInfo').innerHTML =
-        '<strong>仓库名称:</strong> ' + escapeHtml(r.name) + ' &nbsp; ' +
-        '<strong>分支:</strong> ' + escapeHtml(r.branch) + '<br>' +
-        '<strong>仓库地址:</strong> ' + escapeHtml(r.repo);
-      document.getElementById('deleteFilesPreview').style.display = 'none';
-      document.getElementById('deleteFilesLoading').style.display = 'block';
-      document.getElementById('deleteFilesBtn').disabled = true;
-      document.getElementById('deleteFilesSelectedCount').textContent = '已选 0 项';
-      document.getElementById('deleteFilesModal').classList.add('show');
-
-      try {
-        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: id }) });
-        var data = await res.json();
-        document.getElementById('deleteFilesLoading').style.display = 'none';
-        if (data.ok) {
-          var items = data.items || data.files || [];
-          if (data.totalFiles === 0 && items.length === 0) {
-            document.getElementById('deleteFilesPreview').style.display = 'block';
-            document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库已经是空的，没有文件可删除</div>';
-          } else {
-            deleteFilesData = items;
-            items.sort(function(a, b) {
-              if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
-              return a.path.localeCompare(b.path);
-            });
-            var filesHtml = items.map(function(f, idx) {
-              var isDir = f.type === 'tree';
-              var icon = isDir ? '📁' : '📄';
-              var sizeLabel = isDir ? (f.size + ' 个文件') : formatSize(f.size);
-              return '<div class="file-preview-item" style="cursor:pointer;gap:6px;" onclick="toggleDeleteFile(this, ' + idx + ')">' +
-                '<input type="checkbox" class="delete-file-cb" data-idx="' + idx + '" data-path="' + escapeHtml(f.path) + '" data-type="' + f.type + '" style="flex-shrink:0;width:16px;height:16px;cursor:pointer;" onclick="event.stopPropagation();">' +
-                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
-                '<span class="file-path" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.path) + '</span>' +
-                '<span class="file-size">' + sizeLabel + '</span>' +
-              '</div>';
-            }).join('');
-            if (data.truncated) {
-              filesHtml += '<div class="file-preview-item" style="justify-content:center;color:var(--orange);font-size:12px;">⚠ GitHub API 返回的文件列表被截断，实际文件可能更多</div>';
-            }
-            document.getElementById('deleteFilesPreview').style.display = 'block';
-            document.getElementById('deleteFilesList').innerHTML = filesHtml;
-          }
-        } else {
-          document.getElementById('deleteFilesPreview').style.display = 'block';
-          document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">' + escapeHtml(data.error) + '</div>';
-        }
-      } catch (e) {
-        document.getElementById('deleteFilesLoading').style.display = 'none';
-        document.getElementById('deleteFilesPreview').style.display = 'block';
-        document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">获取文件列表失败</div>';
-      }
-    }
-
-    function toggleDeleteFile(rowEl, idx) {
-      var cb = rowEl.querySelector('input[type="checkbox"]');
-      cb.checked = !cb.checked;
-      rowEl.style.background = cb.checked ? 'rgba(239,68,68,0.05)' : '';
-      updateDeleteFilesCount();
-    }
-
-    function selectAllDeleteFiles(selectAll) {
-      var checkboxes = document.querySelectorAll('.delete-file-cb');
-      for (var i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].checked = selectAll;
-        var row = checkboxes[i].closest('.file-preview-item');
-        if (row) row.style.background = selectAll ? 'rgba(239,68,68,0.05)' : '';
-      }
-      updateDeleteFilesCount();
-    }
-
-    function updateDeleteFilesCount() {
-      var checkboxes = document.querySelectorAll('.delete-file-cb');
-      var checked = 0;
-      var dirCount = 0;
-      for (var i = 0; i < checkboxes.length; i++) {
-        if (checkboxes[i].checked) {
-          checked++;
-          if (checkboxes[i].getAttribute('data-type') === 'tree') dirCount++;
-        }
-      }
-      var label = '已选 ' + checked + ' 项';
-      if (dirCount > 0) label += '（含 ' + dirCount + ' 个文件夹）';
-      document.getElementById('deleteFilesSelectedCount').textContent = label;
-      document.getElementById('deleteFilesBtn').disabled = checked === 0;
-    }
-
-    function closeDeleteFilesModal() {
-      document.getElementById('deleteFilesModal').classList.remove('show');
-      deleteFilesRepoId = null;
-      deleteFilesData = [];
-    }
-
-    async function deleteSelectedFiles() {
-      var checkboxes = document.querySelectorAll('.delete-file-cb:checked');
-      var filesToDelete = [];
-      for (var i = 0; i < checkboxes.length; i++) {
-        filesToDelete.push(checkboxes[i].getAttribute('data-path'));
-      }
-      if (filesToDelete.length === 0) return;
-      if (filesToDelete.length > 1000) {
-        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">单次最多删除 1000 项</div>';
-        return;
-      }
-
-      var btn = document.getElementById('deleteFilesBtn');
-      btn.disabled = true; btn.textContent = '删除中...';
-      document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-warn">正在删除 ' + filesToDelete.length + ' 项（含文件夹内文件），请勿关闭页面...</div>';
-
-      try {
-        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: deleteFilesRepoId, files: filesToDelete }) });
-        var data = await res.json();
-        if (data.ok) {
-          closeDeleteFilesModal();
-          showAlert(data.message, true);
-          loadHistory(); loadStats();
-        } else {
-          document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
-        }
-      } catch (e) {
-        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
-      }
-      btn.disabled = false; btn.textContent = '删除选中文件';
     }
 
     // ===== 品牌与密码 =====
@@ -2986,24 +2833,168 @@
 
     // ===== 文件在线浏览 =====
     var currentBrowseRepoId = null;
+    var currentBrowseDir = '';
 
     async function openFileBrowser(id) {
       currentBrowseRepoId = id;
+      currentBrowseDir = '';
       var r = repos.find(function(x) { return String(x.id) === String(id); });
       if (!r) return;
       document.getElementById('fileBrowserTitle').textContent = r.name + ' 文件浏览';
       document.getElementById('fileBrowserAlert').innerHTML = '';
       document.getElementById('fileBrowserContent').style.display = 'none';
       document.getElementById('fileViewerContent').style.display = 'none';
+      document.getElementById('fileBrowserToolbar').style.display = 'none';
       document.getElementById('fileBrowserLoading').style.display = 'block';
       document.getElementById('fileBrowserModal').classList.add('show');
       await loadFileBrowserList(id, '');
     }
 
+    // 更新批量选择计数
+    function updateBrowserSelectedCount() {
+      var checkboxes = document.querySelectorAll('.browser-file-cb');
+      var checked = 0;
+      var dirCount = 0;
+      for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+          checked++;
+          if (checkboxes[i].getAttribute('data-type') === 'dir') dirCount++;
+        }
+      }
+      var label = '已选 ' + checked + ' 项';
+      if (dirCount > 0) label += '（含 ' + dirCount + ' 个文件夹）';
+      document.getElementById('browserSelectedCount').textContent = label;
+      document.getElementById('browserDeleteBtn').disabled = checked === 0;
+    }
+
+    function browserSelectAll(selectAll) {
+      var checkboxes = document.querySelectorAll('.browser-file-cb');
+      for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = selectAll;
+        var row = checkboxes[i].closest('.file-preview-item');
+        if (row) row.style.background = selectAll ? 'rgba(239,68,68,0.05)' : '';
+      }
+      updateBrowserSelectedCount();
+    }
+
+    function toggleBrowserFile(rowEl) {
+      var cb = rowEl.querySelector('input[type="checkbox"]');
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      rowEl.style.background = cb.checked ? 'rgba(239,68,68,0.05)' : '';
+      updateBrowserSelectedCount();
+    }
+
+    // 批量删除选中项（文件 + 文件夹）
+    async function browserDeleteSelected() {
+      var checkboxes = document.querySelectorAll('.browser-file-cb:checked');
+      var filesToDelete = [];
+      for (var i = 0; i < checkboxes.length; i++) {
+        filesToDelete.push(checkboxes[i].getAttribute('data-path'));
+      }
+      if (filesToDelete.length === 0) return;
+      if (filesToDelete.length > 500) {
+        document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">单次最多删除 500 项</div>';
+        return;
+      }
+      var dirCount = 0;
+      for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].getAttribute('data-type') === 'dir') dirCount++;
+      }
+      var msg = '确认删除 ' + filesToDelete.length + ' 项？';
+      if (dirCount > 0) msg += '\n（含 ' + dirCount + ' 个文件夹，将删除文件夹下所有文件）';
+      if (!confirm(msg)) return;
+
+      var btn = document.getElementById('browserDeleteBtn');
+      btn.disabled = true; btn.textContent = '删除中...';
+      document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-warn">正在删除 ' + filesToDelete.length + ' 项，请勿关闭页面...</div>';
+
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: currentBrowseRepoId, files: filesToDelete }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert(data.message, true);
+          document.getElementById('fileBrowserAlert').innerHTML = '';
+          loadHistory(); loadStats();
+          // 刷新当前目录
+          await loadFileBrowserList(currentBrowseRepoId, currentBrowseDir);
+        } else {
+          document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '删除选中';
+    }
+
+    // 删除单个文件或文件夹
+    async function deleteSingleFile(repoId, path, isDir) {
+      var msg = isDir
+        ? '确认删除文件夹: ' + path + ' 及其所有内容？'
+        : '确认删除文件: ' + path + ' ?';
+      if (!confirm(msg)) return;
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: repoId, files: [path] }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert(data.message, true);
+          if (currentBrowseRepoId) loadFileBrowserList(currentBrowseRepoId, currentBrowseDir);
+          loadHistory(); loadStats();
+        } else {
+          showAlert(data.error || '删除失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
+    // 生成文件列表 HTML（文件和文件夹都带 checkbox + 删除按钮）
+    function renderFileBrowserItems(repoId, items) {
+      items.sort(function(a, b) {
+        var aDir = (a.type === 'dir' || a.type === 'tree');
+        var bDir = (b.type === 'dir' || b.type === 'tree');
+        if (aDir !== bDir) return aDir ? -1 : 1;
+        return (a.name || a.path).localeCompare(b.name || b.path);
+      });
+      return items.map(function(f) {
+        var isDir = (f.type === 'dir' || f.type === 'tree');
+        var icon = isDir ? '📁' : '📄';
+        var name = isDir ? (f.name || f.path.split('/').pop()) + '/' : (f.name || f.path);
+        var sizeLabel = isDir ? (f.size + ' 项') : formatSize(f.size);
+        var pathEscaped = escapeHtml(f.path).replace(/'/g, "\\'");
+        var actions = '';
+        if (isDir) {
+          actions = '<span style="display:flex;gap:6px;align-items:center;margin-left:auto;">' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();loadFileBrowserList(' + repoId + ',\'' + pathEscaped + '\')" style="color:var(--primary);font-size:12px;">进入</a>' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + pathEscaped + '\',true)" style="color:var(--danger);font-size:12px;">删除</a>' +
+          '</span>';
+        } else {
+          actions = '<span style="display:flex;gap:6px;align-items:center;margin-left:auto;">' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();viewFile(' + repoId + ',\'' + pathEscaped + '\')" style="color:var(--primary);font-size:12px;">查看</a>' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();openFileEditor(' + repoId + ',\'' + pathEscaped + '\')" style="color:#2563eb;font-size:12px;">编辑</a>' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();openRenameModal(' + repoId + ',\'' + pathEscaped + '\')" style="color:#d97706;font-size:12px;">重命名</a>' +
+            '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + pathEscaped + '\',false)" style="color:var(--danger);font-size:12px;">删除</a>' +
+          '</span>';
+        }
+        var clickHandler = isDir
+          ? 'loadFileBrowserList(' + repoId + ',\'' + pathEscaped + '\')'
+          : 'viewFile(' + repoId + ',\'' + pathEscaped + '\')';
+        return '<div class="file-preview-item" style="cursor:pointer;" onclick="' + clickHandler + '">' +
+          '<input type="checkbox" class="browser-file-cb" data-path="' + escapeHtml(f.path) + '" data-type="' + (isDir ? 'dir' : 'file') + '" style="flex-shrink:0;width:16px;height:16px;cursor:pointer;" onclick="event.stopPropagation();updateBrowserSelectedCount();">' +
+          '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
+          '<span class="file-path">' + escapeHtml(name) + '</span>' +
+          '<span class="file-size">' + sizeLabel + '</span>' +
+          actions +
+        '</div>';
+      }).join('');
+    }
+
     async function loadFileBrowserList(repoId, dirPath) {
+      currentBrowseDir = dirPath || '';
       document.getElementById('fileBrowserAlert').innerHTML = '';
       document.getElementById('fileBrowserContent').style.display = 'none';
       document.getElementById('fileViewerContent').style.display = 'none';
+      document.getElementById('fileBrowserToolbar').style.display = 'none';
       document.getElementById('fileBrowserLoading').style.display = 'block';
       try {
         var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'list-dir', repoId: repoId, path: dirPath || '' }) });
@@ -3029,34 +3020,13 @@
           if (items.length === 0) {
             html += '<div style="padding:20px;text-align:center;color:var(--text2);">此目录为空</div>';
           } else {
-            items.sort(function(a, b) {
-              if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-              return a.name.localeCompare(b.name);
-            });
-            html += items.map(function(f) {
-              var icon = f.type === 'dir' ? '📁' : '📄';
-              var name = f.type === 'dir' ? f.name + '/' : f.name;
-              var actions = '';
-              if (f.type === 'dir') {
-                actions = '<a href="javascript:void(0)" onclick="event.stopPropagation();loadFileBrowserList(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;margin-left:8px;">进入</a>';
-              } else {
-                actions = '<span style="display:flex;gap:6px;align-items:center;">' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;">查看</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openFileEditor(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#2563eb;font-size:12px;">编辑</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openRenameModal(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#d97706;font-size:12px;">重命名</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--danger);font-size:12px;">删除</a>' +
-                '</span>';
-              }
-              return '<div class="file-preview-item" style="cursor:pointer;" onclick="' + (f.type === 'dir' ? 'loadFileBrowserList(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')' : 'viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')') + '">' +
-                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
-                '<span class="file-path">' + escapeHtml(name) + '</span>' +
-                '<span class="file-size">' + (f.type === 'dir' ? (f.size + ' 项') : formatSize(f.size)) + '</span>' +
-                '<span style="margin-left:auto;">' + actions + '</span>' +
-              '</div>';
-            }).join('');
+            html += renderFileBrowserItems(repoId, items);
           }
           document.getElementById('fileBrowserList').innerHTML = html;
           document.getElementById('fileBrowserContent').style.display = 'block';
+          // 显示批量操作工具栏
+          document.getElementById('fileBrowserToolbar').style.display = 'flex';
+          updateBrowserSelectedCount();
         } else {
           // 回退到 preview-files
           await loadFileBrowserListFallback(repoId);
@@ -3078,54 +3048,17 @@
           if (items.length === 0) {
             document.getElementById('fileBrowserList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);">仓库为空</div>';
           } else {
-            items.sort(function(a, b) {
-              if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
-              return a.path.localeCompare(b.path);
-            });
-            document.getElementById('fileBrowserList').innerHTML = items.map(function(f) {
-              var isDir = f.type === 'tree';
-              var icon = isDir ? '📁' : '📄';
-              var actions = '';
-              if (!isDir) {
-                actions = '<span style="display:flex;gap:6px;align-items:center;margin-left:auto;">' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--primary);font-size:12px;">查看</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openFileEditor(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#2563eb;font-size:12px;">编辑</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();openRenameModal(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:#d97706;font-size:12px;">重命名</a>' +
-                  '<a href="javascript:void(0)" onclick="event.stopPropagation();deleteSingleFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')" style="color:var(--danger);font-size:12px;">删除</a>' +
-                '</span>';
-              }
-              return '<div class="file-preview-item" style="cursor:pointer;" onclick="' + (!isDir ? 'viewFile(' + repoId + ',\'' + escapeHtml(f.path).replace(/'/g, "\\'") + '\')' : '') + '">' +
-                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
-                '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
-                '<span class="file-size">' + (isDir ? (f.size + ' 项') : formatSize(f.size)) + '</span>' +
-                actions +
-              '</div>';
-            }).join('');
+            document.getElementById('fileBrowserList').innerHTML = renderFileBrowserItems(repoId, items);
           }
           document.getElementById('fileBrowserContent').style.display = 'block';
+          document.getElementById('fileBrowserToolbar').style.display = 'flex';
+          updateBrowserSelectedCount();
         } else {
           document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
         }
       } catch (e) {
         document.getElementById('fileBrowserLoading').style.display = 'none';
         document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">加载失败</div>';
-      }
-    }
-
-    // 删除单个文件
-    async function deleteSingleFile(repoId, path) {
-      if (!confirm('确认删除文件: ' + path + ' ?')) return;
-      try {
-        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: repoId, files: [path] }) });
-        var data = await res.json();
-        if (data.ok) {
-          showAlert('已删除文件: ' + path, true);
-          if (currentBrowseRepoId) loadFileBrowserList(currentBrowseRepoId, '');
-        } else {
-          showAlert(data.error || '删除失败', false);
-        }
-      } catch (e) {
-        showAlert('网络错误', false);
       }
     }
 
