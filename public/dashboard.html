@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>控制台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.9.1">
+  <link rel="stylesheet" href="/style.css?v=2.9.2">
   <script src="/error-tracker.js"></script>
   <style>
     /* ===== 页面特有样式 ===== */
@@ -42,6 +42,43 @@
     /* 卡片操作区 - 分为主操作和危险操作 */
     .repo-card-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .repo-action-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+    /* 文件上传页 - 步骤式布局 */
+    .upload-step { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; position: relative; }
+    .upload-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .upload-step-num { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    .upload-step-title { font-size: 15px; font-weight: 700; }
+    .upload-step-desc { font-size: 12px; color: var(--text2); margin-left: auto; }
+
+    /* 上传区 - 重新设计 */
+    .upload-zone-new { border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg); position: relative; }
+    .upload-zone-new:hover { border-color: var(--blue); background: var(--blue-light); }
+    .upload-zone-new.dragover { border-color: var(--blue); background: var(--blue-light); transform: scale(1.01); }
+    .upload-zone-new .upload-icon-new { font-size: 48px; margin-bottom: 12px; line-height: 1; }
+    .upload-zone-new .upload-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .upload-zone-new .upload-subtitle { font-size: 13px; color: var(--text2); }
+    .upload-zone-new .upload-formats { display: flex; gap: 6px; justify-content: center; margin-top: 14px; }
+    .upload-format-tag { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--card); border: 1px solid var(--border); color: var(--text2); }
+
+    /* 已选文件展示 */
+    .selected-file-box { display: none; align-items: center; gap: 12px; padding: 12px 16px; background: var(--blue-light); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius-sm); margin-top: 12px; }
+    .selected-file-box.show { display: flex; }
+    .selected-file-icon { font-size: 28px; flex-shrink: 0; }
+    .selected-file-info { flex: 1; min-width: 0; }
+    .selected-file-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .selected-file-size { font-size: 12px; color: var(--text2); }
+    .selected-file-remove { padding: 4px 10px; font-size: 12px; color: var(--red); border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; cursor: pointer; background: transparent; font-weight: 600; }
+    .selected-file-remove:hover { background: var(--red-light); }
+
+    /* 变量提示标签 */
+    .var-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .var-tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: var(--purple-light); color: var(--purple); cursor: pointer; }
+    .var-tag:hover { opacity: 0.8; }
+
+    /* 上传按钮区 */
+    .upload-action-area { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+    .upload-action-area .btn { flex: 1; padding: 14px 24px; font-size: 15px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* 图标按钮 */
     .btn-icon { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border); background: var(--card); color: var(--text); }
@@ -402,48 +439,89 @@
 
         <!-- ============ 文件上传页 ============ -->
         <div class="page" id="page-upload">
-          <div class="page-header">
-            <div>
-              <h2>上传压缩包到 GitHub</h2>
-              <div class="subtitle">支持 ZIP、TAR、TAR.GZ、TGZ 格式</div>
+          <div class="repo-page-header">
+            <div class="header-info">
+              <h2>文件上传</h2>
+              <div class="subtitle">选择仓库和压缩包，一键推送到 GitHub</div>
             </div>
           </div>
-          <div class="card">
-            <div class="field">
-              <label>选择目标仓库</label>
-              <select id="uploadRepoSelect"><option value="">请先添加仓库</option></select>
-              <div style="margin-top:8px;">
-                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
-                  <input type="checkbox" id="batchUploadCheckbox" onchange="toggleBatchUpload()"> 批量上传（同时推送到多个仓库）
-                </label>
-              </div>
-              <div class="batch-repo-list" id="batchRepoList"></div>
+
+          <!-- Step 1: 选择仓库 -->
+          <div class="upload-step">
+            <div class="upload-step-header">
+              <div class="upload-step-num">1</div>
+              <div class="upload-step-title">选择目标仓库</div>
+              <div class="upload-step-desc">支持批量推送</div>
             </div>
-            <div class="field">
-              <label>Commit Message（可选）</label>
-              <input type="text" id="commitMsgInput" placeholder="支持变量: {count} {date} {filename} {repo}，留空使用默认">
-              <div class="hint">留空则后端自动生成，例如：{count} 文件 · {filename}</div>
+            <select id="uploadRepoSelect" style="margin-bottom:10px;"><option value="">请先添加仓库</option></select>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+              <input type="checkbox" id="batchUploadCheckbox" onchange="toggleBatchUpload()" style="width:auto;"> 批量上传（同时推送到多个仓库）
+            </label>
+            <div class="batch-repo-list" id="batchRepoList"></div>
+          </div>
+
+          <!-- Step 2: Commit Message -->
+          <div class="upload-step">
+            <div class="upload-step-header">
+              <div class="upload-step-num">2</div>
+              <div class="upload-step-title">Commit Message</div>
+              <div class="upload-step-desc">可选，留空自动生成</div>
             </div>
-            <div class="field">
-              <label>选择压缩包文件</label>
-              <div class="upload-zone" id="uploadZone" onclick="document.getElementById('zipFile').click()">
-                <div class="upload-icon">📦</div>
-                <div class="upload-text">点击选择或拖拽文件到此处</div>
-                <div class="upload-file" id="uploadFileName"></div>
-              </div>
-              <input type="file" id="zipFile" accept=".zip,.tar,.gz,.tgz,.tar.gz" style="display:none;" onchange="onFileSelected(this)">
-              <div style="display:flex;gap:8px;margin-top:8px;">
-                <button class="btn btn-outline btn-sm" id="previewBtn" onclick="previewZip()" style="display:none;">预览文件</button>
-              </div>
-              <div class="hint" id="uploadHint">支持 ZIP、TAR、TAR.GZ、TGZ 格式，文件不超过 2000 个，大小不超过 10MB</div>
-              <div id="previewResult" style="display:none;margin-top:8px;">
-                <div style="font-size:13px;font-weight:600;margin-bottom:6px;" id="previewSummary"></div>
-                <div class="file-preview-list" id="previewFileList"></div>
-              </div>
-              <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-              <div id="uploadStatusText" style="font-size:13px;color:var(--text2);margin-top:8px;display:none;"></div>
+            <input type="text" id="commitMsgInput" placeholder="输入提交信息，或使用变量">
+            <div class="var-tags">
+              <span class="var-tag" onclick="insertCommitVar('{count}')">{count} 文件数</span>
+              <span class="var-tag" onclick="insertCommitVar('{date}')">{date} 日期</span>
+              <span class="var-tag" onclick="insertCommitVar('{filename}')">{filename} 文件名</span>
+              <span class="var-tag" onclick="insertCommitVar('{repo}')">{repo} 仓库名</span>
             </div>
-            <button class="btn btn-primary" id="uploadBtn" onclick="uploadZip()">上传到 GitHub</button>
+          </div>
+
+          <!-- Step 3: 选择文件 -->
+          <div class="upload-step">
+            <div class="upload-step-header">
+              <div class="upload-step-num">3</div>
+              <div class="upload-step-title">选择压缩包</div>
+              <div class="upload-step-desc">拖拽或点击选择</div>
+            </div>
+            <div class="upload-zone-new" id="uploadZone" onclick="document.getElementById('zipFile').click()">
+              <div class="upload-icon-new">📦</div>
+              <div class="upload-title">点击选择或拖拽文件到此处</div>
+              <div class="upload-subtitle">支持 ZIP、TAR、TAR.GZ、TGZ 格式</div>
+              <div class="upload-formats">
+                <span class="upload-format-tag">.zip</span>
+                <span class="upload-format-tag">.tar</span>
+                <span class="upload-format-tag">.tar.gz</span>
+                <span class="upload-format-tag">.tgz</span>
+              </div>
+            </div>
+            <input type="file" id="zipFile" accept=".zip,.tar,.gz,.tgz,.tar.gz" style="display:none;" onchange="onFileSelected(this)">
+            <!-- 已选文件展示 -->
+            <div class="selected-file-box" id="selectedFileBox">
+              <span class="selected-file-icon">📄</span>
+              <div class="selected-file-info">
+                <div class="selected-file-name" id="selectedFileName"></div>
+                <div class="selected-file-size" id="selectedFileSize"></div>
+              </div>
+              <button class="selected-file-remove" onclick="clearSelectedFile()">移除</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-outline btn-sm" id="previewBtn" onclick="previewZip()" style="display:none;">预览文件列表</button>
+            </div>
+            <div class="hint" id="uploadHint" style="margin-top:8px;">文件不超过 2000 个，大小不超过 100MB</div>
+            <div id="previewResult" style="display:none;margin-top:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px;" id="previewSummary"></div>
+              <div class="file-preview-list" id="previewFileList"></div>
+            </div>
+            <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+            <div id="uploadStatusText" style="font-size:13px;color:var(--text2);margin-top:8px;display:none;"></div>
+          </div>
+
+          <!-- 上传按钮 -->
+          <div class="upload-action-area">
+            <button class="btn btn-primary" id="uploadBtn" onclick="uploadZip()" disabled style="opacity:0.5;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+              上传到 GitHub
+            </button>
           </div>
         </div>
 
@@ -1746,11 +1824,36 @@
     function onFileSelected(input) {
       var file = input.files[0];
       if (file) {
-        document.getElementById('uploadFileName').textContent = file.name + ' (' + formatSize(file.size) + ')';
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileSize').textContent = formatSize(file.size);
+        document.getElementById('selectedFileBox').classList.add('show');
         document.getElementById('previewBtn').style.display = 'inline-block';
+        // 启用上传按钮
+        var uploadBtn = document.getElementById('uploadBtn');
+        uploadBtn.disabled = false;
+        uploadBtn.style.opacity = '1';
       } else {
-        document.getElementById('previewBtn').style.display = 'none';
+        clearSelectedFile();
       }
+    }
+
+    function clearSelectedFile() {
+      document.getElementById('selectedFileBox').classList.remove('show');
+      document.getElementById('previewBtn').style.display = 'none';
+      document.getElementById('zipFile').value = '';
+      // 禁用上传按钮
+      var uploadBtn = document.getElementById('uploadBtn');
+      uploadBtn.disabled = true;
+      uploadBtn.style.opacity = '0.5';
+    }
+
+    function insertCommitVar(varStr) {
+      var input = document.getElementById('commitMsgInput');
+      var start = input.selectionStart || input.value.length;
+      var end = input.selectionEnd || input.value.length;
+      input.value = input.value.substring(0, start) + varStr + input.value.substring(end);
+      input.focus();
+      input.setSelectionRange(start + varStr.length, start + varStr.length);
     }
 
     function toggleBatchUpload() {
@@ -1915,7 +2018,7 @@
       var progressBar = document.getElementById('progressBar');
       var progressFill = document.getElementById('progressFill');
       var statusText = document.getElementById('uploadStatusText');
-      btn.disabled = true; btn.textContent = '上传中...';
+      btn.disabled = true; btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:6px;"></span>上传中...';
       progressBar.classList.add('show'); progressFill.style.width = '0%';
       statusText.style.display = 'block';
       statusText.textContent = '正在读取文件...';
@@ -2009,7 +2112,7 @@
         progressBar.classList.remove('show');
         statusText.style.display = 'none';
       }
-      btn.disabled = false; btn.textContent = '上传到 GitHub';
+      btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>上传到 GitHub';
     }
 
     async function loadHistory() {
