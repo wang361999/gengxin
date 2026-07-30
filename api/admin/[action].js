@@ -7,7 +7,8 @@ const {
   getAllSettings, updateSetting, updateUser, setUserPlan, getPlans,
   getAllOrders, confirmOrder, clearPendingOrders, addNotification,
   getAnalyticsData, getSetting, getAppVersion, updateAppVersion, healthCheck,
-  getOnlineCount, getOnlineUsers, cleanOnlineSessions
+  getOnlineCount, getOnlineUsers, cleanOnlineSessions,
+  getErrorLogs, getErrorStats, clearErrorLogs
 } = require('../../lib/db');
 const vercel = require('../../lib/vercel');
 
@@ -111,7 +112,7 @@ module.exports = async (req, res) => {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id'];
+        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id', 'plans_enabled', 'donation_enabled', 'donation_title', 'donation_message'];
         for (const key of allowedKeys) {
           if (body[key] !== undefined) {
             await updateSetting(key, body[key]);
@@ -244,7 +245,7 @@ module.exports = async (req, res) => {
         db: dbHealth,
         env: envStatus,
         settings: {
-          siteName: all.site_name || 'GitUpload',
+          siteName: all.site_name || 'GitShip',
           allowRegister: all.allow_register !== 'false',
           appVersion: all.app_version || 'unknown'
         }
@@ -330,6 +331,36 @@ module.exports = async (req, res) => {
       } catch (e) {
         return sendJson(res, 500, { error: e.message });
       }
+    }
+
+    // ===== 错误监控：获取错误日志列表 =====
+    if (action === 'error-logs') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      // 解析查询参数 ?limit=50&type=api
+      const queryStr = (req.url || '').split('?')[1] || '';
+      const params = new URLSearchParams(queryStr);
+      const limit = parseInt(params.get('limit')) || 50;
+      const type = params.get('type') || '';
+      const statusCode = params.get('statusCode');
+      const filter = {};
+      if (type) filter.type = type;
+      if (statusCode != null && statusCode !== '') filter.statusCode = statusCode;
+      const logs = await getErrorLogs(limit, filter);
+      return sendJson(res, 200, { ok: true, logs, count: logs.length });
+    }
+
+    // ===== 错误监控：获取错误统计 =====
+    if (action === 'error-stats') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const stats = await getErrorStats();
+      return sendJson(res, 200, { ok: true, stats });
+    }
+
+    // ===== 错误监控：清空所有错误日志 =====
+    if (action === 'clear-errors') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const result = await clearErrorLogs();
+      return sendJson(res, 200, { ok: true, message: `已清除 ${result.deletedCount} 条错误日志`, deletedCount: result.deletedCount });
     }
 
     return sendJson(res, 404, { error: '未知的操作: ' + action });

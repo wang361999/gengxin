@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         settings: {
-          siteName: all.site_name || 'GitUpload',
+          siteName: all.site_name || 'GitShip',
           allowRegister: all.allow_register !== 'false',
           announcement: all.announcement || ''
         }
@@ -60,13 +60,35 @@ module.exports = async (req, res) => {
       if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
       const all = await getAllSettings();
       const plans = getPlans();
-      const planList = Object.values(plans).map(p => ({
-        ...p,
-        price: p.id === 'pro' ? (parseFloat(all.pro_price) || p.price) :
-               p.id === 'enterprise' ? (parseFloat(all.enterprise_price) || p.price) :
-               p.price
-      }));
-      return sendJson(res, 200, { ok: true, plans: planList });
+      // 套餐功能开关：关闭时所有套餐价格置为 0（免费），适合前期推广
+      // 注：db.js 初始化时 plans_enabled 默认 'false'（关闭），以数据库实际值为准
+      const plansOff = all.plans_enabled === 'false';
+      const planList = Object.values(plans).map(p => {
+        // 套餐关闭时，所有套餐价格返回 0（免费）
+        const price = plansOff ? 0 : (
+          p.id === 'pro' ? (parseFloat(all.pro_price) || p.price) :
+          p.id === 'enterprise' ? (parseFloat(all.enterprise_price) || p.price) :
+          p.price
+        );
+        return { ...p, price };
+      });
+      return sendJson(res, 200, { ok: true, plans: planList, plansEnabled: !plansOff });
+    }
+
+    // ===== 获取打赏/赞助信息（公开） =====
+    if (action === 'donation-info') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const all = await getAllSettings();
+      return sendJson(res, 200, {
+        ok: true,
+        donation: {
+          enabled: all.donation_enabled !== 'false',
+          title: all.donation_title || '支持开发者',
+          message: all.donation_message || '如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕',
+          alipayQrcode: all.alipay_qrcode || '',
+          wechatQrcode: all.wechat_qrcode || ''
+        }
+      });
     }
 
     // ===== 获取收款信息（公开，用户付款页展示） =====
@@ -252,7 +274,7 @@ module.exports = async (req, res) => {
           user: {
             id: authUser.userId,
             username: authUser.username || 'admin',
-            brandName: 'GitUpload',
+            brandName: 'GitShip',
             brandColor: '#111827',
             brandLogo: '',
             status: 'active',

@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <meta name="theme-color" content="#111827">
-  <title>管理后台 - GitUpload</title>
+  <title>管理后台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.6.1">
+  <link rel="stylesheet" href="/style.css?v=2.8.0">
+  <script src="/error-tracker.js"></script>
   <style>
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
     .stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
@@ -284,6 +285,7 @@
       <div class="tab-item" onclick="switchTab(event,'plans')">套餐管理</div>
       <div class="tab-item" onclick="switchTab(event,'broadcast')">通知广播</div>
       <div class="tab-item" onclick="switchTab(event,'vercel')">Vercel 部署</div>
+      <div class="tab-item" onclick="switchTab(event,'errors')">错误监控</div>
       <div class="tab-item" onclick="switchTab(event,'settings')">系统设置</div>
     </div>
 
@@ -640,6 +642,79 @@
       </div>
     </div>
 
+    <!-- 错误监控 -->
+    <div class="tab-content" id="tab-errors">
+      <!-- 汇总卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon icon-red">⚠️</div>
+          <div class="stat-num" id="errStatTotal">-</div>
+          <div class="stat-name">总错误数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-orange">🌐</div>
+          <div class="stat-num" id="errStatApi">-</div>
+          <div class="stat-name">API 错误</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-yellow">🐞</div>
+          <div class="stat-num" id="errStatJs">-</div>
+          <div class="stat-name">JS 错误</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon icon-blue">📅</div>
+          <div class="stat-num" id="errStatToday">-</div>
+          <div class="stat-name">今日错误</div>
+        </div>
+      </div>
+
+      <!-- 错误列表 -->
+      <div class="card">
+        <div class="section-title">
+          <h3>错误列表 <span id="errCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="errTypeFilter" onchange="filterErrorLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+              <option value="">全部类型</option>
+              <option value="API Error">API Error</option>
+              <option value="JavaScript Error">JavaScript Error</option>
+              <option value="Unhandled Promise Rejection">Unhandled Promise Rejection</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="loadErrorLogs()">刷新</button>
+            <button class="btn btn-outline btn-sm" onclick="loadErrorStats()">统计</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" onclick="clearErrors()">清空全部</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>类型</th>
+                <th>错误信息</th>
+                <th>页面 URL</th>
+                <th>状态码</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="errorsBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text2);">切换到此标签页以加载错误数据</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 错误详情弹窗 -->
+      <div class="modal-overlay" id="errorDetailModal">
+        <div class="modal" style="max-width:760px;">
+          <div class="modal-header">
+            <h3 style="margin:0;">错误详情</h3>
+            <button class="modal-close" onclick="closeErrorDetailModal()">&times;</button>
+          </div>
+          <div id="errorDetailContent"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 系统设置 -->
     <div class="tab-content" id="tab-settings">
       <div class="card">
@@ -649,7 +724,7 @@
             <h4>站点名称</h4>
             <p>显示在导航栏和页面的站点名称</p>
           </div>
-          <input type="text" id="setSiteName" placeholder="GitUpload" style="max-width:200px;">
+          <input type="text" id="setSiteName" placeholder="GitShip" style="max-width:200px;">
         </div>
         <div class="setting-row">
           <div class="setting-info">
@@ -671,6 +746,13 @@
             <p>显示在用户仪表盘顶部的公告内容（留空则不显示）</p>
           </div>
           <input type="text" id="setAnnouncement" placeholder="输入公告内容..." style="max-width:300px;">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>开启套餐付费</h4>
+            <p>开启后用户可看到付费套餐并进行升级。关闭后所有用户免费使用，适合前期推广。</p>
+          </div>
+          <div class="toggle" id="setPlansEnabled" onclick="togglePlansEnabled()"></div>
         </div>
         <div style="margin-top:20px;text-align:right;">
           <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
@@ -716,6 +798,30 @@
             <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">微信收款码</label>
             <input type="file" id="wechatFile" accept="image/*" onchange="uploadQrcode('wechat')">
           </div>
+        </div>
+      </div>
+
+      <!-- 打赏功能 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">打赏功能</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">开启后用户仪表盘会显示打赏入口，展示打赏文案与收款二维码（复用上方收款码）。</p>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>开启打赏功能</h4>
+            <p>关闭后用户仪表盘不显示打赏入口</p>
+          </div>
+          <div class="toggle" id="setDonationEnabled" onclick="toggleDonationEnabled()"></div>
+        </div>
+        <div class="field">
+          <label>打赏标题</label>
+          <input type="text" id="setDonationTitle" placeholder="支持开发者" style="max-width:400px;">
+        </div>
+        <div class="field">
+          <label>打赏文案</label>
+          <textarea id="setDonationMessage" placeholder="如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕" rows="3" style="width:100%;max-width:600px;resize:vertical;"></textarea>
+        </div>
+        <div style="margin-top:12px;text-align:right;">
+          <button class="btn btn-primary" onclick="saveDonationSettings()">保存打赏设置</button>
         </div>
       </div>
 
@@ -1132,6 +1238,7 @@
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'analytics') loadAnalytics();
       if (name === 'vercel') loadVercelStatus();
+      if (name === 'errors') { loadErrorStats(); loadErrorLogs(); }
     }
 
     async function loadStats() {
@@ -1438,6 +1545,12 @@
           var toggle = document.getElementById('setAllowRegister');
           if (s.allow_register !== 'false') toggle.classList.add('on');
           else toggle.classList.remove('on');
+          // 套餐功能开关（默认关闭，前期推广免费）
+          var plansToggle = document.getElementById('setPlansEnabled');
+          if (s.plans_enabled !== 'false') plansToggle.classList.add('on');
+          else plansToggle.classList.remove('on');
+          // 打赏功能
+          loadDonationSettings(s);
           // 收款码
           document.getElementById('setAlipayQrcode').value = s.alipay_qrcode || '';
           document.getElementById('setWechatQrcode').value = s.wechat_qrcode || '';
@@ -1451,6 +1564,16 @@
     }
 
     function toggleRegister() { document.getElementById('setAllowRegister').classList.toggle('on'); }
+
+    // ===== 套餐功能开关 =====
+    function togglePlansEnabled() { document.getElementById('setPlansEnabled').classList.toggle('on'); }
+
+    function loadPlansEnabled(settingsObj) {
+      var s = settingsObj || {};
+      var toggle = document.getElementById('setPlansEnabled');
+      if (s.plans_enabled !== 'false') toggle.classList.add('on');
+      else toggle.classList.remove('on');
+    }
 
     // ===== 收款码管理 =====
     function loadPaymentQrcodes() {
@@ -1494,10 +1617,37 @@
       reader.readAsDataURL(file);
     }
 
+    // ===== 打赏功能设置 =====
+    function toggleDonationEnabled() { document.getElementById('setDonationEnabled').classList.toggle('on'); }
+
+    function loadDonationSettings(settingsObj) {
+      var s = settingsObj || {};
+      var toggle = document.getElementById('setDonationEnabled');
+      if (s.donation_enabled !== 'false') toggle.classList.add('on');
+      else toggle.classList.remove('on');
+      document.getElementById('setDonationTitle').value = s.donation_title || '支持开发者';
+      document.getElementById('setDonationMessage').value = s.donation_message || '如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕';
+    }
+
+    async function saveDonationSettings() {
+      var body = {
+        donation_enabled: document.getElementById('setDonationEnabled').classList.contains('on') ? 'true' : 'false',
+        donation_title: document.getElementById('setDonationTitle').value.trim() || '支持开发者',
+        donation_message: document.getElementById('setDonationMessage').value.trim() || '如果这个工具对你有帮助，可以考虑请开发者喝杯咖啡 ☕'
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('打赏设置已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
     async function saveSettings() {
       var body = {
         site_name: document.getElementById('setSiteName').value.trim(),
         allow_register: document.getElementById('setAllowRegister').classList.contains('on') ? 'true' : 'false',
+        plans_enabled: document.getElementById('setPlansEnabled').classList.contains('on') ? 'true' : 'false',
         free_upload_limit: document.getElementById('setUploadLimit').value || '50',
         announcement: document.getElementById('setAnnouncement').value.trim()
       };
@@ -1996,6 +2146,145 @@
           setTimeout(loadVercelStatus, 2000);
         } else {
           showAlert((data && data.error) || '重新部署失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
+    // ===== 错误监控 =====
+    var errorLogsCache = [];
+
+    async function loadErrorLogs() {
+      var typeFilter = document.getElementById('errTypeFilter').value;
+      var url = '/api/admin/error-logs?limit=100';
+      if (typeFilter) url += '&type=' + encodeURIComponent(typeFilter);
+      try {
+        var data = await apiFetch(url);
+        if (!data) return;
+        if (data.ok) {
+          errorLogsCache = data.logs || [];
+          renderErrorLogs(errorLogsCache);
+        } else {
+          document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">' + escapeHtml((data && data.error) || '加载失败') + '</td></tr>';
+        }
+      } catch (e) {
+        document.getElementById('errorsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">网络错误</td></tr>';
+      }
+    }
+
+    function renderErrorLogs(logs) {
+      var body = document.getElementById('errorsBody');
+      document.getElementById('errCount').textContent = '(' + logs.length + ' 条)';
+      if (!logs || logs.length === 0) {
+        body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text2);">暂无错误记录</td></tr>';
+        return;
+      }
+      body.innerHTML = logs.map(function(l) {
+        var time = l.createdAt ? new Date(l.createdAt).toLocaleString('zh-CN') : '-';
+        var typeBadge = renderErrorTypeBadge(l.errorType);
+        var msg = escapeHtml((l.errorMessage || '').slice(0, 120));
+        if (l.errorMessage && l.errorMessage.length > 120) msg += '...';
+        var pageUrl = escapeHtml((l.pageUrl || '').slice(0, 50));
+        if (l.pageUrl && l.pageUrl.length > 50) pageUrl = pageUrl.slice(0, 50) + '...';
+        var statusCode = l.statusCode != null ? escapeHtml(String(l.statusCode)) : '<span style="color:var(--text2);">-</span>';
+        return '<tr>' +
+          '<td style="font-size:12px;">' + escapeHtml(time) + '</td>' +
+          '<td>' + typeBadge + '</td>' +
+          '<td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(l.errorMessage || '') + '">' + msg + '</td>' +
+          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;font-size:12px;" title="' + escapeHtml(l.pageUrl || '') + '">' + pageUrl + '</td>' +
+          '<td>' + statusCode + '</td>' +
+          '<td><button class="btn btn-outline btn-sm" onclick="viewErrorDetail(' + l.id + ')">详情</button></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function renderErrorTypeBadge(type) {
+      var t = type || 'unknown';
+      var cls = 'badge-gray';
+      if (t === 'API Error') cls = 'badge-red';
+      else if (t === 'JavaScript Error') cls = 'badge-yellow';
+      else if (t === 'Unhandled Promise Rejection') cls = 'badge-purple';
+      else if (t === 'unknown') cls = 'badge-gray';
+      return '<span class="badge ' + cls + '">' + escapeHtml(t) + '</span>';
+    }
+
+    function filterErrorLogs() {
+      loadErrorLogs();
+    }
+
+    async function loadErrorStats() {
+      try {
+        var data = await apiFetch('/api/admin/error-stats');
+        if (!data) return;
+        if (data.ok && data.stats) {
+          var s = data.stats;
+          document.getElementById('errStatTotal').textContent = s.total != null ? s.total : '-';
+          document.getElementById('errStatApi').textContent = s.apiErrors != null ? s.apiErrors : '-';
+          document.getElementById('errStatJs').textContent = s.jsErrors != null ? s.jsErrors : '-';
+          document.getElementById('errStatToday').textContent = s.today != null ? s.today : '-';
+        }
+      } catch (e) {}
+    }
+
+    function viewErrorDetail(id) {
+      var l = null;
+      for (var i = 0; i < errorLogsCache.length; i++) {
+        if (errorLogsCache[i].id === id) { l = errorLogsCache[i]; break; }
+      }
+      if (!l) { showAlert('未找到该错误记录', false); return; }
+      var time = l.createdAt ? new Date(l.createdAt).toLocaleString('zh-CN') : '-';
+      var html = '<div class="detail-section">' +
+        '<div class="detail-stats" style="grid-template-columns:1fr 1fr;">' +
+          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(l.errorType || '-') + '</div><div class="label">错误类型</div></div>' +
+          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + (l.statusCode != null ? escapeHtml(String(l.statusCode)) : '-') + '</div><div class="label">状态码</div></div>' +
+          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(time) + '</div><div class="label">发生时间</div></div>' +
+          '<div class="detail-stat"><div class="num" style="font-size:14px;">' + escapeHtml(l.requestMethod || '-') + '</div><div class="label">请求方法</div></div>' +
+        '</div>' +
+        '</div>';
+      html += '<div class="detail-section"><h4>错误信息</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-word;">' + escapeHtml(l.errorMessage || '-') + '</div></div>';
+      if (l.stackTrace) {
+        html += '<div class="detail-section"><h4>堆栈跟踪</h4><div style="background:#1a1a1a;color:#e0e0e0;padding:16px;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:300px;overflow:auto;">' + escapeHtml(l.stackTrace) + '</div></div>';
+      }
+      if (l.pageUrl) {
+        html += '<div class="detail-section"><h4>页面 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.pageUrl) + '</div></div>';
+      }
+      if (l.requestUrl) {
+        html += '<div class="detail-section"><h4>请求 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.requestUrl) + '</div></div>';
+      }
+      if (l.sourceUrl) {
+        html += '<div class="detail-section"><h4>源 URL</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.sourceUrl) + '</div></div>';
+      }
+      if (l.lineNumber != null || l.columnNumber != null) {
+        html += '<div class="detail-section"><h4>位置</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;">行: ' + escapeHtml(l.lineNumber != null ? String(l.lineNumber) : '-') + ' / 列: ' + escapeHtml(l.columnNumber != null ? String(l.columnNumber) : '-') + '</div></div>';
+      }
+      if (l.userAgent) {
+        html += '<div class="detail-section"><h4>User Agent</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:12px;word-break:break-all;">' + escapeHtml(l.userAgent) + '</div></div>';
+      }
+      if (l.userId) {
+        html += '<div class="detail-section"><h4>用户 ID</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.userId) + '</div></div>';
+      }
+      if (l.ipAddress) {
+        html += '<div class="detail-section"><h4>IP 地址</h4><div style="background:var(--bg);padding:12px;border-radius:8px;font-size:13px;word-break:break-all;">' + escapeHtml(l.ipAddress) + '</div></div>';
+      }
+      document.getElementById('errorDetailContent').innerHTML = html;
+      document.getElementById('errorDetailModal').classList.add('show');
+    }
+
+    function closeErrorDetailModal() {
+      document.getElementById('errorDetailModal').classList.remove('show');
+    }
+
+    async function clearErrors() {
+      if (!confirm('确认清空所有错误日志？此操作不可恢复。')) return;
+      try {
+        var data = await apiFetch('/api/admin/clear-errors', { method: 'POST', body: JSON.stringify({}) });
+        if (data && data.ok) {
+          showAlert(data.message || '已清空错误日志', true);
+          loadErrorStats();
+          loadErrorLogs();
+        } else {
+          showAlert((data && data.error) || '清空失败', false);
         }
       } catch (e) {
         showAlert('网络错误', false);

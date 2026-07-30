@@ -3,574 +3,331 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitUpload - 一键上传 ZIP 代码包到 GitHub</title>
-  <meta name="description" content="GitUpload 是专业的 ZIP 代码包上传平台。配置 GitHub 仓库，一键上传 ZIP 文件自动解压推送，还能一键打包下载仓库源码。支持多仓库管理、品牌自定义、上传历史追溯、团队协作、API 接入。">
-  <meta name="keywords" content="GitHub, ZIP上传, 代码上传, 仓库下载, Git Upload, 代码部署, Vercel部署">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <title>GitShip — 一键推送代码到 GitHub</title>
+  <meta name="description" content="GitShip 是开发者的高效工具：ZIP 代码包在线编辑、管理、部署，一键推送到 GitHub。支持多仓库、多分支、文件在线编辑，AES-256 加密存储 Token，安全可靠。">
+  <meta name="keywords" content="GitShip, GitHub, ZIP上传, 代码上传, 代码部署, 一键推送, 仓库管理, 在线编辑, Git Upload">
+  <meta name="author" content="GitShip">
+  <meta name="theme-color" content="#0a0a0b">
+
+  <!-- Open Graph / 社交分享 -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GitShip — 一键推送代码到 GitHub">
+  <meta property="og:description" content="ZIP 代码包在线编辑、管理、部署。支持多仓库、多分支、文件在线编辑，开发者的高效工具。">
+  <meta property="og:site_name" content="GitShip">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GitShip — 一键推送代码到 GitHub">
+  <meta name="twitter:description" content="ZIP 代码包在线编辑、管理、部署。支持多仓库、多分支、文件在线编辑，开发者的高效工具。">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0a0b'/><text y='.9em' font-size='52' x='50' text-anchor='middle' fill='%23fff' font-family='sans-serif' font-weight='bold'>G</text></svg>">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.6.1">
-  <style>
-    /* ===== Hero Section ===== */
-    .hero {
-      text-align: center;
-      padding: 80px 20px 60px;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(16,185,129,0.06) 0%, transparent 50%);
-      animation: heroFloat 20s ease-in-out infinite;
-      pointer-events: none;
-    }
-    @keyframes heroFloat {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-2%, -1%); }
-    }
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      background: rgba(59,130,246,0.08);
-      border: 1px solid rgba(59,130,246,0.15);
-      border-radius: 100px;
-      font-size: 13px;
-      color: #3b82f6;
-      font-weight: 500;
-      margin-bottom: 28px;
-      position: relative;
-    }
-    .hero-badge .dot {
-      width: 6px; height: 6px;
-      background: #10b981;
-      border-radius: 50%;
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
-    }
-    .hero h1 {
-      font-size: 56px;
-      font-weight: 900;
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      margin-bottom: 20px;
-      position: relative;
-    }
-    .hero h1 .gradient-text {
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero p.hero-desc {
-      font-size: 18px;
-      color: var(--text2);
-      max-width: 600px;
-      margin: 0 auto 40px;
-      line-height: 1.7;
-      position: relative;
-    }
-    .hero-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      position: relative;
-    }
-    .btn-hero {
-      padding: 14px 36px;
-      font-size: 16px;
-      border-radius: 10px;
-      font-weight: 600;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-hero-primary {
-      background: linear-gradient(135deg, #111827 0%, #374151 100%);
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(17,24,39,0.3);
-    }
-    .btn-hero-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(17,24,39,0.4);
-      text-decoration: none;
-    }
-    .btn-hero-secondary {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-hero-secondary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-      text-decoration: none;
-    }
-
-    /* ===== Stats Bar ===== */
-    .stats-bar {
-      display: flex;
-      justify-content: center;
-      gap: 48px;
-      padding: 32px 20px;
-      margin-bottom: 20px;
-    }
-    .stat-item {
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 28px;
-      font-weight: 800;
-      color: var(--text);
-    }
-    .stat-label {
-      font-size: 13px;
-      color: var(--text2);
-      margin-top: 4px;
-    }
-
-    /* ===== Features ===== */
-    .features-section {
-      padding: 40px 20px 60px;
-    }
-    .section-header {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .section-header h2 {
-      font-size: 32px;
-      font-weight: 800;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-    }
-    .section-header p {
-      color: var(--text2);
-      font-size: 16px;
-      max-width: 520px;
-      margin: 0 auto;
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      max-width: 960px;
-      margin: 0 auto;
-    }
-    .feature-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px 24px;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
-      border-color: rgba(59,130,246,0.2);
-    }
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
-    .feature-icon.blue { background: rgba(59,130,246,0.1); }
-    .feature-icon.green { background: rgba(16,185,129,0.1); }
-    .feature-icon.purple { background: rgba(139,92,246,0.1); }
-    .feature-icon.orange { background: rgba(249,115,22,0.1); }
-    .feature-icon.pink { background: rgba(236,72,153,0.1); }
-    .feature-icon.cyan { background: rgba(6,182,212,0.1); }
-    .feature-card h3 {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .feature-card p {
-      font-size: 14px;
-      color: var(--text2);
-      line-height: 1.65;
-    }
-
-    /* ===== How it works ===== */
-    .how-section {
-      padding: 60px 20px;
-      background: var(--card);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 32px;
-      max-width: 840px;
-      margin: 0 auto;
-    }
-    .step-item {
-      text-align: center;
-      position: relative;
-    }
-    .step-number {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #111827 0%, #374151 100%);
-      color: #fff;
-      font-weight: 700;
-      font-size: 16px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-    }
-    .step-item h3 {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .step-item p {
-      font-size: 13px;
-      color: var(--text2);
-      line-height: 1.6;
-    }
-    .step-connector {
-      display: none;
-    }
-
-    /* ===== Tech Stack ===== */
-    .tech-section {
-      padding: 60px 20px;
-    }
-    .tech-grid {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 16px;
-      max-width: 700px;
-      margin: 0 auto;
-    }
-    .tech-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text);
-      transition: all 0.2s;
-    }
-    .tech-badge:hover {
-      border-color: rgba(59,130,246,0.3);
-      transform: translateY(-2px);
-    }
-    .tech-badge .icon { font-size: 18px; }
-
-    /* ===== CTA Section ===== */
-    .cta-section {
-      text-align: center;
-      padding: 60px 20px 80px;
-    }
-    .cta-section h2 {
-      font-size: 30px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-    .cta-section p {
-      color: var(--text2);
-      font-size: 16px;
-      margin-bottom: 32px;
-    }
-
-    /* ===== Footer ===== */
-    .footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 20px;
-      text-align: center;
-    }
-    .footer p {
-      font-size: 13px;
-      color: var(--text2);
-    }
-    .footer a {
-      color: var(--text2);
-    }
-    .footer a:hover {
-      color: var(--blue);
-    }
-
-    /* ===== Responsive ===== */
-    @media (max-width: 768px) {
-      .hero h1 { font-size: 36px; }
-      .hero { padding: 48px 20px 40px; }
-      .features-grid { grid-template-columns: 1fr; max-width: 420px; }
-      .steps-grid { grid-template-columns: 1fr; max-width: 320px; }
-      .stats-bar { gap: 24px; }
-      .stat-value { font-size: 22px; }
-      .pricing-grid { grid-template-columns: 1fr !important; max-width: 400px !important; }
-      .pricing-card { transform: none !important; }
-    }
-    @media (max-width: 640px) {
-      .hero-actions { flex-direction: column; align-items: center; }
-      .btn-hero { width: 100%; max-width: 280px; justify-content: center; }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.5); }
-    }
-  </style>
+  <link rel="stylesheet" href="/style.css?v=2.8.0">
+  <!-- 错误追踪器：静默采集前端错误，不影响页面渲染 -->
+  <script src="/error-tracker.js"></script>
 </head>
 <body>
-  <nav class="nav">
-    <div class="nav-brand">
-      <a href="/" style="color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
-        GitUpload
-      </a>
-    </div>
-    <div class="nav-links">
-      <a href="/login">登录</a>
-      <a href="/register" class="btn btn-primary" style="padding:8px 20px;font-size:14px;">免费注册</a>
-    </div>
-  </nav>
+  <div class="landing">
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      免费开源 · 部署在 Vercel · 零服务器成本
-    </div>
-    <div id="onlineBadge" style="display:none;justify-content:center;margin-bottom:12px;">
-      <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.1);color:#16a34a;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid rgba(34,197,94,0.3);">
-        <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        <span id="onlineCount">0</span> 人在线
-      </span>
-    </div>
-    <h1>
-      ZIP 代码包<br>
-      <span class="gradient-text">一键推送到 GitHub</span>
-    </h1>
-    <p class="hero-desc">
-      无需安装 Git、无需敲命令行。上传 ZIP/TAR 压缩包自动解压推送到 GitHub，空仓库也能自动初始化。还能一键打包下载仓库源码。企业版支持团队协作，多人共享仓库共同管理项目。
-    </p>
-    <div class="hero-actions">
-      <a href="/register" class="btn btn-hero-primary btn-hero">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-        免费开始
+    <!-- ===== Nav ===== -->
+    <nav class="landing-nav" id="landingNav">
+      <a href="/" class="ln-brand" aria-label="GitShip 首页">
+        <span class="ln-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5 16 5l3 3L7.5 19.5 4.5 18.5z"/><path d="m13 8 3 3"/><path d="M16.5 5.5 19 8"/></svg>
+        </span>
+        GitShip
       </a>
-      <a href="/login" class="btn btn-hero-secondary btn-hero">
-        查看演示
-      </a>
-    </div>
-  </section>
+      <div class="ln-links">
+        <a href="#features">功能</a>
+        <a href="#pricing">价格</a>
+        <a href="/api-docs.html">文档</a>
+        <a href="/login">登录</a>
+        <a href="/register" class="ln-cta">免费开始</a>
+      </div>
+      <button class="ln-burger" id="navBurger" aria-label="菜单" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="ln-mobile" id="navMobile">
+        <a href="#features">功能</a>
+        <a href="#pricing">价格</a>
+        <a href="/api-docs.html">文档</a>
+        <a href="/login">登录</a>
+        <a href="/register" class="ln-cta">免费开始</a>
+      </div>
+    </nav>
 
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <div class="stat-value">4种</div>
-      <div class="stat-label">支持压缩格式</div>
+    <!-- ===== Hero ===== -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          开源 · 部署在 Vercel · 零服务器成本
+        </div>
+        <h1>
+          一键推送代码到 <span class="gradient-text">GitHub</span>
+        </h1>
+        <p class="hero-desc">
+          ZIP 代码包在线编辑、管理、部署。支持多仓库、多分支、文件在线编辑，开发者的高效工具。
+        </p>
+        <div class="hero-actions">
+          <a href="/register" class="btn-hero btn-hero-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            免费开始使用
+          </a>
+          <a href="#how" class="btn-hero btn-hero-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            查看演示
+          </a>
+        </div>
+
+        <!-- Terminal preview -->
+        <div class="terminal-preview reveal" aria-label="命令示例">
+          <div class="tp-glow"></div>
+          <div class="tp-bar">
+            <span class="tp-dot r"></span>
+            <span class="tp-dot y"></span>
+            <span class="tp-dot g"></span>
+            <span class="tp-title">gitship — bash</span>
+          </div>
+          <pre class="tp-body"><span class="c-dim"># 1. 添加 GitHub 仓库</span>
+<span class="c-prompt">$</span> <span class="c-cmd">gitship</span> <span class="c-flag">repo</span> <span class="c-flag">add</span> <span class="c-str">"https://github.com/me/my-app"</span>
+
+<span class="c-dim"># 2. 上传 ZIP 代码包</span>
+<span class="c-prompt">$</span> <span class="c-cmd">gitship</span> <span class="c-flag">deploy</span> <span class="c-str">"./dist.zip"</span> <span class="c-flag">--branch</span> <span class="c-str">main</span>
+
+<span class="c-blue">→</span> <span class="c-dim">解压</span> <span class="c-violet">128</span> <span class="c-dim">个文件</span>
+<span class="c-blue">→</span> <span class="c-dim">推送到</span> <span class="c-violet">me/my-app</span><span class="c-dim">@main</span>
+<span class="c-ok">✓ 部署成功</span> <span class="c-dim">commit</span> <span class="c-violet">a1b2c3d</span><span class="tp-cursor"></span></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Stats Bar ===== -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value">ZIP / TAR / GZ</div>
+        <div class="stat-label">支持格式</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">100MB</div>
+        <div class="stat-label">最大文件</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">AES-256</div>
+        <div class="stat-label">加密存储</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">一键推送</div>
+        <div class="stat-label">自动部署</div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">2000</div>
-      <div class="stat-label">文件数量上限</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">AES-256</div>
-      <div class="stat-label">Token 加密存储</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-value">SaaS</div>
-      <div class="stat-label">多用户隔离</div>
-    </div>
+
+    <!-- ===== Features ===== -->
+    <section class="section" id="features">
+      <div class="section-header reveal">
+        <span class="eyebrow">功能特性</span>
+        <h2>为开发者打造的完整工具链</h2>
+        <p>从文件编辑到安全部署，GitShip 覆盖代码管理的每个环节</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card reveal d1">
+          <div class="feature-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h3>在线文件编辑</h3>
+          <p>直接在浏览器中编辑、新建、重命名、删除仓库文件，无需克隆到本地，改动即时提交。</p>
+        </div>
+        <div class="feature-card reveal d2">
+          <div class="feature-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><path d="M18 3v12"/><circle cx="18" cy="18" r="3"/><path d="M6 9h12"/></svg>
+          </div>
+          <h3>多仓库管理</h3>
+          <p>同时管理多个 GitHub 仓库，独立设置分支与目标目录，灵活适配不同项目。</p>
+        </div>
+        <div class="feature-card reveal d3">
+          <div class="feature-icon purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="m7 12 3 3 7-7"/></svg>
+          </div>
+          <h3>批量上传</h3>
+          <p>ZIP / TAR / GZ 一键解压上传，自动初始化空仓库，单次可处理上千文件。</p>
+        </div>
+        <div class="feature-card reveal d1">
+          <div class="feature-icon orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>安全加密</h3>
+          <p>GitHub Token 使用 AES-256-GCM 加密存储，密码经 bcrypt 哈希，凭证绝不泄露。</p>
+        </div>
+        <div class="feature-card reveal d2">
+          <div class="feature-icon cyan">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3>定时任务</h3>
+          <p>配置 Cron 定时自动推送更新，无人值守也能按计划部署，支持启用/暂停。</p>
+        </div>
+        <div class="feature-card reveal d3">
+          <div class="feature-icon pink">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>团队协作</h3>
+          <p>多人共享仓库管理，创建团队、邀请成员共同维护项目，协作效率倍增。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== How it works ===== -->
+    <section class="section how-section" id="how">
+      <div class="section-header reveal">
+        <span class="eyebrow">使用流程</span>
+        <h2>三步完成部署</h2>
+        <p>简单三步，告别繁琐的 Git 命令行</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-item reveal d1">
+          <div class="step-number">1</div>
+          <h3>添加仓库</h3>
+          <p>填写 GitHub 仓库地址和 Token，选择分支与目标目录，一键完成绑定。</p>
+        </div>
+        <div class="step-item reveal d2">
+          <div class="step-number">2</div>
+          <h3>上传文件</h3>
+          <p>选择 ZIP 压缩包，或使用在线编辑器直接修改文件内容。</p>
+        </div>
+        <div class="step-item reveal d3">
+          <div class="step-number">3</div>
+          <h3>一键部署</h3>
+          <p>自动解压推送，生成 Commit，部署即时完成。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Pricing ===== -->
+    <section class="section pricing-section" id="pricing">
+      <div class="section-header reveal">
+        <span class="eyebrow">套餐定价</span>
+        <h2>从免费开始，随时升级</h2>
+        <p>灵活满足个人开发者与企业团队的不同需求</p>
+      </div>
+      <div class="pricing-grid" id="pricingGrid">
+        <!-- 渐进增强：JS 关闭时也能看到基本套餐 -->
+        <div class="pricing-card">
+          <div class="pricing-name">免费版</div>
+          <div class="pricing-price free">¥0<span class="per"> /月</span></div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>每月 50 次上传</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>最多 3 个仓库</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>ZIP 最大 10MB</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>基础支持</li>
+          </ul>
+          <a href="/register" class="btn btn-outline">免费开始</a>
+        </div>
+        <div class="pricing-card featured">
+          <span class="pricing-tag">推荐</span>
+          <div class="pricing-name">专业版</div>
+          <div class="pricing-price pro">¥29<span class="per"> /月</span></div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>每月 500 次上传</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>最多 20 个仓库</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>ZIP 最大 50MB</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>优先支持 · 无广告</li>
+          </ul>
+          <a href="/register" class="btn btn-primary">选择专业版</a>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-name">企业版</div>
+          <div class="pricing-price ent">¥99<span class="per"> /月</span></div>
+          <ul class="pricing-features">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>无限上传</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>无限仓库</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>ZIP 最大 100MB</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>专属客服 + API 接入</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>团队协作</li>
+          </ul>
+          <a href="/register" class="btn btn-outline">联系我们</a>
+        </div>
+        <div id="pricingNoteWrap" style="grid-column:1 / -1;text-align:center;display:none;">
+          <span class="pricing-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            前期推广期间，所有功能免费开放
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Donation ===== -->
+    <section class="section donation-section" id="donate">
+      <div class="donation-inner reveal">
+        <div class="donation-heart" aria-hidden="true">❤️</div>
+        <h2 style="font-size:clamp(26px,3.4vw,38px);font-weight:800;letter-spacing:-0.025em;margin-bottom:14px;">支持开发者</h2>
+        <p class="donation-message">
+          GitShip 是一个开源、免费的项目，致力于让代码部署更简单。如果它对你有帮助，欢迎请开发者喝杯咖啡。
+          你的每一份支持，都是项目持续迭代、保持免费的动力。感谢你的信任与鼓励。
+        </p>
+        <div class="donation-qr-grid" id="donationGrid">
+          <div class="donation-qr">
+            <div class="qr-img" id="wechatQr">
+              <div class="qr-placeholder">微信收款码<br>即将加载</div>
+            </div>
+            <div class="qr-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#07c160" aria-hidden="true"><path d="M8.7 13.4c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6zm4.6 0c-.3 0-.6-.3-.6-.6s.3-.6.6-.6.6.3.6.6-.3.6-.6.6zM2 12.2C2 6.9 6.5 2.7 12 2.7s10 4.2 10 9.5-4.5 9.5-10 9.5c-1 0-2-.1-2.9-.4l-3.1 1.6c-.2.1-.4-.1-.4-.3l.1-2.6C3.8 18.7 2 15.6 2 12.2z"/></svg>
+              微信赞赏
+            </div>
+          </div>
+          <div class="donation-qr">
+            <div class="qr-img" id="alipayQr">
+              <div class="qr-placeholder">支付宝收款码<br>即将加载</div>
+            </div>
+            <div class="qr-label">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#1677ff" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v9.5c-2-1-4.5-2-7-2.8.4-.7.7-1.5.9-2.3h-3V8h3.6V7h-3.6V4.8h-1.6V7H7.4v1h3.4v1.4H7.7v1h6.1c-.2.6-.4 1.1-.7 1.6-1.5-.5-3-1-4.2-1.2-2.5-.5-4.5.4-4.9 2.2-.4 1.9.9 3.3 3.3 3.9 1.7.4 3.6.3 5.4-.2.7.3 1.5.7 2.3 1.1H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2.5 11.4c-1.4-.3-2-1-1.8-1.8.2-.9 1.4-1.4 3.1-1 1.3.3 2.6.7 4 1.2-1.7.9-3.6 1.2-5.3 1.6z"/></svg>
+              支付宝赞赏
+            </div>
+          </div>
+        </div>
+        <div class="donation-contact" id="donationContact" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer class="landing-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <a href="/" class="ln-brand">
+            <span class="ln-logo">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 16.5 16 5l3 3L7.5 19.5 4.5 18.5z"/><path d="m13 8 3 3"/><path d="M16.5 5.5 19 8"/></svg>
+            </span>
+            GitShip
+          </a>
+          <p>开发者的代码部署工具。ZIP 包在线编辑、管理、一键推送到 GitHub，安全、高效、开源。</p>
+        </div>
+        <div class="footer-col">
+          <h4>产品</h4>
+          <a href="#features">功能特性</a>
+          <a href="#pricing">套餐定价</a>
+          <a href="#how">使用流程</a>
+          <a href="/register">免费注册</a>
+        </div>
+        <div class="footer-col">
+          <h4>资源</h4>
+          <a href="/api-docs.html">API 文档</a>
+          <a href="/login">登录</a>
+          <a href="/dashboard">控制台</a>
+          <a href="#donate">支持项目</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>GitShip &copy; 2026 · 基于 <a href="https://vercel.com" target="_blank" rel="noopener" style="color:#a1a1aa;">Vercel</a> · 开源项目</p>
+        <div class="footer-stack">
+          <span class="tech-badge">Vercel Serverless</span>
+          <span class="tech-badge">PostgreSQL</span>
+          <span class="tech-badge">JWT + bcrypt</span>
+          <span class="tech-badge">AES-256-GCM</span>
+          <span class="tech-badge">Node.js 22</span>
+          <span class="tech-badge">GitHub REST API</span>
+        </div>
+      </div>
+    </footer>
+
   </div>
 
-  <!-- Features -->
-  <section class="features-section">
-    <div class="section-header">
-      <h2>为什么选择 GitUpload</h2>
-      <p>专为开发者和团队打造，让代码上传变得高效且安全</p>
-    </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon blue">📦</div>
-        <h3>多格式压缩包上传</h3>
-        <p>支持 ZIP、TAR、TAR.GZ、TGZ 格式，拖拽或选择文件自动解压并推送到 GitHub 仓库，无需 Git 命令行操作，一次 Commit 完成。空仓库自动初始化 README.md。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon green">🔗</div>
-        <h3>多仓库管理</h3>
-        <p>配置多个 GitHub 仓库，灵活切换上传目标。每个仓库独立设置分支和目标目录，适配不同项目。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon purple">🔐</div>
-        <h3>Token 安全加密</h3>
-        <p>GitHub Token 使用 AES-256-GCM 加密存储，密码经 bcrypt 哈希处理，你的凭证绝对不会泄露。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon orange">🎨</div>
-        <h3>品牌自定义</h3>
-        <p>自定义品牌名称和主题色，打造你的专属上传平台。适合团队内部使用或作为服务对外提供。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon pink">📊</div>
-        <h3>完整上传历史</h3>
-        <p>记录每次上传的文件数量、大小、目标仓库和 Commit SHA，方便追溯和审计。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon cyan">⬇️</div>
-        <h3>一键打包下载</h3>
-        <p>一键打包下载 GitHub 仓库源码，后端流式代理传输，Token 不暴露给前端，快速备份整个仓库。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon blue">👥</div>
-        <h3>团队协作</h3>
-        <p>企业版专属功能。创建团队、邀请成员、共享仓库，团队成员可共同管理项目，提升协作效率。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon green">🔑</div>
-        <h3>API 密钥接入</h3>
-        <p>企业版支持 API 密钥，通过接口自动化上传，无缝集成到你的 CI/CD 流程和开发工具链。</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon purple">💳</div>
-        <h3>灵活付费方案</h3>
-        <p>支持支付宝、微信扫码支付，管理员后台手动确认开通。从免费版到企业版，按需选择灵活升级。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- How it works -->
-  <section class="how-section">
-    <div class="section-header">
-      <h2>三步开始使用</h2>
-      <p>简单三步，告别繁琐的 Git 命令行</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-item">
-        <div class="step-number">1</div>
-        <h3>注册账号</h3>
-        <p>填写用户名和密码，10 秒完成注册，即可开始使用。</p>
-      </div>
-      <div class="step-item">
-        <div class="step-number">2</div>
-        <h3>配置仓库</h3>
-        <p>填入 GitHub 仓库地址和 Token，选择分支和目标目录。</p>
-      </div>
-      <div class="step-item">
-        <div class="step-number">3</div>
-        <h3>上传 & 下载</h3>
-        <p>上传 ZIP 一键推送到仓库，也能一键打包下载仓库源码备份。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tech Stack -->
-  <section class="tech-section">
-    <div class="section-header">
-      <h2>技术栈</h2>
-      <p>现代技术栈，稳定可靠</p>
-    </div>
-    <div class="tech-grid">
-      <div class="tech-badge">
-        <span class="icon">⚡</span> Vercel Serverless
-      </div>
-      <div class="tech-badge">
-        <span class="icon">🐘</span> PostgreSQL
-      </div>
-      <div class="tech-badge">
-        <span class="icon">🔒</span> JWT + bcrypt
-      </div>
-      <div class="tech-badge">
-        <span class="icon">🔐</span> AES-256-GCM
-      </div>
-      <div class="tech-badge">
-        <span class="icon">📦</span> Node.js 22
-      </div>
-      <div class="tech-badge">
-        <span class="icon">🐙</span> GitHub REST API
-      </div>
-    </div>
-  </section>
-
-  <!-- Pricing -->
-  <section class="pricing-section" style="padding: 60px 20px;">
-    <div class="section-header">
-      <h2>套餐与定价</h2>
-      <p>从免费开始，随时升级，灵活满足不同需求</p>
-    </div>
-    <div class="pricing-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 900px; margin: 0 auto;">
-      <div class="pricing-card" style="background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; text-align: center;">
-        <h3 style="font-size: 18px; margin-bottom: 8px;">免费版</h3>
-        <div style="font-size: 36px; font-weight: 800; margin-bottom: 16px;">¥0<span style="font-size: 14px; font-weight: 400; color: var(--text2);">/月</span></div>
-        <ul style="list-style: none; padding: 0; text-align: left; margin-bottom: 24px;">
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 每月 50 次上传</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 最多 3 个仓库</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ ZIP 最大 10MB</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 基础支持</li>
-        </ul>
-        <a href="/register" class="btn btn-outline" style="width: 100%;">免费开始</a>
-      </div>
-      <div class="pricing-card" style="background: var(--card); border: 2px solid var(--blue); border-radius: 16px; padding: 32px 24px; text-align: center; position: relative; transform: scale(1.05);">
-        <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--blue); color: #fff; font-size: 12px; padding: 4px 16px; border-radius: 20px; font-weight: 600;">推荐</div>
-        <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--blue);">专业版</h3>
-        <div style="font-size: 36px; font-weight: 800; margin-bottom: 16px; color: var(--blue);">¥29<span style="font-size: 14px; font-weight: 400; color: var(--text2);">/月</span></div>
-        <ul style="list-style: none; padding: 0; text-align: left; margin-bottom: 24px;">
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 每月 500 次上传</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 最多 20 个仓库</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ ZIP 最大 50MB</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 优先支持 · 无广告</li>
-        </ul>
-        <a href="/register" class="btn btn-primary" style="width: 100%; background: var(--blue);">选择专业版</a>
-      </div>
-      <div class="pricing-card" style="background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; text-align: center;">
-        <h3 style="font-size: 18px; margin-bottom: 8px;">企业版</h3>
-        <div style="font-size: 36px; font-weight: 800; margin-bottom: 16px;">¥99<span style="font-size: 14px; font-weight: 400; color: var(--text2);">/月</span></div>
-        <ul style="list-style: none; padding: 0; text-align: left; margin-bottom: 24px;">
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 无限上传</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 无限仓库</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ ZIP 最大 100MB</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 专属客服 + API 接入</li>
-          <li style="padding: 6px 0; font-size: 14px; color: var(--text2);">✓ 团队协作</li>
-        </ul>
-        <a href="/register" class="btn btn-outline" style="width: 100%;">联系我们</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="cta-section">
-    <h2>准备好开始了吗？</h2>
-    <p>免费注册，即刻体验 ZIP 一键上传到 GitHub</p>
-    <a href="/register" class="btn btn-hero-primary btn-hero" style="padding:16px 40px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      立即免费注册
-    </a>
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <p>
-      GitUpload &copy; 2025 &middot; 基于
-      <a href="https://vercel.com" target="_blank" rel="noopener">Vercel</a>
-      &middot; 开源项目
-    </p>
-  </footer>
   <script>
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
     async function checkAppVersion() {
@@ -594,27 +351,180 @@
     checkAppVersion();
     setInterval(checkAppVersion, 5 * 60 * 1000);
 
-    // ===== 在线人数统计 =====
-    async function loadOnlineCount() {
-      try {
-        var res = await fetch('/api/auth/online-count');
-        var data = await res.json();
-        if (data.ok) {
-          var badge = document.getElementById('onlineBadge');
-          var count = document.getElementById('onlineCount');
-          if (badge && count) {
-            count.textContent = data.onlineCount;
-            badge.style.display = 'flex';
+    // ===== 导航栏：滚动时变实心 + 移动端菜单 =====
+    (function () {
+      var nav = document.getElementById('landingNav');
+      var burger = document.getElementById('navBurger');
+      var mobile = document.getElementById('navMobile');
+      function onScroll() {
+        if (window.scrollY > 12) nav.classList.add('scrolled');
+        else nav.classList.remove('scrolled');
+      }
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      if (burger && mobile) {
+        burger.addEventListener('click', function () {
+          var open = mobile.classList.toggle('open');
+          burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        mobile.querySelectorAll('a').forEach(function (a) {
+          a.addEventListener('click', function () {
+            mobile.classList.remove('open');
+            burger.setAttribute('aria-expanded', 'false');
+          });
+        });
+      }
+    })();
+
+    // ===== 滚动渐显（Intersection Observer）=====
+    (function () {
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window) || els.length === 0) {
+        els.forEach(function (el) { el.classList.add('in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
           }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+
+    // ===== 动态加载套餐（从 /api/auth/plans）=====
+    (function () {
+      var grid = document.getElementById('pricingGrid');
+      var noteWrap = document.getElementById('pricingNoteWrap');
+      if (!grid) return;
+
+      var NS = 'http://www.w3.org/2000/svg';
+      function checkIcon() {
+        var s = document.createElementNS(NS, 'svg');
+        s.setAttribute('width', '16'); s.setAttribute('height', '16');
+        s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none');
+        s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '3');
+        s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round');
+        s.setAttribute('aria-hidden', 'true');
+        var p = document.createElementNS(NS, 'polyline');
+        p.setAttribute('points', '20 6 9 17 4 12');
+        s.appendChild(p);
+        return s;
+      }
+
+      function planConfig(id) {
+        if (id === 'pro') return { featured: true, priceCls: 'pro', btnCls: 'btn-primary', btnText: '选择专业版', tag: '推荐' };
+        if (id === 'enterprise') return { featured: false, priceCls: 'ent', btnCls: 'btn-outline', btnText: '联系我们', tag: '' };
+        return { featured: false, priceCls: 'free', btnCls: 'btn-outline', btnText: '免费开始', tag: '' };
+      }
+
+      function renderCard(plan) {
+        var cfg = planConfig(plan.id);
+        var card = document.createElement('div');
+        card.className = 'pricing-card' + (cfg.featured ? ' featured' : '');
+
+        if (cfg.tag) {
+          var tag = document.createElement('span');
+          tag.className = 'pricing-tag';
+          tag.textContent = cfg.tag;
+          card.appendChild(tag);
         }
-      } catch(e) {}
-    }
-    loadOnlineCount();
-    setInterval(loadOnlineCount, 60 * 1000);
+
+        var name = document.createElement('div');
+        name.className = 'pricing-name';
+        name.textContent = plan.name || plan.id;
+        card.appendChild(name);
+
+        var price = document.createElement('div');
+        price.className = 'pricing-price ' + cfg.priceCls;
+        var priceNum = (plan.price === 0 || plan.price === '0') ? '¥0' : ('¥' + plan.price);
+        price.innerHTML = priceNum + '<span class="per"> /月</span>';
+        card.appendChild(price);
+
+        var ul = document.createElement('ul');
+        ul.className = 'pricing-features';
+        var feats = (plan.features && plan.features.length) ? plan.features : [];
+        feats.forEach(function (f) {
+          var li = document.createElement('li');
+          li.appendChild(checkIcon());
+          li.appendChild(document.createTextNode(' ' + f));
+          ul.appendChild(li);
+        });
+        card.appendChild(ul);
+
+        var btn = document.createElement('a');
+        btn.href = '/register';
+        btn.className = 'btn ' + cfg.btnCls;
+        btn.textContent = cfg.btnText;
+        card.appendChild(btn);
+
+        return card;
+      }
+
+      fetch('/api/auth/plans').then(function (r) { return r.json(); }).then(function (data) {
+        if (!data || !data.ok || !Array.isArray(data.plans) || data.plans.length === 0) return;
+        // 保留 noteWrap，清掉旧卡片
+        var oldCards = grid.querySelectorAll('.pricing-card');
+        oldCards.forEach(function (c) { c.remove(); });
+        // 按固定顺序渲染：free / pro / enterprise
+        var order = ['free', 'pro', 'enterprise'];
+        var sorted = order.map(function (id) { return data.plans.find(function (p) { return p.id === id; }); }).filter(Boolean);
+        (sorted.length ? sorted : data.plans).forEach(function (plan) {
+          grid.insertBefore(renderCard(plan), noteWrap);
+        });
+        // 推广期提示（当专业版/企业版价格为 0 时视为推广期）
+        var proPlan = data.plans.find(function (p) { return p.id === 'pro'; });
+        var entPlan = data.plans.find(function (p) { return p.id === 'enterprise'; });
+        var promo = (proPlan && (proPlan.price === 0 || proPlan.price === '0')) ||
+                    (entPlan && (entPlan.price === 0 || entPlan.price === '0'));
+        if (promo) noteWrap.style.display = 'block';
+      }).catch(function () { /* 静默回退到内置套餐 */ });
+    })();
+
+    // ===== 动态加载赞赏码（从 /api/auth/donation-info，尊重后台开关）=====
+    (function () {
+      var section = document.getElementById('donate');
+      var wechat = document.getElementById('wechatQr');
+      var alipay = document.getElementById('alipayQr');
+      var contact = document.getElementById('donationContact');
+      var titleEl = section ? section.querySelector('h2') : null;
+      var msgEl = section ? section.querySelector('.donation-message') : null;
+      if (!wechat || !alipay) return;
+
+      function setQr(el, url, fallbackText) {
+        if (url) {
+          el.innerHTML = '';
+          var img = document.createElement('img');
+          img.src = url;
+          img.alt = fallbackText;
+          img.loading = 'lazy';
+          el.appendChild(img);
+        } else {
+          el.innerHTML = '<div class="qr-placeholder">' + fallbackText + '<br>暂未配置</div>';
+        }
+      }
+
+      fetch('/api/auth/donation-info').then(function (r) { return r.json(); }).then(function (data) {
+        if (!data || !data.ok || !data.donation) return;
+        var d = data.donation;
+        // 后台关闭打赏功能时，隐藏整个打赏区块
+        if (d.enabled === false) {
+          if (section) section.style.display = 'none';
+          return;
+        }
+        // 应用后台自定义标题和文案
+        if (titleEl && d.title) titleEl.textContent = d.title;
+        if (msgEl && d.message) msgEl.textContent = d.message;
+        setQr(wechat, d.wechatQrcode, '微信收款码');
+        setQr(alipay, d.alipayQrcode, '支付宝收款码');
+      }).catch(function () { /* 静默回退到占位符 */ });
+    })();
 
     // ===== Service Worker 注册 =====
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(function() {});
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
     }
   </script>
 </body>
