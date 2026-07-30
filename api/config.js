@@ -166,6 +166,7 @@ module.exports = async (req, res) => {
         return sendJson(res, 200, {
           ok: true,
           files: result.files,
+          items: result.items || result.files,
           totalFiles: result.totalFiles,
           truncated: result.truncated,
           branch: result.branch,

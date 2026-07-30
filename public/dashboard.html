@@ -90,10 +90,10 @@
 
     /* 文件预览列表 */
     .file-preview-list { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
-    .file-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .file-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 13px; min-height: 32px; }
     .file-preview-item:last-child { border-bottom: none; }
-    .file-preview-item .file-path { font-family: monospace; color: var(--text); word-break: break-all; }
-    .file-preview-item .file-size { color: var(--text2); white-space: nowrap; margin-left: 12px; }
+    .file-preview-item .file-path { font-family: monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+    .file-preview-item .file-size { color: var(--text2); white-space: nowrap; margin-left: 8px; flex-shrink: 0; font-size: 12px; }
 
     /* 升级套餐弹窗 */
     .upgrade-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
@@ -475,23 +475,23 @@
     <div class="modal" style="max-width:680px;">
       <h3 style="color:var(--red);">删除仓库文件</h3>
       <div id="deleteFilesAlert"></div>
-      <div id="deleteFilesRepoInfo" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--text2);"></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <div id="deleteFilesRepoInfo" style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);"></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(true)">全选</button>
         <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(false)">取消全选</button>
-        <span id="deleteFilesSelectedCount" style="font-size:13px;color:var(--text2);margin-left:auto;">已选 0 个文件</span>
+        <span id="deleteFilesSelectedCount" style="font-size:12px;color:var(--text2);margin-left:auto;">已选 0 项</span>
       </div>
       <div id="deleteFilesLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
         <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px;"></div>
         <div>正在获取文件列表...</div>
       </div>
       <div id="deleteFilesPreview" style="display:none;">
-        <div class="file-preview-list" id="deleteFilesList" style="max-height:360px;"></div>
+        <div class="file-preview-list" id="deleteFilesList" style="max-height:400px;"></div>
       </div>
-      <p style="color:var(--orange);font-size:13px;margin:12px 0;line-height:1.6;">
-        ⚠️ 选中的文件将通过一个新的 commit 删除。此操作不可撤销，但 Git 历史记录仍然保留。
+      <p style="color:var(--orange);font-size:12px;margin:10px 0;line-height:1.5;">
+        ⚠️ 选中文件或文件夹后通过新 commit 删除，不可撤销但 Git 历史保留。选择文件夹会删除其下所有文件。
       </p>
-      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeDeleteFilesModal()">取消</button><button class="btn btn-red" id="deleteFilesBtn" onclick="deleteSelectedFiles()" disabled>删除选中文件</button></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeDeleteFilesModal()">取消</button><button class="btn btn-red" id="deleteFilesBtn" onclick="deleteSelectedFiles()" disabled>删除选中</button></div>
     </div>
   </div>
 
@@ -1198,13 +1198,13 @@
       deleteFilesData = [];
       document.getElementById('deleteFilesAlert').innerHTML = '';
       document.getElementById('deleteFilesRepoInfo').innerHTML =
-        '<strong>仓库名称:</strong> ' + escapeHtml(r.name) + '<br>' +
-        '<strong>仓库地址:</strong> ' + escapeHtml(r.repo) + '<br>' +
-        '<strong>分支:</strong> ' + escapeHtml(r.branch);
+        '<strong>仓库名称:</strong> ' + escapeHtml(r.name) + ' &nbsp; ' +
+        '<strong>分支:</strong> ' + escapeHtml(r.branch) + '<br>' +
+        '<strong>仓库地址:</strong> ' + escapeHtml(r.repo);
       document.getElementById('deleteFilesPreview').style.display = 'none';
       document.getElementById('deleteFilesLoading').style.display = 'block';
       document.getElementById('deleteFilesBtn').disabled = true;
-      document.getElementById('deleteFilesSelectedCount').textContent = '已选 0 个文件';
+      document.getElementById('deleteFilesSelectedCount').textContent = '已选 0 项';
       document.getElementById('deleteFilesModal').classList.add('show');
 
       // 获取文件列表
@@ -1213,18 +1213,26 @@
         var data = await res.json();
         document.getElementById('deleteFilesLoading').style.display = 'none';
         if (data.ok) {
-          if (data.totalFiles === 0) {
+          var items = data.items || data.files || [];
+          if (data.totalFiles === 0 && items.length === 0) {
             document.getElementById('deleteFilesPreview').style.display = 'block';
             document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库已经是空的，没有文件可删除</div>';
           } else {
-            deleteFilesData = data.files;
-            var filesHtml = data.files.map(function(f, idx) {
-              return '<div class="file-preview-item" style="cursor:pointer;" onclick="toggleDeleteFile(this, ' + idx + ')">' +
-                '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">' +
-                  '<input type="checkbox" class="delete-file-cb" data-idx="' + idx + '" data-path="' + escapeHtml(f.path) + '" style="flex-shrink:0;">' +
-                  '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
-                '</div>' +
-                '<span class="file-size">' + formatSize(f.size) + '</span>' +
+            deleteFilesData = items;
+            // 排序：文件夹在前，按路径字母排序
+            items.sort(function(a, b) {
+              if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
+              return a.path.localeCompare(b.path);
+            });
+            var filesHtml = items.map(function(f, idx) {
+              var isDir = f.type === 'tree';
+              var icon = isDir ? '📁' : '📄';
+              var sizeLabel = isDir ? (f.size + ' 个文件') : formatSize(f.size);
+              return '<div class="file-preview-item" style="cursor:pointer;gap:6px;" onclick="toggleDeleteFile(this, ' + idx + ')">' +
+                '<input type="checkbox" class="delete-file-cb" data-idx="' + idx + '" data-path="' + escapeHtml(f.path) + '" data-type="' + f.type + '" style="flex-shrink:0;width:16px;height:16px;cursor:pointer;" onclick="event.stopPropagation();">' +
+                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
+                '<span class="file-path" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.path) + '</span>' +
+                '<span class="file-size">' + sizeLabel + '</span>' +
               '</div>';
             }).join('');
             if (data.truncated) {
@@ -1264,10 +1272,16 @@
     function updateDeleteFilesCount() {
       var checkboxes = document.querySelectorAll('.delete-file-cb');
       var checked = 0;
+      var dirCount = 0;
       for (var i = 0; i < checkboxes.length; i++) {
-        if (checkboxes[i].checked) checked++;
+        if (checkboxes[i].checked) {
+          checked++;
+          if (checkboxes[i].getAttribute('data-type') === 'tree') dirCount++;
+        }
       }
-      document.getElementById('deleteFilesSelectedCount').textContent = '已选 ' + checked + ' 个文件';
+      var label = '已选 ' + checked + ' 项';
+      if (dirCount > 0) label += '（含 ' + dirCount + ' 个文件夹）';
+      document.getElementById('deleteFilesSelectedCount').textContent = label;
       document.getElementById('deleteFilesBtn').disabled = checked === 0;
     }
 
@@ -1284,14 +1298,14 @@
         filesToDelete.push(checkboxes[i].getAttribute('data-path'));
       }
       if (filesToDelete.length === 0) return;
-      if (filesToDelete.length > 500) {
-        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">单次最多删除 500 个文件</div>';
+      if (filesToDelete.length > 1000) {
+        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">单次最多删除 1000 项</div>';
         return;
       }
 
       var btn = document.getElementById('deleteFilesBtn');
       btn.disabled = true; btn.textContent = '删除中...';
-      document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">正在删除 ' + filesToDelete.length + ' 个文件，请勿关闭页面...</div>';
+      document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">正在删除 ' + filesToDelete.length + ' 项（含文件夹内文件），请勿关闭页面...</div>';
 
       try {
         var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: deleteFilesRepoId, files: filesToDelete }) });
@@ -2493,14 +2507,25 @@
         var data = await res.json();
         document.getElementById('fileBrowserLoading').style.display = 'none';
         if (data.ok) {
-          if (data.totalFiles === 0) {
+          var browseItems = data.items || data.files || [];
+          if (data.totalFiles === 0 && browseItems.length === 0) {
             document.getElementById('fileBrowserContent').style.display = 'block';
             document.getElementById('fileBrowserList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库是空的</div>';
           } else {
-            var html = data.files.map(function(f) {
-              return '<div class="file-preview-item" style="cursor:pointer;" onclick="viewFileContent(\'' + escapeHtml(f.path) + '\')">' +
-                '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
-                '<span class="file-size">' + formatSize(f.size) + '</span>' +
+            browseItems.sort(function(a, b) {
+              if (a.type !== b.type) return a.type === 'tree' ? -1 : 1;
+              return a.path.localeCompare(b.path);
+            });
+            var html = browseItems.map(function(f) {
+              var isDir = f.type === 'tree';
+              var icon = isDir ? '📁' : '📄';
+              var sizeLabel = isDir ? (f.size + ' 文件') : formatSize(f.size);
+              var onclick = isDir ? '' : ' onclick="viewFileContent(\'' + escapeHtml(f.path) + '\')"';
+              var cursor = isDir ? 'default' : 'pointer';
+              return '<div class="file-preview-item" style="cursor:' + cursor + ';gap:6px;"' + onclick + '>' +
+                '<span style="flex-shrink:0;font-size:14px;">' + icon + '</span>' +
+                '<span class="file-path" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;" title="' + escapeHtml(f.path) + '">' + escapeHtml(f.path) + '</span>' +
+                '<span class="file-size">' + sizeLabel + '</span>' +
               '</div>';
             }).join('');
             document.getElementById('fileBrowserContent').style.display = 'block';
