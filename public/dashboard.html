@@ -989,16 +989,26 @@
     // ===== 动态版本检测 =====
     async function checkAppVersion() {
       try {
-        var res = await fetch('/api/auth/version');
+        var res = await fetch('/api/auth/version', { cache: 'no-store' });
         var data = await res.json();
         if (data.ok && data.version) {
           var stored = localStorage.getItem('app_version');
           if (stored && stored !== data.version) {
             localStorage.setItem('app_version', data.version);
+            // 强制清除所有缓存
             if (navigator.serviceWorker && navigator.serviceWorker.controller) {
               navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
             }
-            window.location.reload(true);
+            // 注销旧 SW 后重载
+            if (navigator.serviceWorker) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                  window.location.reload(true);
+                });
+              });
+            } else {
+              window.location.reload(true);
+            }
           } else if (!stored) {
             localStorage.setItem('app_version', data.version);
           }
