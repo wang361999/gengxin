@@ -5,16 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>控制台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.9.0">
+  <link rel="stylesheet" href="/style.css?v=2.9.1">
   <script src="/error-tracker.js"></script>
   <style>
     /* ===== 页面特有样式 ===== */
-    .repo-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; transition: all 0.2s; background: var(--card); }
-    .repo-card:hover { box-shadow: var(--shadow-md); }
-    .repo-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
-    .repo-card-title { font-weight: 600; font-size: 15px; }
-    .repo-card-meta { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
-    .repo-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    /* 仓库配置页 - 页面头部 */
+    .repo-page-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+    .repo-page-header .header-info h2 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .repo-page-header .header-info .subtitle { font-size: 14px; color: var(--text2); }
+
+    /* 仓库搜索栏 */
+    .repo-search-bar { position: relative; margin-bottom: 20px; }
+    .repo-search-bar input { width: 100%; padding: 10px 14px 10px 40px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; background: var(--card); transition: border-color 0.15s; }
+    .repo-search-bar input:focus { outline: none; border-color: var(--blue); }
+    .repo-search-bar .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text2); font-size: 16px; }
+
+    /* 仓库卡片 - 重新设计 */
+    .repo-card { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; background: var(--card); transition: all 0.2s; overflow: hidden; }
+    .repo-card:hover { box-shadow: var(--shadow-md); border-color: #d1d5db; }
+    .repo-card-body { padding: 16px 20px; }
+    .repo-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .repo-card-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .repo-card-title { font-weight: 700; font-size: 16px; }
+    .repo-card-meta { font-size: 13px; color: var(--text2); display: flex; gap: 16px; flex-wrap: wrap; margin-top: 2px; }
+    .repo-card-meta-item { display: flex; align-items: center; gap: 4px; }
+    .repo-card-meta-item svg { width: 14px; height: 14px; opacity: 0.6; }
+
+    /* 状态标签 */
+    .status-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-tag-ok { background: var(--green-light); color: #065f46; }
+    .status-tag-warn { background: var(--red-light); color: #991b1b; }
+    .status-tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-tag-ok .status-tag-dot { background: var(--green); }
+    .status-tag-warn .status-tag-dot { background: var(--red); }
+
+    /* 卡片操作区 - 分为主操作和危险操作 */
+    .repo-card-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .repo-action-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+    /* 图标按钮 */
+    .btn-icon { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border); background: var(--card); color: var(--text); }
+    .btn-icon:hover { background: var(--bg); border-color: #d1d5db; }
+    .btn-icon svg { width: 15px; height: 15px; }
+    .btn-icon-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .btn-icon-primary:hover { background: #2563eb; border-color: #2563eb; }
+    .btn-icon-danger { color: var(--red); border-color: rgba(239,68,68,0.2); }
+    .btn-icon-danger:hover { background: var(--red-light); border-color: rgba(239,68,68,0.3); }
+    .btn-icon-danger-solid { background: var(--red); color: #fff; border-color: var(--red); }
+    .btn-icon-danger-solid:hover { background: #dc2626; }
+
+    /* 旧样式兼容 */
     .token-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: var(--green-light); color: #065f46; margin-left: 8px; }
     .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg); }
     .upload-zone:hover { border-color: var(--blue); background: var(--blue-light); }
@@ -346,12 +386,16 @@
 
         <!-- ============ 仓库配置页 ============ -->
         <div class="page" id="page-repos">
-          <div class="page-header">
-            <div>
+          <div class="repo-page-header">
+            <div class="header-info">
               <h2>GitHub 仓库配置</h2>
               <div class="subtitle">管理你的 GitHub 仓库，支持测试连接、文件浏览、Token 检测</div>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="openRepoModal()">+ 添加仓库</button>
+            <button class="btn btn-primary btn-sm" onclick="openRepoModal()" style="padding:10px 20px;">+ 添加仓库</button>
+          </div>
+          <div class="repo-search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="repoSearchInput" placeholder="搜索仓库名称或地址..." oninput="filterRepos(this.value)">
           </div>
           <div id="repoList"><div class="empty-state">加载中...</div></div>
         </div>
@@ -1403,29 +1447,66 @@
       }
     }
 
+    // 仓库搜索过滤
+    var repoSearchKeyword = '';
+    function filterRepos(keyword) {
+      repoSearchKeyword = (keyword || '').toLowerCase().trim();
+      renderRepos();
+    }
+
     function renderRepos() {
       var el = document.getElementById('repoList');
       if (repos.length === 0) {
         el.innerHTML = '<div class="empty-state">还没有配置仓库，点击右上角「添加仓库」开始</div>';
         return;
       }
-      el.innerHTML = repos.map(function(r) {
+      // 按关键词过滤
+      var filtered = repos.filter(function(r) {
+        if (!repoSearchKeyword) return true;
+        return (r.name || '').toLowerCase().indexOf(repoSearchKeyword) >= 0 ||
+               (r.repo || '').toLowerCase().indexOf(repoSearchKeyword) >= 0;
+      });
+      if (filtered.length === 0) {
+        el.innerHTML = '<div class="empty-state">没有匹配的仓库</div>';
+        return;
+      }
+      el.innerHTML = filtered.map(function(r) {
+        var tokenTag = r.hasToken
+          ? '<span class="status-tag status-tag-ok"><span class="status-tag-dot"></span>Token 已配置</span>'
+          : '<span class="status-tag status-tag-warn"><span class="status-tag-dot"></span>未配置 Token</span>';
         return '<div class="repo-card">' +
-          '<div class="repo-card-header">' +
-            '<span class="repo-card-title">' + escapeHtml(r.name) +
-              (r.hasToken ? '<span class="token-badge">Token 已填写</span>' : '<span class="token-badge" style="background:#fef2f2;color:#991b1b;">未填 Token</span>') +
-            '</span>' +
+          '<div class="repo-card-body">' +
+            '<div class="repo-card-top">' +
+              '<div>' +
+                '<div class="repo-card-title-row">' +
+                  '<span class="repo-card-title">' + escapeHtml(r.name) + '</span>' +
+                  tokenTag +
+                '</div>' +
+                '<div class="repo-card-meta">' +
+                  '<span class="repo-card-meta-item">' + escapeHtml(r.repo) + '</span>' +
+                  '<span class="repo-card-meta-item">分支: ' + escapeHtml(r.branch || 'main') + '</span>' +
+                  '<span class="repo-card-meta-item">目录: ' + escapeHtml(r.targetDir || '.') + '</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
             '<div class="repo-card-actions">' +
-              '<button class="btn btn-outline btn-sm" onclick="testRepo(' + r.id + ')" id="testBtn_' + r.id + '">测试</button>' +
-              '<button class="btn btn-blue btn-sm" onclick="openFileBrowser(' + r.id + ')" id="browseBtn_' + r.id + '">浏览</button>' +
-              '<button class="btn btn-outline btn-sm" onclick="checkTokenStatus(' + r.id + ')" id="tokenBtn_' + r.id + '">Token</button>' +
-              '<button class="btn btn-outline btn-sm" onclick="openEditRepo(' + r.id + ')">编辑</button>' +
-              '<button class="btn btn-blue btn-sm" onclick="downloadRepo(' + r.id + ')" id="downloadBtn_' + r.id + '">下载</button>' +
-              '<button class="btn btn-red btn-sm" onclick="openClearRepoModal(' + r.id + ')">清空</button>' +
-              '<button class="btn btn-red btn-sm" onclick="removeRepo(' + r.id + ')">删除</button>' +
+              '<button class="btn-icon" onclick="testRepo(' + r.id + ')" id="testBtn_' + r.id + '" title="测试连接">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>测试</button>' +
+              '<button class="btn-icon btn-icon-primary" onclick="openFileBrowser(' + r.id + ')" id="browseBtn_' + r.id + '" title="浏览文件">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>浏览</button>' +
+              '<button class="btn-icon" onclick="checkTokenStatus(' + r.id + ')" id="tokenBtn_' + r.id + '" title="检查 Token 状态">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3v18M3 7h18M3 17h18M3 12h18"/></svg>Token</button>' +
+              '<button class="btn-icon" onclick="openEditRepo(' + r.id + ')" title="编辑配置">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>编辑</button>' +
+              '<button class="btn-icon" onclick="downloadRepo(' + r.id + ')" id="downloadBtn_' + r.id + '" title="下载仓库">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>下载</button>' +
+              '<span class="repo-action-divider"></span>' +
+              '<button class="btn-icon btn-icon-danger" onclick="openClearRepoModal(' + r.id + ')" title="清空仓库文件（保留 README）">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>' +
+              '<button class="btn-icon btn-icon-danger-solid" onclick="removeRepo(' + r.id + ')" title="删除此仓库配置">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>删除</button>' +
             '</div>' +
           '</div>' +
-          '<div class="repo-card-meta">仓库: ' + escapeHtml(r.repo) + ' | 分支: ' + escapeHtml(r.branch) + ' | 目录: ' + escapeHtml(r.targetDir) + '</div>' +
         '</div>';
       }).join('');
     }
