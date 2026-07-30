@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>API 文档 - GitUpload</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .doc-hero { background: var(--primary); color: #fff; padding: 48px 24px; text-align: center; border-radius: 0 0 24px 24px; margin-bottom: 32px; }
+    .doc-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+    .doc-hero p { font-size: 16px; opacity: 0.7; max-width: 500px; margin: 0 auto; }
+    .doc-container { max-width: 860px; margin: 0 auto; padding: 0 20px 60px; }
+
+    .auth-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 28px; }
+    .auth-section h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+    .auth-section p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+    .auth-section code { background: var(--bg); border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px; font-size: 13px; color: var(--text); }
+    .auth-section pre { background: #1a1a2e; color: #e0e0e0; padding: 16px; border-radius: 10px; font-size: 13px; overflow-x: auto; margin-top: 12px; line-height: 1.6; }
+    .auth-section pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    .endpoint-group { margin-bottom: 28px; }
+    .endpoint-group-title { font-size: 14px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; padding-left: 2px; }
+
+    .endpoint-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; transition: box-shadow 0.2s; }
+    .endpoint-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+    .endpoint-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; user-select: none; }
+    .endpoint-header:hover { background: var(--bg); }
+
+    .method-badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; flex-shrink: 0; }
+    .method-post { background: #fef3c7; color: #92400e; }
+    .method-get { background: #d1fae5; color: #065f46; }
+
+    .endpoint-path { font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace; font-size: 14px; font-weight: 600; color: var(--text); }
+    .endpoint-desc { font-size: 13px; color: var(--text2); margin-left: auto; white-space: nowrap; }
+
+    .endpoint-toggle { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: var(--text2); transition: transform 0.2s; flex-shrink: 0; }
+    .endpoint-card.open .endpoint-toggle { transform: rotate(180deg); }
+
+    .endpoint-body { display: none; border-top: 1px solid var(--border); }
+    .endpoint-card.open .endpoint-body { display: block; }
+
+    .endpoint-body-inner { padding: 20px; }
+    .endpoint-body-inner h4 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+
+    .param-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .param-table th { text-align: left; padding: 8px 10px; background: var(--bg); color: var(--text2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .param-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .param-table code { background: var(--bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+    .param-required { color: var(--red); font-weight: 600; font-size: 11px; }
+    .param-optional { color: var(--text2); font-size: 11px; }
+
+    .code-block { position: relative; margin-bottom: 16px; }
+    .code-block-label { position: absolute; top: 0; right: 0; background: var(--border); color: var(--text2); padding: 2px 10px; border-radius: 0 10px 0 6px; font-size: 11px; font-weight: 600; z-index: 1; }
+    .code-block pre { background: #1a1a2e; color: #e0e0e0; padding: 16px 18px; border-radius: 10px; font-size: 13px; overflow-x: auto; line-height: 1.6; margin: 0; }
+    .code-block pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    .response-status { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+    .status-200 { background: #d1fae5; color: #065f46; }
+
+    .nav-top { display: flex; justify-content: space-between; align-items: center; max-width: 860px; margin: 0 auto; padding: 14px 20px; }
+
+    .toc { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; }
+    .toc h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .toc ul { list-style: none; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .toc a:hover { color: var(--blue); text-decoration: none; }
+    .toc .method-mini { padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+
+    @media (max-width: 640px) {
+      .doc-hero { padding: 32px 16px; }
+      .doc-hero h1 { font-size: 24px; }
+      .endpoint-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+      .endpoint-desc { margin-left: 0; width: 100%; }
+      .param-table { font-size: 12px; }
+      .endpoint-body-inner { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="/dashboard" style="color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+        GitUpload
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="/dashboard">Dashboard</a>
+      <a href="javascript:void(0)" onclick="copyToken()" id="copyTokenLink">复制 Token</a>
+    </div>
+  </nav>
+
+  <div class="doc-hero">
+    <h1>API 文档</h1>
+    <p>通过 RESTful API 集成 GitUpload，实现自动化上传和仓库管理</p>
+  </div>
+
+  <div class="doc-container">
+    <!-- 认证说明 -->
+    <div class="auth-section">
+      <h2>认证方式</h2>
+      <p>所有 API 请求需要在 HTTP Header 中携带 Bearer Token 进行认证。Token 可以在用户仪表盘中创建 API 密钥获取。</p>
+      <pre><code>Authorization: Bearer &lt;your-api-token&gt;</code></pre>
+      <p style="margin-top:12px;">示例请求头：</p>
+      <pre><code>GET /api/config HTTP/1.1
+Host: your-domain.com
+Authorization: Bearer gup_xxxxxxxxxxxxxxxxxxxx
+Content-Type: application/json</code></pre>
+    </div>
+
+    <!-- 目录 -->
+    <div class="toc">
+      <h3>接口目录</h3>
+      <ul>
+        <li><a href="#ep-upload"><span class="method-mini method-post">POST</span> /api/upload - 上传文件</a></li>
+        <li><a href="#ep-config-get"><span class="method-mini method-get">GET</span> /api/config - 获取仓库列表</a></li>
+        <li><a href="#ep-config-post"><span class="method-mini method-post">POST</span> /api/config - 添加/更新/删除仓库</a></li>
+        <li><a href="#ep-history"><span class="method-mini method-get">GET</span> /api/history - 获取上传历史</a></li>
+        <li><a href="#ep-me"><span class="method-mini method-get">GET</span> /api/auth/me - 获取当前用户信息</a></li>
+        <li><a href="#ep-plan"><span class="method-mini method-get">GET</span> /api/auth/plan - 获取套餐详情</a></li>
+        <li><a href="#ep-apikeys"><span class="method-mini method-post">POST</span> /api/auth/api-keys - 创建 API 密钥</a></li>
+        <li><a href="#ep-oauth"><span class="method-mini method-get">GET</span> /api/oauth/auth-url - 获取 OAuth 授权链接</a></li>
+        <li><a href="#ep-webhook"><span class="method-mini method-post">POST</span> /api/webhook/create - 创建 Webhook</a></li>
+      </ul>
+    </div>
+
+    <!-- 文件上传 -->
+    <div class="endpoint-group">
+      <div class="endpoint-group-title">文件管理</div>
+
+      <div class="endpoint-card" id="ep-upload" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/api/upload</span>
+          <span class="endpoint-desc">上传 ZIP 代码包</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（multipart/form-data）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>file</code></td><td>File</td><td><span class="param-required">必填</span></td><td>ZIP 格式的代码包文件</td></tr>
+                <tr><td><code>repoId</code></td><td>String</td><td><span class="param-required">必填</span></td><td>目标仓库 ID</td></tr>
+                <tr><td><code>preview</code></td><td>Boolean</td><td><span class="param-optional">可选</span></td><td>设为 true 时仅预览不上传，默认 false</td></tr>
+                <tr><td><code>batchRepos</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>批量上传到多个仓库，逗号分隔仓库 ID</td></tr>
+                <tr><td><code>commitMsg</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>自定义 Git 提交信息，默认自动生成</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X POST https://your-domain.com/api/upload \
+  -H "Authorization: Bearer gup_xxxxxxxxxx" \
+  -F "file=@my-project.zip" \
+  -F "repoId=repo_abc123" \
+  -F "commitMsg=feat: add new module"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "url": "https://github.com/user/repo/commit/abc123",
+  "sha": "abc123def456",
+  "message": "上传成功",
+  "files": 12,
+  "size": 1024000
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 仓库配置 -->
+    <div class="endpoint-group">
+      <div class="endpoint-group-title">仓库配置</div>
+
+      <div class="endpoint-card" id="ep-config-get" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/api/config</span>
+          <span class="endpoint-desc">获取仓库列表</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（Query String）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td>无</td><td>-</td><td>-</td><td>使用 Token 自动获取对应用户的仓库列表</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X GET https://your-domain.com/api/config \
+  -H "Authorization: Bearer gup_xxxxxxxxxx"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "repos": [
+    {
+      "id": "repo_abc123",
+      "name": "生产仓库",
+      "repo": "user/production-repo",
+      "branch": "main"
+    },
+    {
+      "id": "repo_def456",
+      "name": "测试仓库",
+      "repo": "user/test-repo",
+      "branch": "develop"
+    }
+  ]
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint-card" id="ep-config-post" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/api/config</span>
+          <span class="endpoint-desc">添加/更新/删除仓库</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（application/json）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>action</code></td><td>String</td><td><span class="param-required">必填</span></td><td>操作类型：<code>add</code> / <code>update</code> / <code>delete</code></td></tr>
+                <tr><td><code>repoId</code></td><td>String</td><td><span class="param-required">必填</span></td><td>仓库 ID（update/delete 时需要）</td></tr>
+                <tr><td><code>name</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>仓库显示名称</td></tr>
+                <tr><td><code>repo</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>GitHub 仓库路径，如 <code>user/repo</code></td></tr>
+                <tr><td><code>branch</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>目标分支，默认 main</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">添加仓库示例</span>
+              <pre><code>curl -X POST https://your-domain.com/api/config \
+  -H "Authorization: Bearer gup_xxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"action":"add","name":"生产仓库","repo":"user/prod","branch":"main"}'</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "message": "仓库已添加",
+  "repo": {
+    "id": "repo_new001",
+    "name": "生产仓库",
+    "repo": "user/prod",
+    "branch": "main"
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上传历史 -->
+    <div class="endpoint-group">
+      <div class="endpoint-group-title">上传记录</div>
+
+      <div class="endpoint-card" id="ep-history" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/api/history</span>
+          <span class="endpoint-desc">获取上传历史</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（Query String）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>page</code></td><td>Number</td><td><span class="param-optional">可选</span></td><td>页码，默认 1</td></tr>
+                <tr><td><code>limit</code></td><td>Number</td><td><span class="param-optional">可选</span></td><td>每页条数，默认 20</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X GET "https://your-domain.com/api/history?page=1&limit=10" \
+  -H "Authorization: Bearer gup_xxxxxxxxxx"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "records": [
+    {
+      "id": "hist_001",
+      "time": "2024-12-01T10:30:00Z",
+      "fileName": "project-v2.zip",
+      "fileCount": 15,
+      "size": 2048000,
+      "repo": "user/prod",
+      "branch": "main",
+      "status": "success",
+      "commitSha": "abc123"
+    }
+  ],
+  "total": 42,
+  "page": 1,
+  "limit": 10
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 用户认证 -->
+    <div class="endpoint-group">
+      <div class="endpoint-group-title">用户认证</div>
+
+      <div class="endpoint-card" id="ep-me" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/api/auth/me</span>
+          <span class="endpoint-desc">获取当前用户信息</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>说明</h4>
+            <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">返回当前 Token 对应的用户信息、套餐和用量情况。无额外参数。</p>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X GET https://your-domain.com/api/auth/me \
+  -H "Authorization: Bearer gup_xxxxxxxxxx"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "user": {
+    "id": "user_abc",
+    "username": "developer",
+    "brandName": "MyBrand",
+    "plan": "pro",
+    "email": "dev@example.com",
+    "createdAt": "2024-01-15T00:00:00Z"
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint-card" id="ep-plan" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/api/auth/plan</span>
+          <span class="endpoint-desc">获取套餐详情</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>说明</h4>
+            <p style="font-size:14px;color:var(--text2);margin-bottom:16px;">返回当前用户的套餐信息、用量配额和到期时间。</p>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X GET https://your-domain.com/api/auth/plan \
+  -H "Authorization: Bearer gup_xxxxxxxxxx"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "plan": {
+    "name": "专业版",
+    "type": "pro",
+    "uploadsLimit": 500,
+    "reposLimit": 20,
+    "maxZipSize": 52428800,
+    "expiresAt": "2025-01-15T00:00:00Z",
+    "usage": {
+      "uploads": 128,
+      "files": 1520,
+      "size": 104857600
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint-card" id="ep-apikeys" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/api/auth/api-keys</span>
+          <span class="endpoint-desc">创建 API 密钥</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（application/json）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>密钥名称/备注，如 "CI/CD" 或 "自动化脚本"</td></tr>
+                <tr><td><code>expiresIn</code></td><td>Number</td><td><span class="param-optional">可选</span></td><td>有效期天数，默认 90 天</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X POST https://your-domain.com/api/auth/api-keys \
+  -H "Authorization: Bearer gup_xxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"CI/CD","expiresIn":180}'</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "key": {
+    "id": "key_abc123",
+    "name": "CI/CD",
+    "token": "gup_xxxxxxxxxxxxxxxxxxxx",
+    "createdAt": "2024-12-01T00:00:00Z",
+    "expiresAt": "2025-05-30T00:00:00Z"
+  },
+  "message": "请妥善保存此 Token，创建后将无法再次查看"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OAuth & Webhook -->
+    <div class="endpoint-group">
+      <div class="endpoint-group-title">OAuth 与 Webhook</div>
+
+      <div class="endpoint-card" id="ep-oauth" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-get">GET</span>
+          <span class="endpoint-path">/api/oauth/auth-url</span>
+          <span class="endpoint-desc">获取 OAuth 授权链接</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（Query String）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td>无</td><td>-</td><td>-</td><td>使用当前 Token 关联的账号生成 GitHub OAuth 授权链接</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X GET https://your-domain.com/api/oauth/auth-url \
+  -H "Authorization: Bearer gup_xxxxxxxxxx"</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "url": "https://github.com/login/oauth/authorize?client_id=xxx&state=yyy&scope=repo",
+  "state": "random_state_string"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint-card" id="ep-webhook" onclick="toggleEndpoint(this)">
+        <div class="endpoint-header">
+          <span class="method-badge method-post">POST</span>
+          <span class="endpoint-path">/api/webhook/create</span>
+          <span class="endpoint-desc">创建 Webhook</span>
+          <span class="endpoint-toggle">&#9662;</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="endpoint-body-inner">
+            <h4>请求参数（application/json）</h4>
+            <table class="param-table">
+              <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><code>url</code></td><td>String</td><td><span class="param-required">必填</span></td><td>Webhook 回调地址（HTTPS）</td></tr>
+                <tr><td><code>events</code></td><td>Array</td><td><span class="param-optional">可选</span></td><td>监听事件类型，如 <code>["upload"]</code>，默认监听所有</td></tr>
+                <tr><td><code>secret</code></td><td>String</td><td><span class="param-optional">可选</span></td><td>签名密钥，用于验证回调来源</td></tr>
+              </tbody>
+            </table>
+
+            <div class="code-block">
+              <span class="code-block-label">请求示例</span>
+              <pre><code>curl -X POST https://your-domain.com/api/webhook/create \
+  -H "Authorization: Bearer gup_xxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://my-server.com/webhook","events":["upload"],"secret":"my_secret"}'</code></pre>
+            </div>
+
+            <div class="response-status status-200">200 OK</div>
+            <div class="code-block">
+              <span class="code-block-label">响应示例</span>
+              <pre><code>{
+  "ok": true,
+  "webhook": {
+    "id": "wh_abc123",
+    "url": "https://my-server.com/webhook",
+    "events": ["upload"],
+    "createdAt": "2024-12-01T00:00:00Z"
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <div style="text-align:center;padding:32px 0;color:var(--text2);font-size:13px;border-top:1px solid var(--border);margin-top:20px;">
+      <p>GitUpload API 文档 &middot; 如有疑问请联系管理员</p>
+    </div>
+  </div>
+
+  <script>
+    function toggleEndpoint(card) {
+      card.classList.toggle('open');
+    }
+
+    function copyToken() {
+      var token = localStorage.getItem('token');
+      if (token) {
+        navigator.clipboard.writeText(token).then(function() {
+          var link = document.getElementById('copyTokenLink');
+          var orig = link.textContent;
+          link.textContent = '已复制';
+          setTimeout(function() { link.textContent = orig; }, 1500);
+        });
+      } else {
+        alert('请先登录后再复制 Token');
+        window.location.href = '/login';
+      }
+    }
+    // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
+      async function checkAppVersion() {
+        try {
+          var res = await fetch('/api/auth/version');
+          var data = await res.json();
+          if (data.ok && data.version) {
+            var stored = localStorage.getItem('app_version');
+            if (stored && stored !== data.version) {
+              localStorage.setItem('app_version', data.version);
+              if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+              }
+              window.location.reload(true);
+            } else if (!stored) {
+              localStorage.setItem('app_version', data.version);
+            }
+          }
+        } catch(e) {}
+      }
+      checkAppVersion();
+      setInterval(checkAppVersion, 5 * 60 * 1000);
+
+      // ===== Service Worker 注册 =====
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(function() {});
+      }
+  </script>
+</body>
+</html>
