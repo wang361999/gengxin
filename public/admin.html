@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#111827">
+  <title>管理后台 - GitUpload</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stats-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s; }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .stat-card .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+    .stat-card .stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
+    .stat-card .stat-name { font-size: 13px; color: var(--text2); margin-top: 4px; }
+    .icon-blue { background: rgba(59,130,246,0.1); }
+    .icon-green { background: rgba(16,185,129,0.1); }
+    .icon-purple { background: rgba(139,92,246,0.1); }
+    .icon-orange { background: rgba(249,115,22,0.1); }
+    .icon-red { background: rgba(239,68,68,0.1); }
+    .icon-yellow { background: rgba(234,179,8,0.1); }
+    .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+    .section-title h3 { margin: 0; }
+    .tab-bar { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; margin-bottom: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-item { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text2); transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+    .tab-item.active { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .empty-state { text-align: center; padding: 32px; color: var(--text2); }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 500px; }
+    th, td { white-space: nowrap; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 24px; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { margin-bottom: 20px; }
+    .btn-sm { padding: 4px 12px; font-size: 13px; border-radius: 6px; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .trend-chart { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .trend-bars { display: flex; align-items: flex-end; gap: 3px; height: 120px; margin-top: 16px; }
+    .trend-bar { flex: 1; min-width: 8px; background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%); border-radius: 3px 3px 0 0; position: relative; transition: opacity 0.2s; cursor: pointer; min-height: 2px; }
+    .trend-bar:hover { opacity: 0.8; }
+    .trend-bar:hover::after { content: attr(data-label); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px; z-index: 10; }
+    .trend-legend { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text2); }
+    .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-box input { flex: 1; }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-info h4 { font-size: 15px; font-weight: 600; margin: 0; }
+    .setting-info p { font-size: 13px; color: var(--text2); margin: 4px 0 0; }
+    .toggle { position: relative; width: 44px; height: 24px; background: var(--border); border-radius: 12px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle.on { background: var(--green); }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+    .toggle.on::after { transform: translateX(20px); }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section h4 { font-size: 14px; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .detail-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .detail-stat { background: var(--bg); border-radius: 8px; padding: 12px; text-align: center; }
+    .detail-stat .num { font-size: 20px; font-weight: 700; }
+    .detail-stat .label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .plan-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    .plan-free { background: #f3f4f6; color: #6b7280; }
+    .plan-pro { background: #dbeafe; color: #1e40af; }
+    .plan-enterprise { background: #ede9fe; color: #5b21b6; }
+    .usage-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .usage-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width 0.3s; }
+    .usage-fill.warn { background: #f59e0b; }
+    .usage-fill.full { background: var(--red); }
+    .plan-select { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .plan-option { flex: 1; min-width: 100px; border: 2px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .plan-option:hover { border-color: var(--blue); }
+    .plan-option.selected { border-color: var(--blue); background: rgba(59,130,246,0.05); }
+    .plan-option .plan-name { font-weight: 600; font-size: 14px; }
+    .plan-option .plan-price { font-size: 18px; font-weight: 800; color: var(--blue); margin: 4px 0; }
+    .plan-option .plan-period { font-size: 11px; color: var(--text2); }
+
+    /* ===== 数据分析区块 ===== */
+    .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .analytics-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: all 0.2s; }
+    .analytics-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .analytics-card .stat-num { font-size: 28px; font-weight: 800; line-height: 1; }
+    .analytics-card .stat-name { font-size: 13px; color: var(--text2); margin-top: 4px; }
+    .analytics-card .stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .chart-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .chart-title h3 { margin: 0; font-size: 16px; }
+
+    /* SVG 折线图 */
+    .line-chart-wrap { width: 100%; overflow-x: auto; }
+    .line-chart-wrap svg { display: block; width: 100%; height: 240px; }
+    .line-chart-tooltip { font-size: 11px; }
+
+    /* 柱状图 - 仓库分布 */
+    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { width: 140px; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%); border-radius: 6px; transition: width 0.4s; }
+    .bar-value { width: 50px; text-align: right; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+
+    /* 饼图 - 套餐分布 */
+    .pie-wrap { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+    .pie-chart { flex-shrink: 0; }
+    .pie-legend { flex: 1; min-width: 180px; }
+    .pie-legend-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 14px; }
+    .pie-legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .pie-legend-count { margin-left: auto; font-weight: 600; color: var(--text2); }
+
+    /* 转化漏斗 */
+    .funnel { display: flex; flex-direction: column; gap: 4px; }
+    .funnel-step { background: var(--bg); border-radius: 8px; padding: 16px 20px; position: relative; transition: all 0.2s; }
+    .funnel-step.active { background: linear-gradient(90deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02)); }
+    .funnel-step-row { display: flex; justify-content: space-between; align-items: center; }
+    .funnel-step-label { font-size: 14px; font-weight: 600; }
+    .funnel-step-num { font-size: 20px; font-weight: 800; }
+    .funnel-step-pct { font-size: 13px; color: var(--text2); margin-top: 4px; }
+    .funnel-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .funnel-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+    /* 活跃热力图 */
+    .heatmap-wrap { overflow-x: auto; padding-bottom: 8px; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; min-width: 480px; }
+    .heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: #f3f4f6; min-height: 18px; position: relative; cursor: pointer; transition: transform 0.1s; }
+    .heatmap-cell:hover { transform: scale(1.3); z-index: 2; }
+    .heatmap-cell:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 3px 7px; border-radius: 4px; font-size: 11px; white-space: nowrap; margin-bottom: 4px; z-index: 10; pointer-events: none; }
+    .heatmap-legend { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 12px; font-size: 12px; color: var(--text2); }
+    .heatmap-legend-box { width: 12px; height: 12px; border-radius: 3px; }
+
+    .analytics-empty { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; }
+
+    @media (max-width: 768px) {
+      .analytics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .analytics-card { padding: 16px; }
+      .analytics-card .stat-num { font-size: 22px; }
+      .pie-wrap { flex-direction: column; gap: 16px; }
+      .bar-label { width: 100px; font-size: 12px; }
+      .heatmap-grid { grid-template-columns: repeat(10, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .analytics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .analytics-card { padding: 14px; }
+      .analytics-card .stat-num { font-size: 20px; }
+      .bar-label { width: 80px; }
+    }
+
+    /* ===== 强制修改密码弹窗 ===== */
+    .force-pwd-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; }
+    .force-pwd-overlay.show { display: flex; }
+    .force-pwd-modal { background: #fff; border-radius: 12px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .force-pwd-modal h3 { font-size: 20px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .force-pwd-modal .sub { font-size: 13px; color: var(--red); margin-bottom: 20px; padding: 10px 12px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; }
+    .force-pwd-modal .field { margin-bottom: 14px; }
+    .force-pwd-modal .btn { width: 100%; margin-top: 6px; }
+
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .stats-grid-3 { grid-template-columns: 1fr; gap: 12px; }
+      .stat-card { padding: 16px; }
+      .stat-card .stat-num { font-size: 22px; }
+      .stat-card .stat-icon { width: 32px; height: 32px; font-size: 16px; margin-bottom: 8px; }
+      .container { padding: 12px; }
+      .card { padding: 16px; }
+      .modal { padding: 20px; }
+      .nav { padding: 12px 16px; }
+      .nav-brand a { font-size: 15px; }
+      .nav-links { gap: 10px; }
+      .nav-links a { font-size: 13px; }
+      .section-title h3 { font-size: 16px; }
+      .detail-stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-card .stat-num { font-size: 20px; }
+      .tab-item { padding: 7px 12px; font-size: 13px; }
+      .modal { padding: 16px; border-radius: 10px; }
+      .modal h3 { font-size: 17px; margin-bottom: 16px; }
+      .setting-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .trend-bars { height: 80px; }
+      .search-box { flex-direction: column; }
+      .plan-select { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="/" style="color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+        管理后台
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="/dashboard" style="color:var(--blue);font-weight:600;">前台</a>
+      <a href="javascript:void(0)" onclick="openPasswordModal()">修改密码</a>
+      <a href="javascript:void(0)" onclick="logout()">退出</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="alert"></div>
+
+    <!-- 统计面板 -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-icon icon-blue">👥</div>
+        <div class="stat-num" id="statUsers">-</div>
+        <div class="stat-name">总用户数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-green">📤</div>
+        <div class="stat-num" id="statUploads">-</div>
+        <div class="stat-name">总上传次数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-purple">📦</div>
+        <div class="stat-num" id="statFiles">-</div>
+        <div class="stat-name">总文件数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-orange">🔗</div>
+        <div class="stat-num" id="statRepos">-</div>
+        <div class="stat-name">配置仓库数</div>
+      </div>
+    </div>
+
+    <!-- 次级统计 -->
+    <div class="stats-grid-3">
+      <div class="stat-card">
+        <div class="stat-icon icon-yellow">⭐</div>
+        <div class="stat-num" id="statPaid" style="font-size:22px;">-</div>
+        <div class="stat-name">付费用户</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-green">💰</div>
+        <div class="stat-num" id="statRevenue" style="font-size:22px;">-</div>
+        <div class="stat-name">总收入 (元)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-blue">📅</div>
+        <div class="stat-num" id="statToday" style="font-size:22px;">-</div>
+        <div class="stat-name">今日上传</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div>
+        <div class="stat-num" id="statOnline" style="font-size:22px;color:#16a34a;">-</div>
+        <div class="stat-name">在线人数</div>
+      </div>
+    </div>
+
+    <!-- 上传趋势 -->
+    <div class="trend-chart">
+      <div class="section-title" style="margin-bottom:0;">
+        <h3 style="font-size:16px;">最近 30 天上传趋势</h3>
+        <span id="trendSummary" style="font-size:13px;color:var(--text2);"></span>
+      </div>
+      <div class="trend-bars" id="trendBars">
+        <div style="width:100%;text-align:center;color:var(--text2);font-size:13px;align-self:center;">加载中...</div>
+      </div>
+      <div class="trend-legend">
+        <span id="trendStart">-</span>
+        <span id="trendEnd">-</span>
+      </div>
+    </div>
+
+    <!-- Tab 切换 -->
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchTab(event,'users')">用户管理</div>
+      <div class="tab-item" onclick="switchTab(event,'analytics')">数据分析</div>
+      <div class="tab-item" onclick="switchTab(event,'history')">上传历史</div>
+      <div class="tab-item" onclick="switchTab(event,'orders')">订单管理</div>
+      <div class="tab-item" onclick="switchTab(event,'plans')">套餐管理</div>
+      <div class="tab-item" onclick="switchTab(event,'broadcast')">通知广播</div>
+      <div class="tab-item" onclick="switchTab(event,'settings')">系统设置</div>
+    </div>
+
+    <!-- 用户管理 -->
+    <div class="tab-content active" id="tab-users">
+      <div class="card">
+        <div class="section-title">
+          <h3>用户列表 <span id="userCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+          <button class="btn btn-outline btn-sm" onclick="exportUsers()">导出 CSV</button>
+        </div>
+        <div class="search-box">
+          <input type="text" id="userSearch" placeholder="搜索用户名或品牌名..." oninput="filterUsers()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>用户名</th>
+                <th>品牌名</th>
+                <th>套餐</th>
+                <th>状态</th>
+                <th>注册时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据分析 -->
+    <div class="tab-content" id="tab-analytics">
+      <!-- 汇总卡片 -->
+      <div class="analytics-grid" id="analyticsSummary">
+        <div class="analytics-card">
+          <div class="stat-icon icon-blue">📤</div>
+          <div class="stat-num" id="anaTotalUploads">-</div>
+          <div class="stat-name">总上传次数</div>
+        </div>
+        <div class="analytics-card">
+          <div class="stat-icon icon-green">📦</div>
+          <div class="stat-num" id="anaTotalFiles">-</div>
+          <div class="stat-name">总文件数</div>
+        </div>
+        <div class="analytics-card">
+          <div class="stat-icon icon-purple">💾</div>
+          <div class="stat-num" id="anaTotalSize">-</div>
+          <div class="stat-name">总上传大小</div>
+        </div>
+        <div class="analytics-card">
+          <div class="stat-icon icon-orange">👥</div>
+          <div class="stat-num" id="anaTotalUsers">-</div>
+          <div class="stat-name">总用户数</div>
+        </div>
+      </div>
+
+      <!-- 上传趋势折线图 -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <h3>最近 30 天上传趋势</h3>
+          <span id="anaTrendSummary" style="font-size:13px;color:var(--text2);"></span>
+        </div>
+        <div class="line-chart-wrap" id="anaLineChart">
+          <div class="analytics-empty">加载中...</div>
+        </div>
+      </div>
+
+      <div class="grid2" style="gap:20px;">
+        <!-- 仓库分布柱状图 -->
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-title"><h3>Top 10 仓库上传次数</h3></div>
+          <div class="bar-chart" id="anaRepoChart">
+            <div class="analytics-empty">加载中...</div>
+          </div>
+        </div>
+
+        <!-- 套餐分布饼图 -->
+        <div class="chart-card" style="margin-bottom:0;">
+          <div class="chart-title"><h3>套餐分布</h3></div>
+          <div class="pie-wrap" id="anaPieChart">
+            <div class="analytics-empty">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 转化漏斗 -->
+      <div class="chart-card" style="margin-top:20px;">
+        <div class="chart-title"><h3>转化漏斗</h3></div>
+        <div class="funnel" id="anaFunnel">
+          <div class="analytics-empty">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 活跃热力图 -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <h3>最近 30 天活跃热力图</h3>
+          <span style="font-size:13px;color:var(--text2);" id="anaHeatSummary"></span>
+        </div>
+        <div class="heatmap-wrap">
+          <div class="heatmap-grid" id="anaHeatmap">
+            <div class="analytics-empty">加载中...</div>
+          </div>
+        </div>
+        <div class="heatmap-legend">
+          <span>少</span>
+          <span class="heatmap-legend-box" style="background:#f3f4f6;"></span>
+          <span class="heatmap-legend-box" style="background:#bfdbfe;"></span>
+          <span class="heatmap-legend-box" style="background:#60a5fa;"></span>
+          <span class="heatmap-legend-box" style="background:#3b82f6;"></span>
+          <span class="heatmap-legend-box" style="background:#1d4ed8;"></span>
+          <span>多</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 全局历史 -->
+    <div class="tab-content" id="tab-history">
+      <div class="card">
+        <div class="section-title">
+          <h3>全局上传历史 <span id="historyCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+          <button class="btn btn-outline btn-sm" onclick="exportHistory()">导出 CSV</button>
+        </div>
+        <div class="search-box">
+          <input type="text" id="historySearch" placeholder="搜索用户或文件名..." oninput="filterHistory()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>用户</th>
+                <th>文件名</th>
+                <th>文件数</th>
+                <th>仓库</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 套餐管理 -->
+    <div class="tab-content" id="tab-plans">
+      <div class="card">
+        <h3 style="margin-bottom:20px;">套餐定价配置</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>专业版月费 (元)</h4>
+            <p>专业版套餐每月价格</p>
+          </div>
+          <input type="number" id="setProPrice" placeholder="29" style="max-width:120px;" min="0" step="0.01">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>企业版月费 (元)</h4>
+            <p>企业版套餐每月价格</p>
+          </div>
+          <input type="number" id="setEntPrice" placeholder="99" style="max-width:120px;" min="0" step="0.01">
+        </div>
+        <div style="margin-top:20px;text-align:right;">
+          <button class="btn btn-primary" onclick="savePlanSettings()">保存套餐配置</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">套餐说明</h3>
+        <div id="planInfoList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <h4 style="font-size:16px;margin-bottom:8px;">免费版</h4>
+            <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥0<span style="font-size:13px;font-weight:400;">/月</span></div>
+            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+              <li>每月 50 次上传</li><li>最多 3 个仓库</li><li>ZIP 最大 10MB</li>
+            </ul>
+          </div>
+          <div style="border:2px solid var(--blue);border-radius:10px;padding:16px;">
+            <h4 style="font-size:16px;margin-bottom:8px;color:var(--blue);">专业版 ⭐</h4>
+            <div style="font-size:24px;font-weight:800;color:var(--blue);margin-bottom:8px;">¥<span id="proPriceDisplay">29</span><span style="font-size:13px;font-weight:400;">/月</span></div>
+            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+              <li>每月 500 次上传</li><li>最多 20 个仓库</li><li>ZIP 最大 50MB</li><li>优先支持</li>
+            </ul>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <h4 style="font-size:16px;margin-bottom:8px;">企业版</h4>
+            <div style="font-size:24px;font-weight:800;color:var(--text2);margin-bottom:8px;">¥<span id="entPriceDisplay">99</span><span style="font-size:13px;font-weight:400;">/月</span></div>
+            <ul style="font-size:13px;color:var(--text2);padding-left:16px;line-height:1.8;">
+              <li>无限上传</li><li>无限仓库</li><li>ZIP 最大 100MB</li><li>专属客服 + API</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 订单管理 -->
+    <div class="tab-content" id="tab-orders">
+      <div class="card">
+        <div class="section-title">
+          <h3>升级订单 <span id="orderCount" style="color:var(--text2);font-size:14px;font-weight:400;"></span></h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="loadOrders()">刷新</button>
+            <button class="btn btn-red btn-sm" onclick="clearPendingOrders()">清除未支付订单</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>用户</th>
+                <th>套餐</th>
+                <th>金额</th>
+                <th>周期</th>
+                <th>付款备注</th>
+                <th>状态</th>
+                <th>时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody">
+              <tr><td colspan="9" style="text-align:center;color:var(--text2);">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知广播 -->
+    <div class="tab-content" id="tab-broadcast">
+      <div class="card">
+        <h3 style="margin-bottom:20px;">发送全站通知</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">向所有活跃用户发送通知消息，用户可在仪表盘的通知消息区查看。</p>
+        <div class="field">
+          <label>通知类型</label>
+          <select id="broadcastType">
+            <option value="info">普通通知</option>
+            <option value="success">成功消息</option>
+            <option value="warning">警告消息</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>通知标题</label>
+          <input type="text" id="broadcastTitle" placeholder="输入通知标题">
+        </div>
+        <div class="field">
+          <label>通知内容</label>
+          <textarea id="broadcastContent" placeholder="输入通知内容（可选）" rows="4" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
+        </div>
+        <button class="btn btn-primary" id="broadcastBtn" onclick="sendBroadcast()">发送通知</button>
+      </div>
+    </div>
+
+    <!-- 系统设置 -->
+    <div class="tab-content" id="tab-settings">
+      <div class="card">
+        <h3 style="margin-bottom:20px;">系统设置</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>站点名称</h4>
+            <p>显示在导航栏和页面的站点名称</p>
+          </div>
+          <input type="text" id="setSiteName" placeholder="GitUpload" style="max-width:200px;">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>允许注册</h4>
+            <p>关闭后新用户将无法注册，只能由管理员创建</p>
+          </div>
+          <div class="toggle" id="setAllowRegister" onclick="toggleRegister()"></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>免费上传次数限制</h4>
+            <p>免费用户每月上传次数上限</p>
+          </div>
+          <input type="number" id="setUploadLimit" placeholder="50" style="max-width:100px;" min="0">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>公告通知</h4>
+            <p>显示在用户仪表盘顶部的公告内容（留空则不显示）</p>
+          </div>
+          <input type="text" id="setAnnouncement" placeholder="输入公告内容..." style="max-width:300px;">
+        </div>
+        <div style="margin-top:20px;text-align:right;">
+          <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+        </div>
+      </div>
+
+      <!-- 收款码上传 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:20px;">收款码管理</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">上传支付宝/微信收款码，用户升级套餐时会展示扫码支付。请上传图片 URL 或 Base64 数据。</p>
+        <div class="grid2">
+          <div class="field">
+            <label>支付宝收款码（图片 URL 或 Base64）</label>
+            <input type="text" id="setAlipayQrcode" placeholder="https://... 或 data:image/...">
+            <div id="alipayPreview" style="margin-top:8px;text-align:center;"></div>
+          </div>
+          <div class="field">
+            <label>微信收款码（图片 URL 或 Base64）</label>
+            <input type="text" id="setWechatQrcode" placeholder="https://... 或 data:image/...">
+            <div id="wechatPreview" style="margin-top:8px;text-align:center;"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>付款说明（展示给用户看）</label>
+          <input type="text" id="setPaymentInstructions" placeholder="请在付款备注中填写订单号后6位" style="max-width:400px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-outline" onclick="loadPaymentQrcodes()">预览收款码</button>
+          <button class="btn btn-primary" onclick="savePaymentQrcodes()">保存收款码</button>
+        </div>
+      </div>
+
+      <!-- 上传收款码图片 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">上传收款码图片</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">直接选择本地收款码图片上传，自动转为 Base64 存储。</p>
+        <div class="grid2">
+          <div>
+            <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">支付宝收款码</label>
+            <input type="file" id="alipayFile" accept="image/*" onchange="uploadQrcode('alipay')">
+          </div>
+          <div>
+            <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">微信收款码</label>
+            <input type="file" id="wechatFile" accept="image/*" onchange="uploadQrcode('wechat')">
+          </div>
+        </div>
+      </div>
+
+      <!-- 版本管理 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">版本管理</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">更新版本号后，所有用户下次访问时会自动检测到新版本并强制刷新页面，确保加载最新代码。</p>
+        <div class="setting-row">
+          <div class="setting-info">
+            <h4>当前版本号</h4>
+            <p id="currentVersionDisplay" style="font-family:monospace;font-size:16px;font-weight:600;color:var(--blue);">加载中...</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="newVersionInput" placeholder="v2.6.1" style="max-width:150px;">
+            <button class="btn btn-primary" onclick="updateVersion()">更新版本</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GitHub OAuth 配置 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">GitHub OAuth 配置</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以通过 GitHub 弹窗授权一键导入仓库，无需手动填写 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
+        <div class="field">
+          <label>GitHub OAuth Client ID</label>
+          <input type="text" id="setOauthClientId" placeholder="Iv1.xxxxxxxxxxxxxxxx" style="max-width:400px;">
+        </div>
+        <div class="field">
+          <label>GitHub OAuth Client Secret</label>
+          <input type="password" id="setOauthClientSecret" placeholder="GitHub OAuth App 的 Secret" style="max-width:400px;">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="btn btn-primary" onclick="saveOauthConfig()">保存 OAuth 配置</button>
+          <button class="btn btn-outline" onclick="testOauthConfig()">测试 OAuth 是否可用</button>
+        </div>
+        <div id="oauthTestResult" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- 系统健康检查 -->
+      <div class="card" style="margin-top:20px;">
+        <h3 style="margin-bottom:16px;">系统健康检查</h3>
+        <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">检查数据库连接、环境变量和系统配置状态。</p>
+        <div id="healthCheckResult" style="display:flex;flex-direction:column;gap:12px;">
+          <button class="btn btn-outline" onclick="runHealthCheck()" style="align-self:flex-start;">运行健康检查</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 强制修改密码弹窗（不可关闭） -->
+  <div class="force-pwd-overlay" id="forcePwdOverlay">
+    <div class="force-pwd-modal">
+      <h3>🔒 必须修改密码</h3>
+      <div class="sub">系统检测到当前密码存在安全风险，请立即修改密码后才能继续使用。此弹窗无法关闭。</div>
+      <div id="forcePwdAlert"></div>
+      <div class="field"><label>旧密码</label><input type="password" id="forceOldPwd" placeholder="当前密码"></div>
+      <div class="field"><label>新密码</label><input type="password" id="forceNewPwd" placeholder="至少 6 位"></div>
+      <div class="field"><label>确认新密码</label><input type="password" id="forceConfirmPwd" placeholder="再次输入新密码"></div>
+      <button class="btn btn-primary" id="forceChangeBtn" onclick="forceChangePassword()">确认修改并重新登录</button>
+    </div>
+  </div>
+
+  <!-- 修改密码弹窗 -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal">
+      <h3>修改管理员密码</h3>
+      <div id="pwdAlert"></div>
+      <div class="field"><label>旧密码</label><input type="password" id="adminOldPwd" placeholder="当前密码"></div>
+      <div class="field"><label>新密码</label><input type="password" id="adminNewPwd" placeholder="至少 6 位"></div>
+      <div class="field"><label>确认新密码</label><input type="password" id="adminConfirmPwd" placeholder="再次输入新密码"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closePasswordModal()">取消</button>
+        <button class="btn btn-primary" id="changePwdBtn" onclick="changePassword()">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 用户详情弹窗 -->
+  <div class="modal-overlay" id="userDetailModal">
+    <div class="modal">
+      <h3>用户详情</h3>
+      <div id="userDetailContent"><div style="text-align:center;color:var(--text2);padding:20px;">加载中...</div></div>
+    </div>
+  </div>
+
+  <!-- 设置套餐弹窗 -->
+  <div class="modal-overlay" id="setPlanModal">
+    <div class="modal">
+      <h3>设置用户套餐</h3>
+      <div id="setPlanAlert"></div>
+      <div id="setPlanUserInfo" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;"></div>
+      <div class="plan-select" id="planSelect">
+        <div class="plan-option" data-plan="free" onclick="selectPlan('free')">
+          <div class="plan-name">免费版</div>
+          <div class="plan-price">¥0</div>
+          <div class="plan-period">50次/月</div>
+        </div>
+        <div class="plan-option" data-plan="pro" onclick="selectPlan('pro')">
+          <div class="plan-name">专业版</div>
+          <div class="plan-price">¥<span id="modalProPrice">29</span></div>
+          <div class="plan-period">500次/月</div>
+        </div>
+        <div class="plan-option" data-plan="enterprise" onclick="selectPlan('enterprise')">
+          <div class="plan-name">企业版</div>
+          <div class="plan-price">¥<span id="modalEntPrice">99</span></div>
+          <div class="plan-period">无限</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>订阅周期</label>
+        <select id="planPeriod">
+          <option value="monthly">月付</option>
+          <option value="yearly">年付</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeSetPlanModal()">取消</button>
+        <button class="btn btn-primary" id="confirmPlanBtn" onclick="confirmSetPlan()">确认设置</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; }
+
+    // 非管理员自动跳转到用户仪表盘
+    var role = localStorage.getItem('role');
+    if (role && role !== 'admin') { window.location.href = '/dashboard'; }
+
+    // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
+    async function checkAppVersion() {
+      try {
+        var res = await fetch('/api/auth/version');
+        var data = await res.json();
+        if (data.ok && data.version) {
+          var stored = localStorage.getItem('app_version');
+          if (stored && stored !== data.version) {
+            localStorage.setItem('app_version', data.version);
+            // 通知 Service Worker 清理缓存
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+            }
+            window.location.reload(true);
+          } else if (!stored) {
+            localStorage.setItem('app_version', data.version);
+          }
+        }
+      } catch(e) {}
+    }
+    checkAppVersion();
+    setInterval(checkAppVersion, 5 * 60 * 1000);
+
+    // ===== Service Worker 注册 =====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
+    function authHeader() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+
+    // 统一 API 请求封装：自动处理 401/403 和单会话踢出
+    async function apiFetch(url, options) {
+      try {
+        var res = await fetch(url, options || { headers: authHeader() });
+        if (res.status === 401) {
+          var errData = null;
+          try { errData = await res.json(); } catch {}
+          var errMsg = (errData && errData.error) || '登录已过期，请重新登录';
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          if (errMsg.indexOf('其他设备') > -1) { alert(errMsg); }
+          window.location.href = '/login';
+          return null;
+        }
+        if (res.status === 403) {
+          window.location.href = '/dashboard';
+          return null;
+        }
+        return await res.json();
+      } catch (e) {
+        console.error('API 请求失败:', url, e);
+        return { ok: false, error: '网络请求失败: ' + (e.message || '未知错误') };
+      }
+    }
+    function showAlert(msg, ok) {
+      var el = document.getElementById('alert');
+      el.innerHTML = '<div class="alert ' + (ok ? 'alert-ok' : 'alert-err') + '">' + escapeHtml(msg) + '</div>';
+      setTimeout(function() { el.innerHTML = ''; }, 5000);
+    }
+    function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function formatSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/(1024*1024)).toFixed(1) + ' MB';
+    }
+    function planBadge(plan) {
+      var map = { free: 'plan-free', pro: 'plan-pro', enterprise: 'plan-enterprise' };
+      var names = { free: '免费版', pro: '专业版', enterprise: '企业版' };
+      return '<span class="plan-badge ' + (map[plan]||'plan-free') + '">' + (names[plan]||plan) + '</span>';
+    }
+
+    var allUsers = [];
+    var allHistory = [];
+    var setPlanUserId = null;
+    var selectedPlan = null;
+    var analyticsLoaded = false;
+
+    // ===== 数据分析 =====
+    async function loadAnalytics() {
+      if (analyticsLoaded) return;
+      try {
+        var data = await apiFetch('/api/admin/analytics');
+        if (!data) return;
+        if (data.ok && data.analytics) {
+          analyticsLoaded = true;
+          renderAnalytics(data.analytics);
+        } else {
+          renderAnalyticsEmpty();
+        }
+      } catch (e) {
+        renderAnalyticsEmpty();
+      }
+    }
+
+    function renderAnalyticsEmpty() {
+      ['anaLineChart','anaRepoChart','anaPieChart','anaFunnel','anaHeatmap'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="analytics-empty">暂无数据</div>';
+      });
+    }
+
+    function renderAnalytics(a) {
+      // 汇总卡片
+      document.getElementById('anaTotalUploads').textContent = a.summary.totalUploads || 0;
+      document.getElementById('anaTotalFiles').textContent = a.summary.totalFiles || 0;
+      document.getElementById('anaTotalSize').textContent = formatSize(a.summary.totalSize || 0);
+      document.getElementById('anaTotalUsers').textContent = a.summary.totalUsers || 0;
+
+      // 折线图
+      renderLineChart(a.trend || []);
+      // 仓库分布柱状图
+      renderRepoChart(a.topRepos || []);
+      // 套餐分布饼图
+      renderPieChart(a.planDistribution || {});
+      // 转化漏斗
+      renderFunnel(a.funnel || {});
+      // 热力图
+      renderHeatmap(a.activeHeatmap || []);
+    }
+
+    // SVG 折线图
+    function renderLineChart(trend) {
+      var wrap = document.getElementById('anaLineChart');
+      if (!trend || trend.length === 0) {
+        wrap.innerHTML = '<div class="analytics-empty">暂无数据</div>';
+        document.getElementById('anaTrendSummary').textContent = '';
+        return;
+      }
+      var W = 800, H = 240, padL = 40, padR = 16, padT = 16, padB = 32;
+      var innerW = W - padL - padR, innerH = H - padT - padB;
+      var maxVal = Math.max.apply(null, trend.map(function(t){return t.count||0;}));
+      if (maxVal === 0) maxVal = 1;
+      var stepX = innerW / Math.max(1, trend.length - 1);
+      var totalUploads = 0, totalFiles = 0;
+
+      var points = trend.map(function(t, i) {
+        totalUploads += (t.count||0); totalFiles += (t.files||0);
+        var x = padL + i * stepX;
+        var y = padT + innerH - ((t.count||0) / maxVal) * innerH;
+        return { x: x, y: y, count: t.count||0, files: t.files||0, date: t.date };
+      });
+
+      var linePath = points.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p.x + ' ' + p.y; }).join(' ');
+      var areaPath = linePath + ' L ' + points[points.length-1].x + ' ' + (padT + innerH) + ' L ' + points[0].x + ' ' + (padT + innerH) + ' Z';
+
+      // 网格线（4 条）
+      var gridLines = '';
+      for (var g = 0; g <= 4; g++) {
+        var gy = padT + (innerH / 4) * g;
+        var gval = Math.round(maxVal - (maxVal / 4) * g);
+        gridLines += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="3,3"/>';
+        gridLines += '<text x="' + (padL - 6) + '" y="' + (gy + 4) + '" text-anchor="end" fill="#6b7280" font-size="10">' + gval + '</text>';
+      }
+
+      // 数据点
+      var dots = points.map(function(p) {
+        var dateStr = new Date(p.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+        return '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" fill="#3b82f6" stroke="#fff" stroke-width="1.5"><title>' + dateStr + ': ' + p.count + '次 / ' + p.files + '文件</title></circle>';
+      }).join('');
+
+      // X 轴标签（每隔若干个显示）
+      var xLabels = '';
+      var labelStep = Math.ceil(trend.length / 6);
+      points.forEach(function(p, i) {
+        if (i % labelStep === 0 || i === points.length - 1) {
+          var dateStr = new Date(p.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+          xLabels += '<text x="' + p.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="#6b7280" font-size="10">' + dateStr + '</text>';
+        }
+      });
+
+      wrap.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+        gridLines +
+        '<path d="' + areaPath + '" fill="url(#lineGrad)" opacity="0.3"/>' +
+        '<defs><linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>' +
+        '<path d="' + linePath + '" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+        dots + xLabels +
+        '</svg>';
+      document.getElementById('anaTrendSummary').textContent = totalUploads + ' 次上传 / ' + totalFiles + ' 个文件';
+    }
+
+    // 仓库分布柱状图
+    function renderRepoChart(repos) {
+      var wrap = document.getElementById('anaRepoChart');
+      if (!repos || repos.length === 0) {
+        wrap.innerHTML = '<div class="analytics-empty">暂无数据</div>';
+        return;
+      }
+      var maxCount = Math.max.apply(null, repos.map(function(r){return r.count||0;}));
+      if (maxCount === 0) maxCount = 1;
+      wrap.innerHTML = repos.map(function(r) {
+        var pct = Math.round(((r.count||0) / maxCount) * 100);
+        return '<div class="bar-row">' +
+          '<div class="bar-label" title="' + escapeHtml(r.name||r.repo||'') + '">' + escapeHtml(r.name||r.repo||'-') + '</div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div>' +
+          '<div class="bar-value">' + (r.count||0) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // 套餐分布饼图（纯 SVG）
+    function renderPieChart(dist) {
+      var wrap = document.getElementById('anaPieChart');
+      var data = [
+        { name: '免费版', value: dist.free || 0, color: '#9ca3af' },
+        { name: '专业版', value: dist.pro || 0, color: '#3b82f6' },
+        { name: '企业版', value: dist.enterprise || 0, color: '#8b5cf6' }
+      ];
+      var total = data.reduce(function(s, d) { return s + d.value; }, 0);
+      if (total === 0) {
+        wrap.innerHTML = '<div class="analytics-empty">暂无数据</div>';
+        return;
+      }
+      var cx = 80, cy = 80, r = 70, startAngle = -Math.PI / 2;
+      var paths = '';
+      data.forEach(function(d) {
+        if (d.value === 0) return;
+        var angle = (d.value / total) * 2 * Math.PI;
+        var endAngle = startAngle + angle;
+        var x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+        var x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
+        var largeArc = angle > Math.PI ? 1 : 0;
+        paths += '<path d="M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + ' Z" fill="' + d.color + '" stroke="#fff" stroke-width="2"><title>' + d.name + ': ' + d.value + ' 人 (' + Math.round(d.value/total*100) + '%)</title></path>';
+        startAngle = endAngle;
+      });
+      var legend = data.map(function(d) {
+        var pct = total > 0 ? Math.round(d.value / total * 100) : 0;
+        return '<div class="pie-legend-item"><span class="pie-legend-dot" style="background:' + d.color + ';"></span><span>' + d.name + '</span><span style="color:var(--text2);font-size:12px;">(' + pct + '%)</span><span class="pie-legend-count">' + d.value + ' 人</span></div>';
+      }).join('');
+      wrap.innerHTML = '<div class="pie-chart"><svg width="160" height="160" viewBox="0 0 160 160">' + paths + '<circle cx="80" cy="80" r="32" fill="#fff"/></svg></div>' +
+        '<div class="pie-legend">' + legend + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:13px;color:var(--text2);">总计 <strong style="color:var(--text);">' + total + '</strong> 用户</div></div>';
+    }
+
+    // 转化漏斗
+    function renderFunnel(f) {
+      var wrap = document.getElementById('anaFunnel');
+      var totalUsers = f.totalUsers || 0;
+      var paidUsers = f.paidUsers || 0;
+      var rate = totalUsers > 0 ? (paidUsers / totalUsers * 100) : 0;
+      var steps = [
+        { label: '总用户数', num: totalUsers, pct: 100, barPct: 100 },
+        { label: '付费用户', num: paidUsers, pct: rate, barPct: totalUsers > 0 ? (paidUsers / totalUsers * 100) : 0 },
+        { label: '转化率', num: rate.toFixed(2) + '%', pct: rate, barPct: rate }
+      ];
+      wrap.innerHTML = steps.map(function(s, i) {
+        return '<div class="funnel-step ' + (i < 2 ? 'active' : '') + '">' +
+          '<div class="funnel-step-row"><span class="funnel-step-label">' + s.label + '</span><span class="funnel-step-num">' + s.num + '</span></div>' +
+          '<div class="funnel-step-pct">' + (i === 2 ? '付费转化比率' : '占总用户 ' + s.pct.toFixed(1) + '%') + '</div>' +
+          '<div class="funnel-bar"><div class="funnel-bar-fill" style="width:' + Math.max(s.barPct, 2) + '%;"></div></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // 活跃热力图
+    function renderHeatmap(heatmap) {
+      var wrap = document.getElementById('anaHeatmap');
+      if (!heatmap || heatmap.length === 0) {
+        wrap.innerHTML = '<div class="analytics-empty">暂无数据</div>';
+        document.getElementById('anaHeatSummary').textContent = '';
+        return;
+      }
+      var maxActive = Math.max.apply(null, heatmap.map(function(h){return h.active||0;}));
+      if (maxActive === 0) maxActive = 1;
+      var totalActive = 0;
+      var cells = heatmap.map(function(h) {
+        var v = h.active || 0;
+        totalActive += v;
+        var level = 0;
+        if (v > 0) {
+          var ratio = v / maxActive;
+          level = ratio > 0.75 ? 4 : ratio > 0.5 ? 3 : ratio > 0.25 ? 2 : 1;
+        }
+        var colors = ['#f3f4f6','#bfdbfe','#60a5fa','#3b82f6','#1d4ed8'];
+        var dateStr = new Date(h.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+        return '<div class="heatmap-cell" style="background:' + colors[level] + ';" data-tip="' + dateStr + ': ' + v + ' 人活跃"></div>';
+      }).join('');
+      wrap.innerHTML = cells;
+      document.getElementById('anaHeatSummary').textContent = '30 天累计活跃 ' + totalActive + ' 人次';
+    }
+
+    function switchTab(e, name) {
+      document.querySelectorAll('.tab-item').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+      e.target.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'analytics') loadAnalytics();
+    }
+
+    async function loadStats() {
+      try {
+        var data = await apiFetch('/api/admin/stats');
+        if (!data) return;
+        if (data.ok) {
+          var s = data.stats;
+          document.getElementById('statUsers').textContent = s.totalUsers;
+          document.getElementById('statUploads').textContent = s.totalUploads;
+          document.getElementById('statRepos').textContent = s.totalRepos;
+          document.getElementById('statFiles').textContent = s.totalFiles;
+          document.getElementById('statToday').textContent = s.todayUploads;
+          document.getElementById('statPaid').textContent = s.paidUsers || 0;
+          document.getElementById('statRevenue').textContent = (s.totalRevenue || 0).toFixed(2);
+          // 在线人数
+          if (data.onlineCount !== undefined) {
+            document.getElementById('statOnline').textContent = data.onlineCount;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 在线人数定时刷新
+    setInterval(loadStats, 60 * 1000);
+
+    async function loadTrend() {
+      try {
+        var data = await apiFetch('/api/admin/trend');
+        if (!data) return;
+        if (data.ok && data.trend.length > 0) {
+          var trend = data.trend;
+          var maxCount = Math.max.apply(null, trend.map(function(t) { return t.count; }));
+          if (maxCount === 0) maxCount = 1;
+          var totalUploads = 0, totalFiles = 0;
+          var html = trend.map(function(t) {
+            var h = Math.round((t.count / maxCount) * 100);
+            totalUploads += t.count; totalFiles += t.files;
+            var dateStr = new Date(t.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+            return '<div class="trend-bar" style="height:' + Math.max(h, 2) + '%;" data-label="' + dateStr + ': ' + t.count + '次/' + t.files + '文件"></div>';
+          }).join('');
+          document.getElementById('trendBars').innerHTML = html;
+          document.getElementById('trendStart').textContent = new Date(trend[0].date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+          document.getElementById('trendEnd').textContent = new Date(trend[trend.length - 1].date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+          document.getElementById('trendSummary').textContent = totalUploads + ' 次上传 / ' + totalFiles + ' 个文件';
+        } else {
+          document.getElementById('trendBars').innerHTML = '<div style="width:100%;text-align:center;color:var(--text2);font-size:13px;align-self:center;">暂无数据</div>';
+        }
+      } catch (e) {}
+    }
+
+    async function loadUsers() {
+      try {
+        var data = await apiFetch('/api/admin/users');
+        if (!data) return;
+        if (data.ok) { allUsers = data.users; renderUsers(allUsers); }
+      } catch (e) {}
+    }
+
+    function renderUsers(users) {
+      document.getElementById('userCount').textContent = '(' + users.length + ' 人)';
+      var tbody = document.getElementById('usersBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无用户</td></tr>';
+      } else {
+        tbody.innerHTML = users.map(function(u) {
+          var time = new Date(u.createdAt).toLocaleDateString('zh-CN');
+          var statusBadge = u.status === 'disabled'
+            ? '<span class="badge badge-red">已禁用</span>'
+            : '<span class="badge badge-green">正常</span>';
+          var toggleBtn = u.status === 'disabled'
+            ? '<button class="btn btn-outline btn-sm" onclick="toggleUserStatus(\'' + u.id + '\')">启用</button>'
+            : '<button class="btn btn-outline btn-sm" onclick="toggleUserStatus(\'' + u.id + '\')">禁用</button>';
+          return '<tr><td>' + escapeHtml(u.username) + '</td><td>' + escapeHtml(u.brandName||'-') + '</td><td>' + planBadge(u.plan) + '</td><td>' + statusBadge + '</td><td>' + time + '</td><td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="showUserDetail(\'' + u.id + '\')" style="margin-right:4px;">详情</button><button class="btn btn-blue btn-sm" onclick="openSetPlanModal(\'' + u.id + '\')" style="margin-right:4px;">套餐</button>' + toggleBtn + ' <button class="btn btn-red btn-sm" onclick="deleteUser(\'' + u.id + '\')">删除</button></td></tr>';
+        }).join('');
+      }
+    }
+
+    function filterUsers() {
+      var q = document.getElementById('userSearch').value.trim().toLowerCase();
+      if (!q) { renderUsers(allUsers); return; }
+      renderUsers(allUsers.filter(function(u) {
+        return (u.username||'').toLowerCase().indexOf(q) >= 0 || (u.brandName||'').toLowerCase().indexOf(q) >= 0;
+      }));
+    }
+
+    async function showUserDetail(id) {
+      document.getElementById('userDetailModal').classList.add('show');
+      document.getElementById('userDetailContent').innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">加载中...</div>';
+      try {
+        var data = await apiFetch('/api/admin/user-detail', { method: 'POST', headers: authHeader(), body: JSON.stringify({ userId: id }) });
+        if (!data) return;
+        if (data.ok) {
+          var u = data.user;
+          var s = u.stats;
+          var mu = u.monthlyUsage;
+          var usagePercent = mu.limit > 0 ? Math.min(100, Math.round((mu.uploads / mu.limit) * 100)) : 0;
+          var usageClass = usagePercent >= 100 ? 'full' : usagePercent >= 80 ? 'warn' : '';
+          var html = '<div class="detail-section">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+              '<div><h4 style="font-size:18px;font-weight:700;margin:0;">' + escapeHtml(u.username) + ' ' + planBadge(u.plan) + '</h4>' +
+              '<p style="font-size:13px;color:var(--text2);margin:4px 0 0;">品牌: ' + escapeHtml(u.brandName||'-') + ' · 注册于 ' + new Date(u.createdAt).toLocaleDateString('zh-CN') + '</p></div>' +
+              '<span class="badge ' + (u.status === 'disabled' ? 'badge-red' : 'badge-green') + '">' + (u.status === 'disabled' ? '已禁用' : '正常') + '</span>' +
+            '</div>' +
+            '<div class="detail-stats">' +
+              '<div class="detail-stat"><div class="num">' + s.uploadCount + '</div><div class="label">总上传次数</div></div>' +
+              '<div class="detail-stat"><div class="num">' + s.repoCount + '</div><div class="label">仓库数</div></div>' +
+              '<div class="detail-stat"><div class="num">' + s.totalFiles + '</div><div class="label">总文件数</div></div>' +
+              '<div class="detail-stat"><div class="num">' + formatSize(s.totalSize) + '</div><div class="label">总大小</div></div>' +
+            '</div>' +
+          '</div>';
+
+          // 当月用量
+          html += '<div class="detail-section"><h4>当月用量</h4>' +
+            '<div style="background:var(--bg);border-radius:8px;padding:14px;">' +
+              '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">' +
+                '<span>上传: ' + mu.uploads + ' / ' + (mu.limit === 0 ? '无限' : mu.limit) + ' 次</span>' +
+                '<span>文件: ' + mu.files + ' · 大小: ' + formatSize(mu.size) + '</span>' +
+              '</div>';
+          if (mu.limit > 0) {
+            html += '<div class="usage-bar"><div class="usage-fill ' + usageClass + '" style="width:' + usagePercent + '%;"></div></div>';
+          }
+          html += '</div></div>';
+
+          if (u.planExpiresAt) {
+            html += '<div class="detail-section"><h4>套餐到期</h4><p style="font-size:14px;">' + new Date(u.planExpiresAt).toLocaleString('zh-CN') + '</p></div>';
+          }
+
+          if (u.repos.length > 0) {
+            html += '<div class="detail-section"><h4>仓库配置 (' + u.repos.length + ')</h4><div class="table-wrap"><table><thead><tr><th>名称</th><th>仓库</th><th>分支</th></tr></thead><tbody>';
+            html += u.repos.map(function(r) { return '<tr><td>' + escapeHtml(r.name) + '</td><td>' + escapeHtml(r.repo) + '</td><td>' + escapeHtml(r.branch) + '</td></tr>'; }).join('');
+            html += '</tbody></table></div></div>';
+          }
+
+          if (u.recentHistory.length > 0) {
+            html += '<div class="detail-section"><h4>最近上传 (' + u.recentHistory.length + ')</h4><div class="table-wrap"><table><thead><tr><th>时间</th><th>文件名</th><th>文件数</th><th>状态</th></tr></thead><tbody>';
+            html += u.recentHistory.map(function(h) { return '<tr><td>' + new Date(h.time).toLocaleDateString('zh-CN') + '</td><td>' + escapeHtml(h.fileName||'-') + '</td><td>' + h.fileCount + '</td><td><span class="badge badge-green">' + escapeHtml(h.status) + '</span></td></tr>'; }).join('');
+            html += '</tbody></table></div></div>';
+          }
+
+          html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">';
+          html += '<button class="btn btn-blue btn-sm" onclick="closeUserDetail();openSetPlanModal(\'' + u.id + '\')">设置套餐</button>';
+          html += '<button class="btn btn-outline btn-sm" onclick="toggleUserStatus(\'' + u.id + '\', true)">' + (u.status === 'disabled' ? '启用' : '禁用') + '</button>';
+          html += '<button class="btn btn-red btn-sm" onclick="deleteUser(\'' + u.id + '\', true)">删除该用户</button>';
+          html += '</div>';
+
+          document.getElementById('userDetailContent').innerHTML = html;
+        } else {
+          document.getElementById('userDetailContent').innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('userDetailContent').innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;">加载失败</div>';
+      }
+    }
+
+    function closeUserDetail() { document.getElementById('userDetailModal').classList.remove('show'); }
+
+    async function toggleUserStatus(id, fromDetail) {
+      try {
+        var data = await apiFetch('/api/admin/toggle-user-status', { method: 'POST', headers: authHeader(), body: JSON.stringify({ userId: id }) });
+        if (!data) return;
+        if (data.ok) {
+          showAlert(data.message, true);
+          if (fromDetail) closeUserDetail();
+          loadUsers(); loadStats();
+        } else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function deleteUser(id, fromDetail) {
+      if (!confirm('确定删除该用户？此操作将删除其所有仓库和历史记录，不可恢复。')) return;
+      try {
+        var data = await apiFetch('/api/admin/delete-user', { method: 'POST', headers: authHeader(), body: JSON.stringify({ userId: id }) });
+        if (!data) return;
+        if (data.ok) {
+          showAlert('用户已删除', true);
+          if (fromDetail) closeUserDetail();
+          loadUsers(); loadStats(); loadTrend();
+        } else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 设置套餐 =====
+    function openSetPlanModal(id) {
+      setPlanUserId = id;
+      selectedPlan = null;
+      var u = allUsers.find(function(x) { return x.id === id; });
+      document.getElementById('setPlanUserInfo').innerHTML = u
+        ? '<strong>用户:</strong> ' + escapeHtml(u.username) + ' · 当前套餐: ' + planBadge(u.plan)
+        : '';
+      document.getElementById('setPlanAlert').innerHTML = '';
+      document.querySelectorAll('.plan-option').forEach(function(el) { el.classList.remove('selected'); });
+      document.getElementById('setPlanModal').classList.add('show');
+    }
+    function closeSetPlanModal() {
+      document.getElementById('setPlanModal').classList.remove('show');
+      setPlanUserId = null; selectedPlan = null;
+    }
+    function selectPlan(plan) {
+      selectedPlan = plan;
+      document.querySelectorAll('.plan-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.plan === plan);
+      });
+    }
+    async function confirmSetPlan() {
+      if (!setPlanUserId) return;
+      if (!selectedPlan) {
+        document.getElementById('setPlanAlert').innerHTML = '<div class="alert alert-err">请选择套餐</div>';
+        return;
+      }
+      var period = document.getElementById('planPeriod').value;
+      var btn = document.getElementById('confirmPlanBtn');
+      btn.disabled = true; btn.textContent = '设置中...';
+      try {
+        var data = await apiFetch('/api/admin/set-user-plan', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ userId: setPlanUserId, plan: selectedPlan, period: period })
+        });
+        if (!data) return;
+        if (data.ok) {
+          showAlert('套餐已设置', true);
+          closeSetPlanModal();
+          loadUsers(); loadStats();
+        } else {
+          document.getElementById('setPlanAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('setPlanAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '确认设置';
+    }
+
+    async function loadHistory() {
+      try {
+        var data = await apiFetch('/api/admin/history');
+        if (!data) return;
+        if (data.ok) { allHistory = data.records; renderHistory(allHistory); }
+      } catch (e) {}
+    }
+
+    function renderHistory(records) {
+      var tbody = document.getElementById('historyBody');
+      document.getElementById('historyCount').textContent = '(' + records.length + ' 条)';
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无记录</td></tr>';
+      } else {
+        tbody.innerHTML = records.map(function(r) {
+          var time = new Date(r.time).toLocaleString('zh-CN');
+          return '<tr><td>' + time + '</td><td>' + escapeHtml(r.username||'-') + '</td><td>' + escapeHtml(r.fileName||'-') + '</td><td>' + r.fileCount + '</td><td>' + escapeHtml(r.repo||'-') + '</td><td><span class="badge badge-green">' + escapeHtml(r.status) + '</span></td></tr>';
+        }).join('');
+      }
+    }
+
+    function filterHistory() {
+      var q = document.getElementById('historySearch').value.trim().toLowerCase();
+      if (!q) { renderHistory(allHistory); return; }
+      renderHistory(allHistory.filter(function(r) {
+        return (r.username||'').toLowerCase().indexOf(q) >= 0 || (r.fileName||'').toLowerCase().indexOf(q) >= 0;
+      }));
+    }
+
+    function exportUsers() {
+      if (allUsers.length === 0) { showAlert('暂无用户可导出', false); return; }
+      var csv = '\uFEFF用户名,品牌名,套餐,状态,注册时间\n';
+      csv += allUsers.map(function(u) {
+        return [u.username, u.brandName||'', u.plan||'free', u.status||'active', new Date(u.createdAt).toLocaleString('zh-CN')].join(',');
+      }).join('\n');
+      downloadCSV(csv, 'users.csv');
+    }
+
+    function exportHistory() {
+      if (allHistory.length === 0) { showAlert('暂无历史可导出', false); return; }
+      var csv = '\uFEFF时间,用户,文件名,文件数,大小,仓库,分支,状态\n';
+      csv += allHistory.map(function(r) {
+        return [new Date(r.time).toLocaleString('zh-CN'), r.username||'', r.fileName||'', r.fileCount, formatSize(r.size), r.repo||'', r.branch||'', r.status||''].join(',');
+      }).join('\n');
+      downloadCSV(csv, 'history.csv');
+    }
+
+    function downloadCSV(csv, filename) {
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    async function loadSettings() {
+      try {
+        var data = await apiFetch('/api/admin/settings');
+        if (!data) return;
+        if (data.ok) {
+          var s = data.settings;
+          document.getElementById('setSiteName').value = s.site_name || '';
+          document.getElementById('setUploadLimit').value = s.free_upload_limit || '50';
+          document.getElementById('setAnnouncement').value = s.announcement || '';
+          document.getElementById('setProPrice').value = s.pro_price || '29';
+          document.getElementById('setEntPrice').value = s.enterprise_price || '99';
+          document.getElementById('proPriceDisplay').textContent = s.pro_price || '29';
+          document.getElementById('entPriceDisplay').textContent = s.enterprise_price || '99';
+          document.getElementById('modalProPrice').textContent = s.pro_price || '29';
+          document.getElementById('modalEntPrice').textContent = s.enterprise_price || '99';
+          var toggle = document.getElementById('setAllowRegister');
+          if (s.allow_register !== 'false') toggle.classList.add('on');
+          else toggle.classList.remove('on');
+          // 收款码
+          document.getElementById('setAlipayQrcode').value = s.alipay_qrcode || '';
+          document.getElementById('setWechatQrcode').value = s.wechat_qrcode || '';
+          document.getElementById('setPaymentInstructions').value = s.payment_instructions || '';
+          loadPaymentQrcodes();
+          // OAuth 配置
+          document.getElementById('setOauthClientId').value = s.github_oauth_client_id || '';
+          document.getElementById('setOauthClientSecret').value = s.github_oauth_client_secret || '';
+        }
+      } catch (e) {}
+    }
+
+    function toggleRegister() { document.getElementById('setAllowRegister').classList.toggle('on'); }
+
+    // ===== 收款码管理 =====
+    function loadPaymentQrcodes() {
+      var alipay = document.getElementById('setAlipayQrcode').value.trim();
+      var wechat = document.getElementById('setWechatQrcode').value.trim();
+      document.getElementById('alipayPreview').innerHTML = alipay
+        ? '<img src="' + escapeHtml(alipay) + '" style="width:160px;height:160px;border:1px solid var(--border);border-radius:8px;">'
+        : '<span style="color:var(--text2);font-size:13px;">未设置</span>';
+      document.getElementById('wechatPreview').innerHTML = wechat
+        ? '<img src="' + escapeHtml(wechat) + '" style="width:160px;height:160px;border:1px solid var(--border);border-radius:8px;">'
+        : '<span style="color:var(--text2);font-size:13px;">未设置</span>';
+    }
+
+    async function savePaymentQrcodes() {
+      var body = {
+        alipay_qrcode: document.getElementById('setAlipayQrcode').value.trim(),
+        wechat_qrcode: document.getElementById('setWechatQrcode').value.trim(),
+        payment_instructions: document.getElementById('setPaymentInstructions').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) { showAlert('收款码已保存', true); loadPaymentQrcodes(); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    function uploadQrcode(type) {
+      var input = document.getElementById(type + 'File');
+      var file = input.files[0];
+      if (!file) return;
+      if (file.size > 1024 * 1024 * 2) { showAlert('图片不能超过 2MB', false); return; }
+      var reader = new FileReader();
+      reader.onload = function() {
+        var target = document.getElementById('set' + (type === 'alipay' ? 'Alipay' : 'Wechat') + 'Qrcode');
+        target.value = reader.result;
+        loadPaymentQrcodes();
+        showAlert(type === 'alipay' ? '支付宝收款码已上传，点击保存生效' : '微信收款码已上传，点击保存生效', true);
+      };
+      reader.onerror = function() { showAlert('读取图片失败', false); };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveSettings() {
+      var body = {
+        site_name: document.getElementById('setSiteName').value.trim(),
+        allow_register: document.getElementById('setAllowRegister').classList.contains('on') ? 'true' : 'false',
+        free_upload_limit: document.getElementById('setUploadLimit').value || '50',
+        announcement: document.getElementById('setAnnouncement').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('设置已保存', true);
+      else showAlert(data.error, false);
+    } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== GitHub OAuth 配置 =====
+    async function saveOauthConfig() {
+      var body = {
+        github_oauth_client_id: document.getElementById('setOauthClientId').value.trim(),
+        github_oauth_client_secret: document.getElementById('setOauthClientSecret').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('OAuth 配置已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function testOauthConfig() {
+      var resultEl = document.getElementById('oauthTestResult');
+      resultEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;font-size:14px;color:var(--text2);">正在测试...</div>';
+      try {
+        var data = await apiFetch('/api/oauth/auth-url');
+        if (!data) return;
+        if (data.ok && data.enabled) {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:14px;color:#059669;">✅ OAuth 已配置，可以使用 GitHub 授权登录<br><br>授权链接：<a href="' + escapeHtml(data.authUrl) + '" target="_blank" style="color:var(--blue);word-break:break-all;">点击测试 GitHub 授权</a></div>';
+        } else if (data.ok && !data.enabled) {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;font-size:14px;color:#ea580c;">⚠️ OAuth 未配置，请先填写 Client ID 和 Secret 并保存</div>';
+        } else {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">' + escapeHtml(data.error || '测试失败') + '</div>';
+        }
+      } catch (e) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';
+      }
+    }
+
+    async function savePlanSettings() {
+      var body = {
+        pro_price: document.getElementById('setProPrice').value || '29',
+        enterprise_price: document.getElementById('setEntPrice').value || '99'
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) {
+          showAlert('套餐配置已保存', true);
+          document.getElementById('proPriceDisplay').textContent = body.pro_price;
+          document.getElementById('entPriceDisplay').textContent = body.enterprise_price;
+          document.getElementById('modalProPrice').textContent = body.pro_price;
+          document.getElementById('modalEntPrice').textContent = body.enterprise_price;
+        } else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 强制修改密码 =====
+    function showForcePwdModal() {
+      document.getElementById('forceOldPwd').value = '';
+      document.getElementById('forceNewPwd').value = '';
+      document.getElementById('forceConfirmPwd').value = '';
+      document.getElementById('forcePwdAlert').innerHTML = '';
+      document.getElementById('forcePwdOverlay').classList.add('show');
+    }
+
+    async function forceChangePassword() {
+      var oldPwd = document.getElementById('forceOldPwd').value;
+      var newPwd = document.getElementById('forceNewPwd').value;
+      var confirmPwd = document.getElementById('forceConfirmPwd').value;
+      var alertEl = document.getElementById('forcePwdAlert');
+      if (!oldPwd || !newPwd) { alertEl.innerHTML = '<div class="alert alert-err">请填写旧密码和新密码</div>'; return; }
+      if (newPwd !== confirmPwd) { alertEl.innerHTML = '<div class="alert alert-err">两次输入的新密码不一致</div>'; return; }
+      if (newPwd.length < 6) { alertEl.innerHTML = '<div class="alert alert-err">新密码至少 6 位</div>'; return; }
+      var btn = document.getElementById('forceChangeBtn');
+      btn.disabled = true; btn.textContent = '修改中...';
+      try {
+        var data = await apiFetch('/api/admin/change-password', { method: 'POST', headers: authHeader(), body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd }) });
+        if (!data) return;
+        if (data.ok) {
+          alertEl.innerHTML = '<div class="alert alert-ok">密码修改成功，即将跳转到登录页...</div>';
+          setTimeout(function() { logout(); }, 2000);
+        } else {
+          alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) { alertEl.innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '确认修改并重新登录';
+    }
+
+    // 检查是否需要强制修改密码
+    function checkNeedChangePassword() {
+      var need = localStorage.getItem('needChangePassword');
+      if (need === 'true') {
+        showForcePwdModal();
+        localStorage.removeItem('needChangePassword');
+      }
+    }
+
+    function openPasswordModal() {
+      document.getElementById('adminOldPwd').value = '';
+      document.getElementById('adminNewPwd').value = '';
+      document.getElementById('adminConfirmPwd').value = '';
+      document.getElementById('pwdAlert').innerHTML = '';
+      document.getElementById('passwordModal').classList.add('show');
+    }
+    function closePasswordModal() { document.getElementById('passwordModal').classList.remove('show'); }
+    async function changePassword() {
+      var oldPwd = document.getElementById('adminOldPwd').value;
+      var newPwd = document.getElementById('adminNewPwd').value;
+      var confirmPwd = document.getElementById('adminConfirmPwd').value;
+      var alertEl = document.getElementById('pwdAlert');
+      if (!oldPwd || !newPwd) { alertEl.innerHTML = '<div class="alert alert-err">请填写旧密码和新密码</div>'; return; }
+      if (newPwd !== confirmPwd) { alertEl.innerHTML = '<div class="alert alert-err">两次输入的新密码不一致</div>'; return; }
+      if (newPwd.length < 6) { alertEl.innerHTML = '<div class="alert alert-err">新密码至少 6 位</div>'; return; }
+      var btn = document.getElementById('changePwdBtn');
+      btn.disabled = true; btn.textContent = '修改中...';
+      try {
+        var data = await apiFetch('/api/admin/change-password', { method: 'POST', headers: authHeader(), body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd }) });
+        if (!data) return;
+        if (data.ok) {
+          closePasswordModal();
+          showAlert('密码已修改，请重新登录', true);
+          setTimeout(function() { logout(); }, 2000);
+        } else {
+          alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) { alertEl.innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '确认修改';
+    }
+
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('role'); window.location.href = '/login'; }
+
+    // ===== 版本管理 =====
+    async function loadCurrentVersion() {
+      var data = await apiFetch('/api/admin/version');
+      if (data && data.ok) {
+        document.getElementById('currentVersionDisplay').textContent = data.version;
+        document.getElementById('newVersionInput').placeholder = data.version;
+      }
+    }
+
+    async function updateVersion() {
+      var newVersion = document.getElementById('newVersionInput').value.trim();
+      if (!newVersion) { showAlert('请输入新版本号', false); return; }
+      var data = await apiFetch('/api/admin/version', {
+        method: 'POST',
+        headers: authHeader(),
+        body: JSON.stringify({ version: newVersion })
+      });
+      if (data && data.ok) {
+        showAlert('版本号已更新为 ' + newVersion + '，所有用户下次访问将自动刷新', true);
+        document.getElementById('currentVersionDisplay').textContent = newVersion;
+        document.getElementById('newVersionInput').value = '';
+        localStorage.setItem('app_version', newVersion);
+      } else {
+        showAlert((data && data.error) || '更新失败', false);
+      }
+    }
+
+    // ===== 系统健康检查 =====
+    async function runHealthCheck() {
+      var container = document.getElementById('healthCheckResult');
+      container.innerHTML = '<p style="color:var(--text2);">正在检查...</p>';
+      var data = await apiFetch('/api/admin/health');
+      if (!data || !data.ok) {
+        container.innerHTML = '<div class="alert alert-err">健康检查失败: ' + escapeHtml((data && data.error) || '未知错误') + '</div>';
+        return;
+      }
+      var html = '<div style="display:grid;gap:12px;">';
+      // 数据库状态
+      var dbOk = data.db && data.db.ok;
+      html += '<div style="padding:12px;border-radius:8px;background:' + (dbOk ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)') + ';border:1px solid ' + (dbOk ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)') + ';">';
+      html += '<strong>数据库连接</strong>: ' + (dbOk ? '<span style="color:#10b981;">正常</span>' : '<span style="color:#ef4444;">异常</span>');
+      if (!dbOk) html += '<br><span style="font-size:13px;color:var(--text2);">' + escapeHtml(data.db.error || '') + '</span>';
+      html += '</div>';
+      // 环境变量
+      var env = data.env || {};
+      html += '<div style="padding:12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">';
+      html += '<strong>环境变量检查</strong><br>';
+      html += '<span style="font-size:13px;">数据库 URL: ' + (env.hasDbUrl ? '<span style="color:#10b981;">已配置</span>' : '<span style="color:#ef4444;">未配置</span>') + '</span><br>';
+      html += '<span style="font-size:13px;">JWT 密钥: ' + (env.hasJwtSecret ? '<span style="color:#10b981;">已配置</span>' : '<span style="color:#f59e0b;">未配置（使用数据库自动生成）</span>') + '</span><br>';
+      html += '<span style="font-size:13px;">Node.js 版本: ' + escapeHtml(env.nodeVersion) + '</span><br>';
+      html += '<span style="font-size:13px;">Vercel 区域: ' + escapeHtml(env.vercelRegion) + '</span>';
+      html += '</div>';
+      // 系统配置
+      var settings = data.settings || {};
+      html += '<div style="padding:12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">';
+      html += '<strong>系统配置</strong><br>';
+      html += '<span style="font-size:13px;">站点名称: ' + escapeHtml(settings.siteName || '') + '</span><br>';
+      html += '<span style="font-size:13px;">允许注册: ' + (settings.allowRegister ? '是' : '否') + '</span><br>';
+      html += '<span style="font-size:13px;">当前版本: ' + escapeHtml(settings.appVersion || '') + '</span>';
+      html += '</div>';
+      html += '</div>';
+      html += '<button class="btn btn-outline" onclick="runHealthCheck()" style="margin-top:12px;align-self:flex-start;">重新检查</button>';
+      container.innerHTML = html;
+    }
+
+    // ===== 第二阶段：订单管理 =====
+    async function loadOrders() {
+      try {
+        var data = await apiFetch('/api/admin/orders');
+        if (!data) return;
+        if (data.ok) {
+          var orders = data.orders || [];
+          document.getElementById('orderCount').textContent = '(' + orders.length + ' 条)';
+          var tbody = document.getElementById('ordersBody');
+          if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty-state">暂无订单</td></tr>';
+          } else {
+            tbody.innerHTML = orders.map(function(o) {
+              var time = new Date(o.createdAt).toLocaleString('zh-CN');
+              var planName = { free: '免费版', pro: '专业版', enterprise: '企业版' }[o.plan] || o.plan;
+              var periodText = o.period === 'yearly' ? '年付' : '月付';
+              var statusBadge = o.status === 'paid' ? '<span class="badge badge-green">已开通</span>' :
+                               o.status === 'paid_pending' ? '<span class="badge badge-yellow">待确认</span>' :
+                               o.status === 'pending' ? '<span class="badge badge-gray">待支付</span>' :
+                               '<span class="badge badge-gray">' + escapeHtml(o.status) + '</span>';
+              var noteDisplay = o.paymentNote ? '<span style="color:var(--blue);font-weight:600;">' + escapeHtml(o.paymentNote) + '</span>' : '<span style="color:var(--text2);">-</span>';
+              var actionBtn = (o.status === 'pending' || o.status === 'paid_pending')
+                ? '<button class="btn btn-primary btn-sm" onclick="confirmOrder(' + o.id + ')">确认开通</button>'
+                : '-';
+              return '<tr><td style="font-family:monospace;font-size:12px;">' + escapeHtml(o.orderNo) + '</td><td>' + escapeHtml(o.username) + '</td><td>' + planName + '</td><td>¥' + o.amount + '</td><td>' + periodText + '</td><td>' + noteDisplay + '</td><td>' + statusBadge + '</td><td>' + time + '</td><td>' + actionBtn + '</td></tr>';
+            }).join('');
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function confirmOrder(orderId) {
+      if (!confirm('确认此订单已支付？确认后将自动为用户开通对应套餐。')) return;
+      try {
+        var data = await apiFetch('/api/admin/confirm-order', { method: 'POST', headers: authHeader(), body: JSON.stringify({ orderId: orderId }) });
+        if (!data) return;
+        if (data.ok) {
+          showAlert(data.message, true);
+          loadOrders(); loadStats(); loadUsers();
+        } else {
+          showAlert(data.error, false);
+        }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 清除未支付订单 =====
+    async function clearPendingOrders() {
+      if (!confirm('确定清除所有未支付订单（包括待支付和待确认）？此操作不可恢复。')) return;
+      try {
+        var data = await apiFetch('/api/admin/clear-pending-orders', { method: 'POST', headers: authHeader() });
+        if (!data) return;
+        if (data.ok) { showAlert(data.message, true); loadOrders(); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 第二阶段：通知广播 =====
+    async function sendBroadcast() {
+      var title = document.getElementById('broadcastTitle').value.trim();
+      var content = document.getElementById('broadcastContent').value.trim();
+      var type = document.getElementById('broadcastType').value;
+      if (!title) { showAlert('请输入通知标题', false); return; }
+      var btn = document.getElementById('broadcastBtn');
+      btn.disabled = true; btn.textContent = '发送中...';
+      try {
+        var data = await apiFetch('/api/admin/broadcast', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ title: title, content: content, type: type })
+        });
+        if (!data) return;
+        if (data.ok) {
+          showAlert(data.message, true);
+          document.getElementById('broadcastTitle').value = '';
+          document.getElementById('broadcastContent').value = '';
+        } else {
+          showAlert(data.error, false);
+        }
+      } catch (e) { showAlert('网络错误', false); }
+      btn.disabled = false; btn.textContent = '发送通知';
+    }
+
+    document.getElementById('passwordModal').addEventListener('click', function(e) { if (e.target === this) closePasswordModal(); });
+    document.getElementById('userDetailModal').addEventListener('click', function(e) { if (e.target === this) closeUserDetail(); });
+    document.getElementById('setPlanModal').addEventListener('click', function(e) { if (e.target === this) closeSetPlanModal(); });
+
+    loadStats();
+    loadTrend();
+    loadUsers();
+    loadHistory();
+    loadSettings();
+    loadOrders();
+    loadCurrentVersion();
+    checkNeedChangePassword();
+    // 显示 OAuth 回调 URL
+    document.getElementById('oauthCallbackHint').textContent = window.location.origin + '/api/oauth/callback';
+  </script>
+</body>
+</html>

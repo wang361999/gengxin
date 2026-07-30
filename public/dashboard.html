@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仪表盘 - GitUpload</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .mini-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .mini-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+    .mini-stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .mini-stat-info .num { font-size: 22px; font-weight: 800; line-height: 1.2; }
+    .mini-stat-info .label { font-size: 12px; color: var(--text2); }
+    .icon-blue { background: rgba(59,130,246,0.1); }
+    .icon-green { background: rgba(16,185,129,0.1); }
+    .icon-purple { background: rgba(139,92,246,0.1); }
+    .icon-orange { background: rgba(249,115,22,0.1); }
+    .repo-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; }
+    .repo-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .repo-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .repo-card-title { font-weight: 600; font-size: 15px; }
+    .repo-card-meta { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+    .repo-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .token-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #d1fae5; color: #065f46; margin-left: 8px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 28px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { margin-bottom: 20px; }
+    .btn-sm { padding: 4px 12px; font-size: 13px; border-radius: 6px; }
+    .empty-state { text-align: center; padding: 32px; color: var(--text2); }
+    .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+    .section-title h3 { margin: 0; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .upload-zone:hover { border-color: var(--blue); background: rgba(59,130,246,0.02); }
+    .upload-zone.dragover { border-color: var(--blue); background: rgba(59,130,246,0.05); }
+    .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-zone .upload-text { font-size: 14px; color: var(--text2); }
+    .upload-zone .upload-file { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 8px; }
+    .progress-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+    .progress-bar.show { display: block; }
+    .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width 0.3s; }
+    .danger-zone { border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 20px; margin-top: 20px; }
+    .danger-zone h3 { color: var(--red); margin-bottom: 12px; }
+    .commit-link { color: var(--blue); font-family: monospace; font-size: 12px; }
+
+    /* ===== 上传结果弹窗 ===== */
+    .result-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; opacity: 0; transition: opacity 0.25s; }
+    .result-overlay.show { display: flex; opacity: 1; }
+    .result-modal { background: #fff; border-radius: 20px; width: 90%; max-width: 420px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.2); transform: scale(0.9) translateY(10px); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+    .result-overlay.show .result-modal { transform: scale(1) translateY(0); }
+    .result-icon-wrap { width: 72px; height: 72px; border-radius: 50%; margin: 32px auto 0; display: flex; align-items: center; justify-content: center; font-size: 34px; animation: resultPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+    .result-icon-ok { background: linear-gradient(135deg,#d1fae5,#a7f3d0); color: #059669; box-shadow: 0 8px 24px rgba(16,185,129,0.2); }
+    .result-icon-err { background: linear-gradient(135deg,#fef2f2,#fecaca); color: #dc2626; box-shadow: 0 8px 24px rgba(239,68,68,0.2); }
+    .result-icon-info { background: linear-gradient(135deg,#dbeafe,#bfdbfe); color: #2563eb; box-shadow: 0 8px 24px rgba(59,130,246,0.2); }
+    @keyframes resultPop { 0% { transform: scale(0) rotate(-30deg); } 100% { transform: scale(1) rotate(0); } }
+    .result-title { text-align: center; font-size: 20px; font-weight: 700; margin: 16px 0 6px; }
+    .result-message { text-align: center; font-size: 14px; color: var(--text2); padding: 0 28px; line-height: 1.6; }
+    .result-details { margin: 20px 28px; background: var(--bg); border-radius: 12px; padding: 16px; }
+    .result-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+    .result-detail-row + .result-detail-row { border-top: 1px solid var(--border); }
+    .result-detail-label { color: var(--text2); }
+    .result-detail-value { font-weight: 600; font-family: monospace; font-size: 12px; }
+    .result-actions { padding: 0 28px 28px; }
+    .result-btn { width: 100%; padding: 12px; border-radius: 10px; font-size: 15px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+    .result-btn-ok { background: linear-gradient(135deg,#111827,#374151); color: #fff; }
+    .result-btn-ok:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(17,24,39,0.3); }
+    .result-btn-err { background: linear-gradient(135deg,#fef2f2,#fee2e2); color: #dc2626; border: 1px solid #fecaca; }
+    .result-btn-err:hover { background: #fecaca; }
+    .result-confetti { position: absolute; width: 8px; height: 8px; pointer-events: none; animation: confettiFall 1.2s ease-out forwards; }
+    @keyframes confettiFall { 0% { transform: translateY(-40px) rotate(0); opacity: 1; } 100% { transform: translateY(120px) rotate(360deg); opacity: 0; } }
+    .table-wrap { overflow-x: auto; }
+
+    /* 套餐卡片 */
+    .plan-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 14px; padding: 24px; color: #fff; margin-bottom: 24px; }
+    .plan-card.free { background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); }
+    .plan-card.pro { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+    .plan-card.enterprise { background: linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%); }
+    .plan-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+    .plan-card-title { font-size: 20px; font-weight: 800; }
+    .plan-card-price { font-size: 14px; opacity: 0.9; }
+    .plan-card-price strong { font-size: 28px; font-weight: 800; }
+    .usage-info { background: rgba(255,255,255,0.15); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+    .usage-info-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+    .usage-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+    .usage-bar-fill { height: 100%; background: #fff; border-radius: 4px; transition: width 0.3s; }
+    .plan-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .plan-actions .btn { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+    .plan-actions .btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* 文件预览列表 */
+    .file-preview-list { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+    .file-preview-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .file-preview-item:last-child { border-bottom: none; }
+    .file-preview-item .file-path { font-family: monospace; color: var(--text); word-break: break-all; }
+    .file-preview-item .file-size { color: var(--text2); white-space: nowrap; margin-left: 12px; }
+
+    /* 升级套餐弹窗 */
+    .upgrade-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .upgrade-plan { border: 2px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+    .upgrade-plan:hover { border-color: var(--blue); }
+    .upgrade-plan.selected { border-color: var(--blue); background: rgba(59,130,246,0.05); }
+    .upgrade-plan.current { border-color: var(--green); }
+    .upgrade-plan .plan-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .upgrade-plan .plan-price { font-size: 22px; font-weight: 800; color: var(--blue); }
+    .upgrade-plan .plan-price small { font-size: 12px; font-weight: 400; color: var(--text2); }
+    .upgrade-plan .plan-features { font-size: 12px; color: var(--text2); margin-top: 8px; text-align: left; padding-left: 12px; line-height: 1.6; }
+    .upgrade-plan .current-tag { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--green); color: #fff; font-size: 11px; padding: 2px 10px; border-radius: 10px; }
+
+    /* 批量上传仓库多选 */
+    .batch-repo-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: none; }
+    .batch-repo-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; cursor: pointer; font-size: 14px; }
+    .batch-repo-item:hover { background: rgba(59,130,246,0.03); }
+    .batch-repo-item input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; }
+
+    /* Webhook 区块 */
+    .webhook-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .webhook-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .webhook-info { flex: 1; min-width: 200px; }
+    .webhook-platform { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #dbeafe; color: #1e40af; margin-right: 8px; }
+    .webhook-url { font-family: monospace; font-size: 13px; word-break: break-all; }
+    .webhook-events { font-size: 12px; color: var(--text2); margin-top: 4px; }
+    .webhook-actions { display: flex; gap: 6px; }
+
+    /* OAuth 仓库导入 */
+    .oauth-repo-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .oauth-repo-item:last-child { border-bottom: none; }
+    .oauth-repo-name { font-weight: 600; }
+    .oauth-repo-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    @media (max-width: 768px) {
+      .mini-stats { grid-template-columns: repeat(2, 1fr); }
+      .upgrade-plans { grid-template-columns: 1fr; }
+      .modal { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-brand">
+      <a href="/" style="color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65S8.93 17.38 9 18v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+        GitUpload
+      </a>
+    </div>
+    <div class="nav-links">
+      <a href="javascript:void(0)" id="adminLink" onclick="goAdmin()" style="display:none;color:var(--blue);font-weight:600;">后台管理</a>
+      <span id="brandLabel" style="color:var(--text2);font-size:14px;"></span>
+      <a href="javascript:void(0)" onclick="logout()">退出</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="alert"></div>
+
+    <!-- 公告 -->
+    <div id="announcementBox" style="display:none;background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px;color:#1e40af;display:flex;align-items:center;gap:8px;">
+      <span>📢</span><span id="announcementText"></span>
+    </div>
+
+    <!-- 套餐状态卡片 -->
+    <div class="plan-card free" id="planCard">
+      <div class="plan-card-header">
+        <div>
+          <div class="plan-card-title" id="planTitle">免费版</div>
+          <div style="font-size:13px;opacity:0.8;margin-top:4px;" id="planSubtitle">每月 50 次上传</div>
+        </div>
+        <div class="plan-card-price" id="planPriceDisplay">
+          <strong>¥0</strong> /月
+        </div>
+      </div>
+      <div class="usage-info">
+        <div class="usage-info-row">
+          <span>本月已用</span>
+          <span id="planUsage">- / -</span>
+        </div>
+        <div class="usage-bar-bg">
+          <div class="usage-bar-fill" id="planUsageBar" style="width:0%;"></div>
+        </div>
+      </div>
+      <div class="plan-actions">
+        <button class="btn" onclick="openUpgradeModal()">升级套餐</button>
+        <button class="btn" onclick="loadPlanDetail()">刷新用量</button>
+      </div>
+    </div>
+
+    <!-- 用户统计 -->
+    <div class="mini-stats" id="miniStats">
+      <div class="mini-stat-card"><div class="mini-stat-icon icon-blue">📤</div><div class="mini-stat-info"><div class="num" id="myUploads">-</div><div class="label">上传次数</div></div></div>
+      <div class="mini-stat-card"><div class="mini-stat-icon icon-green">🔗</div><div class="mini-stat-info"><div class="num" id="myRepos">-</div><div class="label">仓库数</div></div></div>
+      <div class="mini-stat-card"><div class="mini-stat-icon icon-purple">📦</div><div class="mini-stat-info"><div class="num" id="myFiles">-</div><div class="label">总文件数</div></div></div>
+      <div class="mini-stat-card"><div class="mini-stat-icon icon-orange">💾</div><div class="mini-stat-info"><div class="num" id="mySize">-</div><div class="label">总大小</div></div></div>
+      <div class="mini-stat-card"><div class="mini-stat-icon" style="background:rgba(34,197,94,0.1);color:#16a34a;">👥</div><div class="mini-stat-info"><div class="num" id="onlineCountBadge" style="color:#16a34a;">-</div><div class="label">在线人数</div></div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3 style="margin-bottom:16px;">品牌设置</h3>
+        <div class="field"><label>品牌名称</label><input type="text" id="brandName" placeholder="你的品牌名"></div>
+        <div class="field"><label>主题色</label><input type="color" id="brandColor" value="#111827" style="height:42px;padding:4px;"></div>
+        <button class="btn btn-blue" onclick="saveBrand()">保存品牌</button>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:16px;">修改密码</h3>
+        <div class="field"><label>旧密码</label><input type="password" id="oldPassword" placeholder="当前密码"></div>
+        <div class="field"><label>新密码</label><input type="password" id="newPassword" placeholder="至少 6 位"></div>
+        <button class="btn btn-outline" onclick="changePassword()">修改密码</button>
+      </div>
+    </div>
+
+    <!-- GitHub 仓库配置 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>GitHub 仓库配置</h3>
+        <button class="btn btn-primary btn-sm" onclick="openRepoModal()">+ 添加仓库</button>
+      </div>
+      <div id="repoList"><div class="empty-state">加载中...</div></div>
+    </div>
+
+    <!-- 上传压缩包 -->
+    <div class="card">
+      <h3 style="margin-bottom:16px;">上传压缩包到 GitHub</h3>
+      <div class="field">
+        <label>选择目标仓库</label>
+        <select id="uploadRepoSelect"><option value="">请先添加仓库</option></select>
+        <div style="margin-top:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="batchUploadCheckbox" onchange="toggleBatchUpload()"> 批量上传（同时推送到多个仓库）
+          </label>
+        </div>
+        <div class="batch-repo-list" id="batchRepoList"></div>
+      </div>
+      <div class="field">
+        <label>Commit Message（可选）</label>
+        <input type="text" id="commitMsgInput" placeholder="支持变量: {count} {date} {filename} {repo}，留空使用默认">
+        <div class="hint">留空则后端自动生成，例如：{count} 文件 · {filename}</div>
+      </div>
+      <div class="field">
+        <label>选择压缩包文件</label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('zipFile').click()">
+          <div class="upload-icon">📦</div>
+          <div class="upload-text">点击选择或拖拽文件到此处</div>
+          <div class="upload-file" id="uploadFileName"></div>
+        </div>
+        <input type="file" id="zipFile" accept=".zip,.tar,.gz,.tgz,.tar.gz" style="display:none;" onchange="onFileSelected(this)">
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-outline btn-sm" id="previewBtn" onclick="previewZip()" style="display:none;">预览文件</button>
+        </div>
+        <div class="hint" id="uploadHint">支持 ZIP、TAR、TAR.GZ、TGZ 格式，文件不超过 2000 个，大小不超过 10MB</div>
+        <div id="previewResult" style="display:none;margin-top:8px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;" id="previewSummary"></div>
+          <div class="file-preview-list" id="previewFileList"></div>
+        </div>
+        <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div id="uploadStatusText" style="font-size:13px;color:var(--text2);margin-top:8px;display:none;"></div>
+      </div>
+      <button class="btn btn-primary" id="uploadBtn" onclick="uploadZip()">上传到 GitHub</button>
+    </div>
+
+    <!-- 数据统计图表 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>数据统计</h3>
+        <button class="btn btn-outline btn-sm" onclick="loadChartData()">刷新</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div>
+          <h4 style="font-size:14px;margin-bottom:8px;">上传趋势（30天）</h4>
+          <canvas id="trendChart" style="max-height:200px;"></canvas>
+        </div>
+        <div>
+          <h4 style="font-size:14px;margin-bottom:8px;">仓库使用分布</h4>
+          <canvas id="repoDistChart" style="max-height:200px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上传模板 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>上传模板</h3>
+        <button class="btn btn-primary btn-sm" onclick="openTemplateModal()">+ 保存模板</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">保存常用的仓库+目录+commit 配置，下次上传时一键复用。</p>
+      <div id="templateList"><div class="empty-state">暂无模板</div></div>
+    </div>
+
+    <!-- 定时上传任务 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>定时上传任务</h3>
+        <button class="btn btn-primary btn-sm" onclick="openScheduleModal()">+ 创建任务</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">设定时间自动推送指定文件到仓库，适合定期备份场景。</p>
+      <div id="scheduleList"><div class="empty-state">暂无定时任务</div></div>
+    </div>
+
+    <!-- 邮件通知 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>邮件通知</h3>
+        <button class="btn btn-outline btn-sm" onclick="loadEmailConfig()">配置</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">上传成功/失败时自动发送邮件通知，无需配置第三方平台。</p>
+      <div id="emailNotifyStatus"><div class="empty-state">加载中...</div></div>
+    </div>
+
+    <!-- 上传历史 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>上传历史</h3>
+        <button class="btn btn-outline btn-sm" id="clearHistoryBtn" onclick="clearHistory()" style="display:none;">清除历史</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>文件名</th><th>文件数</th><th>仓库</th><th>状态</th><th>Commit</th></tr></thead>
+          <tbody id="historyBody"><tr><td colspan="6" style="text-align:center;color:var(--text2);">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 危险操作区 -->
+    <div class="danger-zone">
+      <h3>危险操作</h3>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:12px;">注销账号将永久删除你的所有数据，包括仓库配置和上传历史，此操作不可恢复。</p>
+      <button class="btn btn-red btn-sm" onclick="openDeleteModal()">注销账号</button>
+    </div>
+
+    <!-- 第二阶段：我的订单 -->
+    <div class="card">
+      <h3 style="margin-bottom:16px;">我的订单</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>订单号</th><th>套餐</th><th>金额</th><th>周期</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+          <tbody id="ordersBody"><tr><td colspan="7" style="text-align:center;color:var(--text2);">暂无订单</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 第三阶段：团队协作 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>团队协作 <span style="font-size:13px;color:var(--text2);font-weight:400;">(企业版功能)</span></h3>
+        <button class="btn btn-primary btn-sm" onclick="openTeamModal()" id="createTeamBtn">+ 创建团队</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">创建团队、邀请成员、共享仓库，团队成员可共同管理项目。仅企业版可用。</p>
+      <div id="teamList"><div class="empty-state">加载中...</div></div>
+    </div>
+
+    <!-- 第二阶段：API 密钥 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>API 密钥 <span style="font-size:13px;color:var(--text2);font-weight:400;">(企业版功能)</span></h3>
+        <button class="btn btn-primary btn-sm" onclick="openApiKeyModal()">+ 创建密钥</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">使用 API 密钥可以通过编程方式上传文件，无需登录网页。仅企业版可用。</p>
+      <div id="apiKeysList"><div class="empty-state">暂无 API 密钥</div></div>
+    </div>
+
+    <!-- Webhook 配置 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>Webhook 配置</h3>
+        <button class="btn btn-outline btn-sm" onclick="toggleWebhookForm()">+ 添加 Webhook</button>
+      </div>
+      <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">在上传成功/失败等事件发生时，自动通知到飞书、钉钉、企业微信、Discord 等平台。</p>
+      <div id="webhookList"><div class="empty-state">暂无 Webhook 配置</div></div>
+
+      <!-- 添加 Webhook 表单 -->
+      <div id="webhookForm" style="display:none;margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div id="webhookFormAlert"></div>
+        <div class="field"><label>Webhook URL</label><input type="text" id="webhookUrl" placeholder="https://oapi.dingtalk.com/robot/send?access_token=xxx"></div>
+        <div class="grid2">
+          <div class="field"><label>平台</label>
+            <select id="webhookPlatform">
+              <option value="feishu">飞书</option>
+              <option value="dingtalk">钉钉</option>
+              <option value="wecom">企业微信</option>
+              <option value="discord">Discord</option>
+              <option value="custom">自定义</option>
+            </select>
+          </div>
+          <div class="field"><label>密钥（可选）</label><input type="text" id="webhookSecret" placeholder="用于签名校验"></div>
+        </div>
+        <div class="field"><label>事件类型（多选）</label>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 0;">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;"><input type="checkbox" class="webhook-event" value="upload_success" checked> 上传成功</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;"><input type="checkbox" class="webhook-event" value="upload_failed"> 上传失败</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;"><input type="checkbox" class="webhook-event" value="repo_added"> 仓库添加</label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;"><input type="checkbox" class="webhook-event" value="repo_deleted"> 仓库删除</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn btn-outline" onclick="toggleWebhookForm()">取消</button>
+          <button class="btn btn-primary" id="saveWebhookBtn" onclick="saveWebhook()">保存 Webhook</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二阶段：通知消息 -->
+    <div class="card">
+      <div class="section-title">
+        <h3>通知消息 <span id="unreadBadge" style="display:none;background:var(--red);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;"></span></h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="markAllRead()">全部已读</button>
+          <button class="btn btn-red btn-sm" id="clearNotificationsBtn" onclick="clearNotifications()" style="display:none;">清除通知</button>
+        </div>
+      </div>
+      <div id="notificationsList"><div class="empty-state">暂无通知</div></div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑仓库弹窗 -->
+  <div class="modal-overlay" id="repoModal">
+    <div class="modal">
+      <h3 id="modalTitle">添加仓库</h3>
+      <div id="modalAlert"></div>
+
+      <!-- GitHub OAuth 一键授权 -->
+      <div id="oauthSection" style="border:1px dashed var(--border);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">使用 GitHub 账号一键授权导入仓库，无需手动填写 Token</div>
+        <button class="btn btn-blue" id="oauthBtn" onclick="startGithubOAuth()" style="width:100%;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:6px;"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          GitHub 一键授权
+        </button>
+      </div>
+
+      <input type="hidden" id="editRepoId">
+      <div class="field"><label>仓库名称</label><input type="text" id="repoName" placeholder="例如：主站代码、博客源码"></div>
+      <div class="field"><label>仓库地址</label><input type="text" id="repoUrl" placeholder="https://github.com/用户名/仓库名.git"></div>
+      <div class="field"><label>GitHub Token</label><input type="password" id="repoToken" placeholder="编辑时留空表示不修改"><div class="hint">需要 repo 权限。GitHub Settings → Developer settings → Tokens 生成</div></div>
+      <div class="grid2">
+        <div class="field"><label>分支</label><input type="text" id="repoBranch" value="main"></div>
+        <div class="field"><label>目标目录</label><input type="text" id="repoTargetDir" placeholder="留空为根目录，例如 src"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeRepoModal()">取消</button><button class="btn btn-primary" id="saveRepoBtn" onclick="saveRepo()">保存</button></div>
+    </div>
+  </div>
+
+  <!-- 注销账号弹窗 -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <h3 style="color:var(--red);">注销账号</h3>
+      <div id="deleteAlert"></div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">此操作将永久删除你的账号和所有数据，不可恢复。请输入密码确认。</p>
+      <div class="field"><label>密码确认</label><input type="password" id="deletePassword" placeholder="输入你的密码"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeDeleteModal()">取消</button><button class="btn btn-red" id="confirmDeleteBtn" onclick="deleteAccount()">确认注销</button></div>
+    </div>
+  </div>
+
+  <!-- 清空仓库弹窗 -->
+  <div class="modal-overlay" id="clearRepoModal">
+    <div class="modal">
+      <h3 style="color:var(--red);">清空仓库所有文件</h3>
+      <div id="clearAlert"></div>
+      <div id="clearRepoInfo" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--text2);"></div>
+      <div id="clearFilePreview" style="display:none;">
+        <h4 style="font-size:14px;margin-bottom:8px;">将删除以下文件：</h4>
+        <div class="file-preview-list" id="clearFileList"></div>
+      </div>
+      <div id="clearLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
+        <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px;"></div>
+        <div>正在获取文件列表...</div>
+      </div>
+      <p style="color:var(--red);font-size:14px;margin-bottom:16px;line-height:1.6;">
+        ⚠️ <strong>警告：</strong>此操作将删除该仓库分支上的<strong>所有文件</strong>（保留 README.md），并通过一个新的 commit 提交。此操作不可撤销，但 Git 历史记录仍然保留。<br>
+        <span style="color:var(--blue);">ℹ️ 清空后会自动保留 README.md 文件，确保仓库不会变为空仓库，后续可正常上传。</span>
+      </p>
+      <div class="field"><label>输入 <strong style="color:var(--red);">DELETE ALL</strong> 确认操作</label><input type="text" id="clearConfirmInput" placeholder="DELETE ALL"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeClearRepoModal()">取消</button><button class="btn btn-red" id="clearRepoBtn" onclick="clearRepo()">确认清空</button></div>
+    </div>
+  </div>
+
+  <!-- 删除指定文件弹窗 -->
+  <div class="modal-overlay" id="deleteFilesModal">
+    <div class="modal" style="max-width:680px;">
+      <h3 style="color:var(--red);">删除仓库文件</h3>
+      <div id="deleteFilesAlert"></div>
+      <div id="deleteFilesRepoInfo" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--text2);"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(true)">全选</button>
+        <button class="btn btn-outline btn-sm" onclick="selectAllDeleteFiles(false)">取消全选</button>
+        <span id="deleteFilesSelectedCount" style="font-size:13px;color:var(--text2);margin-left:auto;">已选 0 个文件</span>
+      </div>
+      <div id="deleteFilesLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
+        <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px;"></div>
+        <div>正在获取文件列表...</div>
+      </div>
+      <div id="deleteFilesPreview" style="display:none;">
+        <div class="file-preview-list" id="deleteFilesList" style="max-height:360px;"></div>
+      </div>
+      <p style="color:var(--orange);font-size:13px;margin:12px 0;line-height:1.6;">
+        ⚠️ 选中的文件将通过一个新的 commit 删除。此操作不可撤销，但 Git 历史记录仍然保留。
+      </p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeDeleteFilesModal()">取消</button><button class="btn btn-red" id="deleteFilesBtn" onclick="deleteSelectedFiles()" disabled>删除选中文件</button></div>
+    </div>
+  </div>
+
+  <!-- 创建团队弹窗 -->
+  <div class="modal-overlay" id="teamModal">
+    <div class="modal">
+      <h3>创建团队</h3>
+      <div id="teamAlert"></div>
+      <div class="field"><label>团队名称</label><input type="text" id="teamName" placeholder="例如：前端开发组"></div>
+      <div class="field"><label>团队描述</label><textarea id="teamDesc" placeholder="团队描述（可选）" style="width:100%;min-height:60px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;"></textarea></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeTeamModal()">取消</button><button class="btn btn-primary" id="saveTeamBtn" onclick="saveTeam()">创建</button></div>
+    </div>
+  </div>
+
+  <!-- 团队详情弹窗 -->
+  <div class="modal-overlay" id="teamDetailModal" style="max-width:none;">
+    <div class="modal" style="max-width:720px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 id="teamDetailTitle" style="margin:0;">团队详情</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeTeamDetailModal()">关闭</button>
+      </div>
+      <div id="teamDetailAlert"></div>
+
+      <!-- 成员管理 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h4 style="margin:0;font-size:15px;">团队成员</h4>
+          <div id="inviteSection" style="display:flex;gap:6px;">
+            <input type="text" id="inviteUsername" placeholder="用户名" style="padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:6px;width:140px;">
+            <button class="btn btn-primary btn-sm" onclick="inviteMember()">邀请</button>
+          </div>
+        </div>
+        <div id="teamMembersList" style="max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- 共享仓库 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <h4 style="margin:0;font-size:15px;">共享仓库</h4>
+          <button class="btn btn-outline btn-sm" onclick="loadShareRepos()">共享仓库</button>
+        </div>
+        <div id="teamReposList"></div>
+      </div>
+
+      <!-- 团队动态 -->
+      <div>
+        <h4 style="margin:0 0 10px;font-size:15px;">团队动态（最近30条）</h4>
+        <div id="teamHistoryList" style="max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn btn-red btn-sm" id="deleteTeamBtn" onclick="confirmDeleteTeam()" style="display:none;">删除团队</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 共享仓库选择弹窗 -->
+  <div class="modal-overlay" id="shareRepoModal">
+    <div class="modal">
+      <h3>选择要共享的仓库</h3>
+      <div id="shareRepoAlert"></div>
+      <div id="shareRepoList" style="max-height:300px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;"><button class="btn btn-outline" onclick="closeShareRepoModal()">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 升级套餐弹窗 -->
+  <div class="modal-overlay" id="upgradeModal">
+    <div class="modal">
+      <h3>升级套餐</h3>
+      <div id="upgradeAlert"></div>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">选择适合你的套餐，提交升级申请后管理员会确认开通。</p>
+      <div class="upgrade-plans" id="upgradePlans"></div>
+      <div id="upgradePeriodField" style="display:none;margin-bottom:12px;">
+        <label style="font-size:14px;font-weight:600;margin-bottom:6px;display:block;">订阅周期</label>
+        <select id="upgradePeriod" style="width:100%;">
+          <option value="monthly">月付</option>
+          <option value="yearly">年付（10个月价格）</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeUpgradeModal()">关闭</button></div>
+    </div>
+  </div>
+
+  <!-- 支付弹窗（收款码 + 我已支付） -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal">
+      <h3>扫码支付</h3>
+      <div id="paymentAlert"></div>
+      <div id="paymentOrderInfo" style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px;color:var(--text2);"></div>
+      <div id="paymentQrcodes" style="text-align:center;margin-bottom:16px;">
+        <div style="color:var(--text2);padding:20px;">加载中...</div>
+      </div>
+      <div id="paymentInstructionsBox" style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.15);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;line-height:1.6;">
+      </div>
+      <div class="field">
+        <label>付款备注（填写付款账号尾号或订单号后6位）</label>
+        <input type="text" id="paymentNoteInput" placeholder="例如：支付宝尾号 8888">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closePaymentModal()">取消</button>
+        <button class="btn btn-primary" id="markPaidBtn" onclick="markOrderPaid()">我已支付</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API 密钥创建弹窗 -->
+  <div class="modal-overlay" id="apiKeyModal">
+    <div class="modal">
+      <h3>创建 API 密钥</h3>
+      <div id="apiKeyAlert"></div>
+      <div class="field"><label>密钥名称</label><input type="text" id="apiKeyName" placeholder="例如：自动上传脚本"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline" onclick="closeApiKeyModal()">取消</button>
+        <button class="btn btn-primary" id="createApiKeyBtn" onclick="createApiKeyAction()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OAuth 仓库导入弹窗 -->
+  <div class="modal-overlay" id="oauthImportModal">
+    <div class="modal">
+      <h3>从 GitHub 导入仓库</h3>
+      <div id="oauthImportAlert"></div>
+      <div id="oauthRepoList" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <div style="padding:20px;text-align:center;color:var(--text2);">加载中...</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+        <button class="btn btn-outline" onclick="closeOauthImportModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+  <!-- 文件在线浏览弹窗 -->
+  <div class="modal-overlay" id="fileBrowserModal">
+    <div class="modal" style="max-width:780px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;" id="fileBrowserTitle">仓库文件浏览</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeFileBrowser()">关闭</button>
+      </div>
+      <div id="fileBrowserAlert"></div>
+      <div id="fileBrowserLoading" style="display:none;text-align:center;padding:20px;color:var(--text2);">
+        <div style="display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px;"></div>
+        <div>正在获取文件列表...</div>
+      </div>
+      <div id="fileBrowserContent" style="display:none;">
+        <div class="file-preview-list" id="fileBrowserList" style="max-height:300px;"></div>
+      </div>
+      <div id="fileViewerContent" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <div style="background:var(--bg);padding:8px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+          <span id="fileViewerPath" style="font-family:monospace;"></span>
+          <button class="btn btn-outline btn-sm" onclick="closeFileViewer()">返回列表</button>
+        </div>
+        <pre id="fileViewerPre" style="margin:0;padding:12px;max-height:360px;overflow:auto;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Token 检测结果弹窗 -->
+  <div class="modal-overlay" id="tokenCheckModal">
+    <div class="modal" style="max-width:480px;">
+      <h3>Token 状态检测</h3>
+      <div id="tokenCheckAlert"></div>
+      <div id="tokenCheckResult"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button class="btn btn-outline" onclick="closeTokenCheckModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上传模板弹窗 -->
+  <div class="modal-overlay" id="templateModal">
+    <div class="modal">
+      <h3>保存上传模板</h3>
+      <div id="templateAlert"></div>
+      <div class="field"><label>模板名称</label><input type="text" id="tplName" placeholder="例如：主站部署"></div>
+      <div class="field"><label>目标仓库</label><select id="tplRepo"></select></div>
+      <div class="field"><label>目标目录</label><input type="text" id="tplTargetDir" placeholder="留空为根目录"></div>
+      <div class="field"><label>Commit Message</label><input type="text" id="tplCommitMsg" placeholder="支持变量: {count} {date}"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeTemplateModal()">取消</button><button class="btn btn-primary" id="saveTemplateBtn" onclick="saveTemplate()">保存</button></div>
+    </div>
+  </div>
+
+  <!-- 定时任务弹窗 -->
+  <div class="modal-overlay" id="scheduleModal">
+    <div class="modal">
+      <h3>创建定时上传任务</h3>
+      <div id="scheduleAlert"></div>
+      <div class="field"><label>任务名称</label><input type="text" id="schedName" placeholder="例如：每日备份"></div>
+      <div class="field"><label>目标仓库</label><select id="schedRepo"></select></div>
+      <div class="field"><label>文件内容</label><textarea id="schedFileContent" placeholder="文件内容（将上传为 auto_backup.txt）" style="width:100%;min-height:80px;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:monospace;"></textarea></div>
+      <div class="grid2">
+        <div class="field"><label>目标目录</label><input type="text" id="schedTargetDir" placeholder="留空为根目录"></div>
+        <div class="field"><label>执行频率</label><select id="schedCron"><option value="hourly">每小时</option><option value="daily" selected>每天</option><option value="weekly">每周</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeScheduleModal()">取消</button><button class="btn btn-primary" id="saveScheduleBtn" onclick="saveSchedule()">创建</button></div>
+    </div>
+  </div>
+
+  <!-- 邮件通知配置弹窗 -->
+  <div class="modal-overlay" id="emailConfigModal">
+    <div class="modal" style="max-width:520px;">
+      <h3>邮件通知配置</h3>
+      <div id="emailConfigAlert"></div>
+      <div class="field"><label>发送方式</label><select id="emailProvider"><option value="resend">Resend API（推荐）</option><option value="webhook">自定义 Webhook</option></select></div>
+      <div class="field"><label>Resend API Key</label><input type="text" id="emailApiKey" placeholder="re_xxxxxxxxxxxx"><div class="hint">在 resend.com 注册免费获取 API Key</div></div>
+      <div class="field" id="emailWebhookField" style="display:none;"><label>Webhook URL</label><input type="text" id="emailWebhookUrl" placeholder="https://your-email-service.com/send"></div>
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
+        <h4 style="font-size:15px;margin-bottom:8px;">我的通知邮箱</h4>
+        <div class="field"><label>接收通知的邮箱</label><input type="email" id="userNotifyEmail" placeholder="your@email.com"></div>
+        <div class="field"><label><input type="checkbox" id="userNotifyEnabled" style="width:auto;margin-right:6px;">开启邮件通知</label></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-outline" onclick="closeEmailConfigModal()">取消</button><button class="btn btn-primary" id="saveEmailConfigBtn" onclick="saveEmailConfig()">保存</button></div>
+    </div>
+  </div>
+
+  <!-- 上传结果弹窗 -->
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-modal"></div>
+  </div>
+
+  <script>
+    var token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; }
+
+    // 管理员不再强制跳转，而是显示后台入口按钮
+    var role = localStorage.getItem('role');
+    if (role === 'admin') {
+      document.getElementById('adminLink').style.display = 'inline-block';
+    }
+    function goAdmin() { window.location.href = '/admin'; }
+
+    // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
+    async function checkAppVersion() {
+      try {
+        var res = await fetch('/api/auth/version');
+        var data = await res.json();
+        if (data.ok && data.version) {
+          var stored = localStorage.getItem('app_version');
+          if (stored && stored !== data.version) {
+            localStorage.setItem('app_version', data.version);
+            // 通知 Service Worker 清理缓存
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage('CLEAR_CACHE');
+            }
+            // 强制刷新页面加载新版本
+            window.location.reload(true);
+          } else if (!stored) {
+            localStorage.setItem('app_version', data.version);
+          }
+        }
+      } catch(e) {}
+    }
+    checkAppVersion();
+    // 每5分钟轮询一次版本号
+    setInterval(checkAppVersion, 5 * 60 * 1000);
+
+    function authHeader() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+
+    // 统一 API 请求封装：自动处理 401 和网络错误
+    async function apiFetch(url, options) {
+      try {
+        var res = await fetch(url, options || { headers: authHeader() });
+        if (res.status === 401) {
+          // token 过期/无效/或账号已在其他设备登录
+          var errData = null;
+          try { errData = await res.json(); } catch {}
+          var errMsg = (errData && errData.error) || '登录已过期，请重新登录';
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          // 如果是单会话踢出，显示提示
+          if (errMsg.indexOf('其他设备') > -1) {
+            alert(errMsg);
+          }
+          window.location.href = '/login';
+          return null;
+        }
+        var data = await res.json();
+        return data;
+      } catch (e) {
+        console.error('API 请求失败:', url, e);
+        return { ok: false, error: '网络请求失败: ' + (e.message || '未知错误') };
+      }
+    }
+
+    function showAlert(msg, ok) {
+      var el = document.getElementById('alert');
+      el.innerHTML = '<div class="alert ' + (ok ? 'alert-ok' : 'alert-err') + '">' + escapeHtml(msg) + '</div>';
+      setTimeout(function() { el.innerHTML = ''; }, 5000);
+    }
+    function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function formatSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/(1024*1024)).toFixed(1) + ' MB';
+    }
+
+    var currentPlan = null;
+
+    // ===== 套餐状态 =====
+    async function loadPlanDetail() {
+      var data = await apiFetch('/api/auth/me');
+      if (data && data.ok) {
+        var plan = data.user.plan;
+        currentPlan = plan;
+        renderPlanCard(plan);
+      }
+    }
+
+    function renderPlanCard(plan) {
+      var card = document.getElementById('planCard');
+      card.className = 'plan-card ' + plan.id;
+      document.getElementById('planTitle').textContent = plan.name;
+
+      var subtitle = plan.uploadLimit === 0 ? '无限上传' : '每月 ' + plan.uploadLimit + ' 次上传';
+      if (plan.repoLimit > 0) subtitle += ' · 最多 ' + plan.repoLimit + ' 个仓库';
+      else subtitle += ' · 无限仓库';
+      document.getElementById('planSubtitle').textContent = subtitle;
+
+      var priceText = plan.price === 0 ? '<strong>¥0</strong> /月' : '<strong>¥' + plan.price + '</strong> /月';
+      if (plan.planExpiresAt) {
+        var expDate = new Date(plan.planExpiresAt).toLocaleDateString('zh-CN');
+        priceText += '<br><span style="font-size:12px;opacity:0.8;">到期: ' + expDate + '</span>';
+      }
+      document.getElementById('planPriceDisplay').innerHTML = priceText;
+
+      // 用量
+      var usageText, usagePercent;
+      if (plan.uploadLimit === 0) {
+        usageText = plan.currentUsage + ' 次 (无限)';
+        usagePercent = 0;
+      } else {
+        usageText = plan.currentUsage + ' / ' + plan.uploadLimit + ' 次';
+        usagePercent = Math.min(100, Math.round((plan.currentUsage / plan.uploadLimit) * 100));
+      }
+      document.getElementById('planUsage').textContent = usageText;
+      document.getElementById('planUsageBar').style.width = usagePercent + '%';
+
+      // 上传提示
+      var hint = document.getElementById('uploadHint');
+      var maxSize = plan.id === 'enterprise' ? 100 : plan.id === 'pro' ? 50 : 10;
+      if (plan.remaining !== undefined && plan.remaining >= 0 && plan.uploadLimit > 0) {
+        hint.textContent = '本月剩余 ' + plan.remaining + ' 次上传 · ZIP 不超过 ' + maxSize + 'MB';
+        if (plan.remaining === 0) {
+          hint.innerHTML = '<span style="color:var(--red);font-weight:600;">本月上传次数已用完，请升级套餐</span>';
+        }
+      } else if (plan.uploadLimit === 0) {
+        hint.textContent = '无限上传 · ZIP 不超过 ' + maxSize + 'MB';
+      }
+    }
+
+    // ===== 升级套餐 =====
+    var selectedUpgradePlan = null;
+
+    async function openUpgradeModal() {
+      document.getElementById('upgradeModal').classList.add('show');
+      document.getElementById('upgradeAlert').innerHTML = '';
+      document.getElementById('upgradePeriodField').style.display = 'none';
+      try {
+        var res = await fetch('/api/auth/plans');
+        var data = await res.json();
+        if (data.ok) {
+          var html = data.plans.map(function(p) {
+            var isCurrent = currentPlan && currentPlan.id === p.id;
+            var features = p.features.map(function(f) { return '<li>' + escapeHtml(f) + '</li>'; }).join('');
+            return '<div class="upgrade-plan ' + (isCurrent ? 'current' : '') + '" data-plan="' + p.id + '">' +
+              (isCurrent ? '<span class="current-tag">当前</span>' : '') +
+              '<div class="plan-name">' + escapeHtml(p.name) + '</div>' +
+              '<div class="plan-price">¥' + p.price + '<small>/月</small></div>' +
+              '<ul class="plan-features">' + features + '</ul>' +
+              (isCurrent ? '' : '<button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;" onclick="selectUpgradePlan(\'' + p.id + '\')">选择此套餐</button>') +
+            '</div>';
+          }).join('');
+          document.getElementById('upgradePlans').innerHTML = html;
+        }
+      } catch (e) {
+        document.getElementById('upgradePlans').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);">加载失败</div>';
+      }
+    }
+    function closeUpgradeModal() { document.getElementById('upgradeModal').classList.remove('show'); selectedUpgradePlan = null; }
+
+    function selectUpgradePlan(planId) {
+      selectedUpgradePlan = planId;
+      document.getElementById('upgradePeriodField').style.display = 'block';
+      document.getElementById('upgradeAlert').innerHTML = '<div class="alert alert-ok">已选择套餐，请选择订阅周期后点击下方按钮提交申请</div>';
+      document.getElementById('upgradeAlert').innerHTML += '<button class="btn btn-primary" style="margin-top:8px;width:100%;" onclick="submitUpgradeOrder()">提交升级申请</button>';
+    }
+
+    async function submitUpgradeOrder() {
+      if (!selectedUpgradePlan) { showAlert('请选择套餐', false); return; }
+      var period = document.getElementById('upgradePeriod').value;
+      try {
+        var res = await fetch('/api/auth/create-order', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ plan: selectedUpgradePlan, period: period })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          closeUpgradeModal();
+          showAlert(data.message + '（订单号：' + data.order.orderNo + '）', true);
+          loadOrders(); loadNotifications();
+          // 自动打开支付弹窗
+          setTimeout(function() { openPaymentModal(data.order.id); }, 800);
+        } else {
+          document.getElementById('upgradeAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('upgradeAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+    }
+
+    // ===== 统计 =====
+    async function loadStats() {
+      var data = await apiFetch('/api/history?mode=stats');
+      if (data && data.ok) {
+        document.getElementById('myUploads').textContent = data.stats.totalUploads;
+        document.getElementById('myRepos').textContent = data.stats.totalRepos;
+        document.getElementById('myFiles').textContent = data.stats.totalFiles;
+        document.getElementById('mySize').textContent = formatSize(data.stats.totalSize);
+      } else {
+        document.getElementById('myUploads').textContent = '0';
+        document.getElementById('myRepos').textContent = '0';
+        document.getElementById('myFiles').textContent = '0';
+        document.getElementById('mySize').textContent = '0 B';
+      }
+    }
+
+    async function loadProfile() {
+      var data = await apiFetch('/api/auth/me');
+      if (data && data.ok) {
+        document.getElementById('brandLabel').textContent = data.user.brandName || data.user.username;
+        document.getElementById('brandName').value = data.user.brandName || '';
+        document.getElementById('brandColor').value = data.user.brandColor || '#111827';
+      }
+    }
+
+    // ===== 多仓库管理 =====
+    var repos = [];
+
+    async function loadRepos() {
+      var data = await apiFetch('/api/config');
+      if (data && data.ok) {
+        repos = data.repos || [];
+        renderRepos();
+        renderUploadSelect();
+      } else {
+        repos = [];
+        var el = document.getElementById('repoList');
+        el.innerHTML = '<div class="empty-state">' + (data && data.error ? escapeHtml(data.error) : '加载失败，请刷新页面重试') + '</div>';
+        renderUploadSelect();
+      }
+    }
+
+    function renderRepos() {
+      var el = document.getElementById('repoList');
+      if (repos.length === 0) {
+        el.innerHTML = '<div class="empty-state">还没有配置仓库，点击右上角「添加仓库」开始</div>';
+        return;
+      }
+      el.innerHTML = repos.map(function(r) {
+        return '<div class="repo-card">' +
+          '<div class="repo-card-header">' +
+            '<span class="repo-card-title">' + escapeHtml(r.name) +
+              (r.hasToken ? '<span class="token-badge">Token 已填写</span>' : '<span class="token-badge" style="background:#fef2f2;color:#991b1b;">未填 Token</span>') +
+            '</span>' +
+            '<div class="repo-card-actions">' +
+              '<button class="btn btn-outline btn-sm" onclick="testRepo(' + r.id + ')" id="testBtn_' + r.id + '">测试</button>' +
+              '<button class="btn btn-blue btn-sm" onclick="openFileBrowser(' + r.id + ')" id="browseBtn_' + r.id + '">浏览</button>' +
+              '<button class="btn btn-outline btn-sm" onclick="checkTokenStatus(' + r.id + ')" id="tokenBtn_' + r.id + '">Token</button>' +
+              '<button class="btn btn-outline btn-sm" onclick="openEditRepo(' + r.id + ')">编辑</button>' +
+              '<button class="btn btn-blue btn-sm" onclick="downloadRepo(' + r.id + ')" id="downloadBtn_' + r.id + '">下载</button>' +
+              '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.3);" onclick="openDeleteFilesModal(' + r.id + ')">删文件</button>' +
+              '<button class="btn btn-red btn-sm" onclick="openClearRepoModal(' + r.id + ')">清空</button>' +
+              '<button class="btn btn-red btn-sm" onclick="removeRepo(' + r.id + ')">删除</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="repo-card-meta">仓库: ' + escapeHtml(r.repo) + ' | 分支: ' + escapeHtml(r.branch) + ' | 目录: ' + escapeHtml(r.targetDir) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderUploadSelect() {
+      var sel = document.getElementById('uploadRepoSelect');
+      if (repos.length === 0) {
+        sel.innerHTML = '<option value="">请先添加仓库</option>';
+      } else {
+        sel.innerHTML = repos.map(function(r) {
+          return '<option value="' + r.id + '">' + escapeHtml(r.name) + ' (' + escapeHtml(r.repo) + ')</option>';
+        }).join('');
+      }
+    }
+
+    async function testRepo(id) {
+      var btn = document.getElementById('testBtn_' + id);
+      btn.disabled = true; btn.textContent = '测试中...';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'test', repoId: id }) });
+        var data = await res.json();
+        if (data.ok) {
+          if (data.connected && data.branchExists) showAlert('✓ ' + data.message, true);
+          else if (data.connected) showAlert('⚠ ' + data.message, false);
+          else showAlert('✗ ' + data.message, false);
+        } else { showAlert(data.error, false); }
+      } catch (e) { showAlert('测试失败：网络错误', false); }
+      btn.disabled = false; btn.textContent = '测试';
+    }
+
+    function openRepoModal() {
+      document.getElementById('modalTitle').textContent = '添加仓库';
+      document.getElementById('editRepoId').value = '';
+      document.getElementById('repoName').value = '';
+      document.getElementById('repoUrl').value = '';
+      document.getElementById('repoToken').value = '';
+      document.getElementById('repoToken').placeholder = 'GitHub Token';
+      document.getElementById('repoBranch').value = 'main';
+      document.getElementById('repoTargetDir').value = '';
+      document.getElementById('modalAlert').innerHTML = '';
+      document.getElementById('repoModal').classList.add('show');
+    }
+
+    function openEditRepo(id) {
+      var r = repos.find(function(x) { return String(x.id) === String(id); });
+      if (!r) return;
+      document.getElementById('modalTitle').textContent = '编辑仓库';
+      document.getElementById('editRepoId').value = r.id;
+      document.getElementById('repoName').value = r.name;
+      document.getElementById('repoUrl').value = r.repo;
+      document.getElementById('repoToken').value = '';
+      document.getElementById('repoToken').placeholder = '留空表示不修改 Token';
+      document.getElementById('repoBranch').value = r.branch;
+      document.getElementById('repoTargetDir').value = r.targetDir;
+      document.getElementById('modalAlert').innerHTML = '';
+      document.getElementById('repoModal').classList.add('show');
+    }
+
+    function closeRepoModal() { document.getElementById('repoModal').classList.remove('show'); }
+    function modalAlert(msg, ok) {
+      document.getElementById('modalAlert').innerHTML = '<div class="alert ' + (ok ? 'alert-ok' : 'alert-err') + '">' + escapeHtml(msg) + '</div>';
+    }
+
+    async function saveRepo() {
+      var id = document.getElementById('editRepoId').value;
+      var name = document.getElementById('repoName').value.trim();
+      var repo = document.getElementById('repoUrl').value.trim();
+      var tok = document.getElementById('repoToken').value.trim();
+      var branch = document.getElementById('repoBranch').value.trim() || 'main';
+      var targetDir = document.getElementById('repoTargetDir').value.trim() || '.';
+      if (!name) { modalAlert('仓库名称必填', false); return; }
+      if (!repo) { modalAlert('仓库地址必填', false); return; }
+      if (!id && !tok) { modalAlert('新增仓库时 Token 必填', false); return; }
+      var btn = document.getElementById('saveRepoBtn');
+      btn.disabled = true; btn.textContent = '保存中...';
+      var body = { name: name, repo: repo, branch: branch, targetDir: targetDir };
+      if (tok) body.token = tok;
+      if (id) body.id = parseInt(id);
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        var data = await res.json();
+        if (data.ok) { closeRepoModal(); showAlert(data.message, true); await loadRepos(); await loadStats(); }
+        else {
+          if (data.needUpgrade) {
+            modalAlert(data.error, false);
+            setTimeout(function() { closeRepoModal(); openUpgradeModal(); }, 1500);
+          } else {
+            modalAlert(data.error, false);
+          }
+        }
+      } catch (e) { modalAlert('网络错误', false); }
+      btn.disabled = false; btn.textContent = '保存';
+    }
+
+    async function removeRepo(id) {
+      if (!confirm('确定删除这个仓库配置？')) return;
+      try {
+        var res = await fetch('/api/config', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('仓库已删除', true); await loadRepos(); await loadStats(); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 下载仓库打包 =====
+    async function downloadRepo(id) {
+      var btn = document.getElementById('downloadBtn_' + id);
+      if (btn) { btn.disabled = true; btn.textContent = '准备中...'; }
+      showAlert('正在获取下载链接...', true);
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'download', repoId: id }) });
+        var data = await res.json();
+        if (data.ok) {
+          // 优先使用 GitHub 临时下载链接（不走后端代理，避免 Vercel 限制）
+          var downloadUrl = data.directUrl || data.downloadUrl;
+          var a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = data.fileName;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showAlert('下载已开始: ' + data.repoName, true);
+        } else {
+          showAlert(data.error || '获取下载链接失败', false);
+        }
+      } catch (e) {
+        showAlert('下载失败: ' + e.message, false);
+      }
+      if (btn) { btn.disabled = false; btn.textContent = '下载'; }
+    }
+
+    // ===== 清空仓库（含文件预览） =====
+    var clearRepoId = null;
+
+    async function openClearRepoModal(id) {
+      var r = repos.find(function(x) { return String(x.id) === String(id); });
+      if (!r) return;
+      clearRepoId = id;
+      document.getElementById('clearConfirmInput').value = '';
+      document.getElementById('clearAlert').innerHTML = '';
+      document.getElementById('clearRepoInfo').innerHTML =
+        '<strong>仓库名称:</strong> ' + escapeHtml(r.name) + '<br>' +
+        '<strong>仓库地址:</strong> ' + escapeHtml(r.repo) + '<br>' +
+        '<strong>分支:</strong> ' + escapeHtml(r.branch);
+      document.getElementById('clearFilePreview').style.display = 'none';
+      document.getElementById('clearLoading').style.display = 'block';
+      document.getElementById('clearRepoModal').classList.add('show');
+
+      // 获取文件列表预览
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: id }) });
+        var data = await res.json();
+        document.getElementById('clearLoading').style.display = 'none';
+        if (data.ok) {
+          if (data.totalFiles === 0) {
+            document.getElementById('clearFilePreview').style.display = 'block';
+            document.getElementById('clearFileList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库已经是空的，没有文件需要删除</div>';
+          } else {
+            var filesHtml = data.files.slice(0, 100).map(function(f) {
+              return '<div class="file-preview-item"><span class="file-path">' + escapeHtml(f.path) + '</span><span class="file-size">' + formatSize(f.size) + '</span></div>';
+            }).join('');
+            if (data.totalFiles > 100) {
+              filesHtml += '<div class="file-preview-item" style="justify-content:center;color:var(--text2);">... 还有 ' + (data.totalFiles - 100) + ' 个文件未显示（共 ' + data.totalFiles + ' 个）</div>';
+            }
+            if (data.truncated) {
+              filesHtml += '<div class="file-preview-item" style="justify-content:center;color:var(--orange);font-size:12px;">⚠ GitHub API 返回的文件列表被截断，实际文件可能更多</div>';
+            }
+            document.getElementById('clearFilePreview').style.display = 'block';
+            document.getElementById('clearFileList').innerHTML = filesHtml;
+          }
+        } else {
+          document.getElementById('clearFilePreview').style.display = 'block';
+          document.getElementById('clearFileList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('clearLoading').style.display = 'none';
+        document.getElementById('clearFilePreview').style.display = 'block';
+        document.getElementById('clearFileList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">获取文件列表失败，但仍可执行清空操作</div>';
+      }
+    }
+
+    function closeClearRepoModal() {
+      document.getElementById('clearRepoModal').classList.remove('show');
+      clearRepoId = null;
+    }
+
+    async function clearRepo() {
+      var confirmText = document.getElementById('clearConfirmInput').value.trim();
+      var alertEl = document.getElementById('clearAlert');
+      if (confirmText !== 'DELETE ALL') {
+        alertEl.innerHTML = '<div class="alert alert-err">请输入 DELETE ALL 确认操作</div>';
+        return;
+      }
+      if (!clearRepoId) { alertEl.innerHTML = '<div class="alert alert-err">未选择仓库</div>'; return; }
+      var btn = document.getElementById('clearRepoBtn');
+      btn.disabled = true; btn.textContent = '清空中...';
+      alertEl.innerHTML = '<div class="alert" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">正在删除仓库所有文件，请勿关闭页面...</div>';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'clear', repoId: clearRepoId, confirm: 'DELETE_ALL' }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeClearRepoModal();
+          showAlert(data.message, true);
+          loadHistory(); loadStats();
+        } else {
+          alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        alertEl.innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '确认清空';
+    }
+
+    // ===== 删除指定文件 =====
+    var deleteFilesRepoId = null;
+    var deleteFilesData = [];
+
+    async function openDeleteFilesModal(id) {
+      var r = repos.find(function(x) { return String(x.id) === String(id); });
+      if (!r) return;
+      deleteFilesRepoId = id;
+      deleteFilesData = [];
+      document.getElementById('deleteFilesAlert').innerHTML = '';
+      document.getElementById('deleteFilesRepoInfo').innerHTML =
+        '<strong>仓库名称:</strong> ' + escapeHtml(r.name) + '<br>' +
+        '<strong>仓库地址:</strong> ' + escapeHtml(r.repo) + '<br>' +
+        '<strong>分支:</strong> ' + escapeHtml(r.branch);
+      document.getElementById('deleteFilesPreview').style.display = 'none';
+      document.getElementById('deleteFilesLoading').style.display = 'block';
+      document.getElementById('deleteFilesBtn').disabled = true;
+      document.getElementById('deleteFilesSelectedCount').textContent = '已选 0 个文件';
+      document.getElementById('deleteFilesModal').classList.add('show');
+
+      // 获取文件列表
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: id }) });
+        var data = await res.json();
+        document.getElementById('deleteFilesLoading').style.display = 'none';
+        if (data.ok) {
+          if (data.totalFiles === 0) {
+            document.getElementById('deleteFilesPreview').style.display = 'block';
+            document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库已经是空的，没有文件可删除</div>';
+          } else {
+            deleteFilesData = data.files;
+            var filesHtml = data.files.map(function(f, idx) {
+              return '<div class="file-preview-item" style="cursor:pointer;" onclick="toggleDeleteFile(this, ' + idx + ')">' +
+                '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">' +
+                  '<input type="checkbox" class="delete-file-cb" data-idx="' + idx + '" data-path="' + escapeHtml(f.path) + '" style="flex-shrink:0;">' +
+                  '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
+                '</div>' +
+                '<span class="file-size">' + formatSize(f.size) + '</span>' +
+              '</div>';
+            }).join('');
+            if (data.truncated) {
+              filesHtml += '<div class="file-preview-item" style="justify-content:center;color:var(--orange);font-size:12px;">⚠ GitHub API 返回的文件列表被截断，实际文件可能更多</div>';
+            }
+            document.getElementById('deleteFilesPreview').style.display = 'block';
+            document.getElementById('deleteFilesList').innerHTML = filesHtml;
+          }
+        } else {
+          document.getElementById('deleteFilesPreview').style.display = 'block';
+          document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('deleteFilesLoading').style.display = 'none';
+        document.getElementById('deleteFilesPreview').style.display = 'block';
+        document.getElementById('deleteFilesList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--red);">获取文件列表失败</div>';
+      }
+    }
+
+    function toggleDeleteFile(rowEl, idx) {
+      var cb = rowEl.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      rowEl.style.background = cb.checked ? 'rgba(239,68,68,0.05)' : '';
+      updateDeleteFilesCount();
+    }
+
+    function selectAllDeleteFiles(selectAll) {
+      var checkboxes = document.querySelectorAll('.delete-file-cb');
+      for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = selectAll;
+        var row = checkboxes[i].closest('.file-preview-item');
+        if (row) row.style.background = selectAll ? 'rgba(239,68,68,0.05)' : '';
+      }
+      updateDeleteFilesCount();
+    }
+
+    function updateDeleteFilesCount() {
+      var checkboxes = document.querySelectorAll('.delete-file-cb');
+      var checked = 0;
+      for (var i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) checked++;
+      }
+      document.getElementById('deleteFilesSelectedCount').textContent = '已选 ' + checked + ' 个文件';
+      document.getElementById('deleteFilesBtn').disabled = checked === 0;
+    }
+
+    function closeDeleteFilesModal() {
+      document.getElementById('deleteFilesModal').classList.remove('show');
+      deleteFilesRepoId = null;
+      deleteFilesData = [];
+    }
+
+    async function deleteSelectedFiles() {
+      var checkboxes = document.querySelectorAll('.delete-file-cb:checked');
+      var filesToDelete = [];
+      for (var i = 0; i < checkboxes.length; i++) {
+        filesToDelete.push(checkboxes[i].getAttribute('data-path'));
+      }
+      if (filesToDelete.length === 0) return;
+      if (filesToDelete.length > 500) {
+        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">单次最多删除 500 个文件</div>';
+        return;
+      }
+
+      var btn = document.getElementById('deleteFilesBtn');
+      btn.disabled = true; btn.textContent = '删除中...';
+      document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">正在删除 ' + filesToDelete.length + ' 个文件，请勿关闭页面...</div>';
+
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-files', repoId: deleteFilesRepoId, files: filesToDelete }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeDeleteFilesModal();
+          showAlert(data.message, true);
+          loadHistory(); loadStats();
+        } else {
+          document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('deleteFilesAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '删除选中文件';
+    }
+
+    // ===== 品牌与密码 =====
+    async function saveBrand() {
+      var body = { brandName: document.getElementById('brandName').value.trim(), brandColor: document.getElementById('brandColor').value };
+      try {
+        var res = await fetch('/api/auth/update', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        var data = await res.json();
+        if (data.ok) { showAlert('品牌设置已保存', true); document.getElementById('brandLabel').textContent = body.brandName; }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function changePassword() {
+      var body = { oldPassword: document.getElementById('oldPassword').value, newPassword: document.getElementById('newPassword').value };
+      if (!body.oldPassword || !body.newPassword) { showAlert('请填写旧密码和新密码', false); return; }
+      try {
+        var res = await fetch('/api/auth/update', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        var data = await res.json();
+        if (data.ok) { showAlert('密码已修改，请重新登录', true); setTimeout(function() { logout(); }, 2000); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 上传 =====
+    function onFileSelected(input) {
+      var file = input.files[0];
+      if (file) {
+        document.getElementById('uploadFileName').textContent = file.name + ' (' + formatSize(file.size) + ')';
+        document.getElementById('previewBtn').style.display = 'inline-block';
+      } else {
+        document.getElementById('previewBtn').style.display = 'none';
+      }
+    }
+
+    // 批量上传切换：勾选后仓库选择变成多选 checkbox 列表
+    function toggleBatchUpload() {
+      var checked = document.getElementById('batchUploadCheckbox').checked;
+      var select = document.getElementById('uploadRepoSelect');
+      var list = document.getElementById('batchRepoList');
+      if (checked) {
+        select.style.display = 'none';
+        renderBatchRepoList();
+        list.style.display = 'block';
+      } else {
+        select.style.display = '';
+        list.style.display = 'none';
+      }
+    }
+
+    function renderBatchRepoList() {
+      var list = document.getElementById('batchRepoList');
+      if (repos.length === 0) {
+        list.innerHTML = '<div class="empty-state">请先添加仓库</div>';
+        return;
+      }
+      list.innerHTML = repos.map(function(r) {
+        return '<label class="batch-repo-item">' +
+          '<input type="checkbox" class="batch-repo-checkbox" value="' + r.id + '">' +
+          '<span>' + escapeHtml(r.name) + ' (' + escapeHtml(r.repo) + ')</span>' +
+        '</label>';
+      }).join('');
+    }
+
+    function getSelectedRepoIds() {
+      var batchChecked = document.getElementById('batchUploadCheckbox').checked;
+      if (batchChecked) {
+        var ids = [];
+        var boxes = document.querySelectorAll('.batch-repo-checkbox:checked');
+        boxes.forEach(function(b) { ids.push(parseInt(b.value)); });
+        return ids;
+      } else {
+        var v = document.getElementById('uploadRepoSelect').value;
+        return v ? [parseInt(v)] : [];
+      }
+    }
+
+    // 文件预览：调用 /api/upload 并传 preview:true
+    async function previewZip() {
+      var fileInput = document.getElementById('zipFile');
+      var file = fileInput.files[0];
+      if (!file) { showAlert('请先选择压缩包文件', false); return; }
+      var btn = document.getElementById('previewBtn');
+      btn.disabled = true; btn.textContent = '预览中...';
+      document.getElementById('previewResult').style.display = 'none';
+      try {
+        var base64 = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() { var s = reader.result; var i = s.indexOf(','); resolve(i >= 0 ? s.substring(i + 1) : s); };
+          reader.onerror = function() { reject(new Error('读取文件失败')); };
+          reader.readAsDataURL(file);
+        });
+        var res = await fetch('/api/upload', { method: 'POST', headers: authHeader(), body: JSON.stringify({ file: base64, fileName: file.name, preview: true }) });
+        var data = await res.json();
+        if (data.ok && data.files) {
+          var filesHtml = data.files.slice(0, 200).map(function(f) {
+            var ext = f.path.split('.').pop().toLowerCase();
+            return '<div class="file-preview-item">' +
+              '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
+              '<span style="display:flex;gap:8px;align-items:center;">' +
+                '<span style="font-size:11px;color:var(--blue);background:rgba(59,130,246,0.08);padding:1px 6px;border-radius:4px;">' + escapeHtml(ext) + '</span>' +
+                '<span class="file-size">' + formatSize(f.size) + '</span>' +
+              '</span>' +
+            '</div>';
+          }).join('');
+          if (data.files.length > 200) {
+            filesHtml += '<div class="file-preview-item" style="justify-content:center;color:var(--text2);">... 还有 ' + (data.files.length - 200) + ' 个文件未显示</div>';
+          }
+          document.getElementById('previewFileList').innerHTML = filesHtml;
+          document.getElementById('previewSummary').innerHTML = '共 <strong>' + (data.totalCount || data.files.length) + '</strong> 个文件 · 格式：' + escapeHtml((data.format || 'zip').toUpperCase()) + ' · 总大小：' + formatSize(data.totalSize || file.size);
+          document.getElementById('previewResult').style.display = 'block';
+        } else {
+          showAlert(data.error || '预览失败', false);
+        }
+      } catch (e) {
+        showAlert('预览失败：' + (e.message || '网络错误'), false);
+      }
+      btn.disabled = false; btn.textContent = '预览文件';
+    }
+
+    var uploadZone = document.getElementById('uploadZone');
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', function(e) { e.preventDefault(); this.classList.remove('dragover'); });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault(); this.classList.remove('dragover');
+      var file = e.dataTransfer.files[0];
+      if (file) {
+        var validExts = ['.zip', '.tar', '.gz', '.tgz'];
+        var fileName = file.name.toLowerCase();
+        var isValid = validExts.some(function(ext) { return fileName.endsWith(ext); }) || fileName.endsWith('.tar.gz');
+        if (isValid) { document.getElementById('zipFile').files = e.dataTransfer.files; onFileSelected(document.getElementById('zipFile')); }
+        else { showAlert('请拖拽 ZIP、TAR、TAR.GZ 或 TGZ 文件', false); }
+      }
+    });
+
+    // 使用 XMLHttpRequest 获取真实上传进度
+    function uploadWithXhr(payload, onProgress) {
+      return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/upload', true);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        // 真实上传进度（请求体发送阶段）
+        if (xhr.upload && onProgress) {
+          xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+              var percent = Math.round((e.loaded / e.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+        xhr.onload = function() {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (err) {
+            reject(new Error('响应解析失败'));
+          }
+        };
+        xhr.onerror = function() { reject(new Error('网络错误')); };
+        xhr.send(JSON.stringify(payload));
+      });
+    }
+
+    // ===== 功能2: 大文件分片上传 =====
+    // 将文件切分为多个 base64 分片，避免大文件导致 JSON 体积过大或 Vercel 请求体超限
+    var CHUNK_THRESHOLD = 2 * 1024 * 1024; // 超过 2MB 启用分片
+    var CHUNK_SIZE = 512 * 1024; // 每片 512KB
+
+    function fileToBase64Chunks(file) {
+      return new Promise(function(resolve, reject) {
+        var chunks = [];
+        var offset = 0;
+        function readNext() {
+          var end = Math.min(offset + CHUNK_SIZE, file.size);
+          var blob = file.slice(offset, end);
+          var reader = new FileReader();
+          reader.onload = function() {
+            var s = reader.result;
+            var i = s.indexOf(',');
+            chunks.push(i >= 0 ? s.substring(i + 1) : s);
+            offset = end;
+            if (offset < file.size) readNext();
+            else resolve(chunks);
+          };
+          reader.onerror = function() { reject(new Error('读取文件失败')); };
+          reader.readAsDataURL(blob);
+        }
+        readNext();
+      });
+    }
+
+    async function uploadZip() {
+      var fileInput = document.getElementById('zipFile');
+      var file = fileInput.files[0];
+      if (!file) { showAlert('请选择压缩包文件', false); return; }
+      var repoIds = getSelectedRepoIds();
+      if (repoIds.length === 0) { showAlert('请选择目标仓库', false); return; }
+
+      var btn = document.getElementById('uploadBtn');
+      var progressBar = document.getElementById('progressBar');
+      var progressFill = document.getElementById('progressFill');
+      var statusText = document.getElementById('uploadStatusText');
+      btn.disabled = true; btn.textContent = '上传中...';
+      progressBar.classList.add('show'); progressFill.style.width = '0%';
+      statusText.style.display = 'block';
+      statusText.textContent = '正在读取文件...';
+      try {
+        // 构造请求体：支持 commitMsg 和批量上传
+        var commitMsg = document.getElementById('commitMsgInput').value.trim();
+        var useChunked = file.size > CHUNK_THRESHOLD;
+
+        var payload;
+        if (useChunked) {
+          // 分片上传模式
+          statusText.textContent = '文件较大（' + (file.size / 1024 / 1024).toFixed(1) + 'MB），启用分片上传...';
+          var chunks = await fileToBase64Chunks(file);
+          payload = { chunks: chunks, fileName: file.name, repoId: repoIds[0] };
+          if (commitMsg) payload.commitMsg = commitMsg;
+          if (repoIds.length > 1) payload.batchRepos = repoIds;
+        } else {
+          // 普通上传模式
+          var base64 = await new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function() { var s = reader.result; var i = s.indexOf(','); resolve(i >= 0 ? s.substring(i + 1) : s); };
+            reader.onerror = function() { reject(new Error('读取文件失败')); };
+            reader.readAsDataURL(file);
+          });
+          payload = { file: base64, fileName: file.name, repoId: repoIds[0] };
+          if (commitMsg) payload.commitMsg = commitMsg;
+          if (repoIds.length > 1) payload.batchRepos = repoIds;
+        }
+
+        statusText.textContent = '正在上传到服务器... 0%';
+
+        // 真实上传进度（上传阶段 0~90%）
+        var data = await uploadWithXhr(payload, function(percent) {
+          progressFill.style.width = percent + '%';
+          statusText.textContent = '正在上传到服务器... ' + percent + '%' + (useChunked ? ' (分片模式)' : '');
+        });
+
+        // 上传完成，进入服务端处理阶段（90~100%）
+        progressFill.style.width = '90%';
+        statusText.textContent = '正在推送到 GitHub…';
+
+        // 模拟服务端处理等待，确保进度条视觉连续
+        await new Promise(function(r) { setTimeout(r, 300); });
+        progressFill.style.width = '100%';
+        statusText.textContent = '处理完成';
+
+        if (data.ok) {
+          var details = [];
+          // 批量上传结果
+          if (data.results && Array.isArray(data.results)) {
+            data.results.forEach(function(item) {
+              details.push({ label: '仓库 ' + (item.repoName || item.repoId), value: (item.ok ? '成功 · ' + item.fileCount + ' 个文件' : '失败: ' + (item.error || '未知')) });
+            });
+            if (data.commitSha) details.push({ label: 'Commit', value: String(data.commitSha).substring(0,7) });
+          } else {
+            details.push({ label: '文件数量', value: data.fileCount + ' 个' });
+            details.push({ label: '压缩格式', value: (data.format || 'zip').toUpperCase() });
+            if (data.commitSha) details.push({ label: 'Commit', value: data.commitSha.substring(0,7) });
+          }
+          showResultModal({
+            type: 'ok',
+            title: '上传成功',
+            message: data.message,
+            details: details,
+            btnText: '完成',
+            onClose: function() { loadHistory(); loadStats(); loadPlanDetail(); }
+          });
+        } else {
+          var errDetails = [];
+          if (data.plan) errDetails.push({ label: '当前套餐', value: data.plan.name });
+          if (data.needUpgrade) {
+            showResultModal({
+              type: 'err',
+              title: '需要升级',
+              message: data.error,
+              details: errDetails,
+              btnText: '去升级',
+              onClose: function() { openUpgradeModal(); }
+            });
+          } else {
+            showResultModal({
+              type: 'err',
+              title: '上传失败',
+              message: data.error || '上传过程中发生错误',
+              details: errDetails,
+              btnText: '知道了'
+            });
+          }
+        }
+        setTimeout(function() { progressBar.classList.remove('show'); progressFill.style.width = '0%'; statusText.style.display = 'none'; }, 2000);
+      } catch (e) {
+        showResultModal({
+          type: 'err',
+          title: '上传失败',
+          message: e.message || '网络错误，请稍后重试',
+          btnText: '知道了'
+        });
+        progressBar.classList.remove('show');
+        statusText.style.display = 'none';
+      }
+      btn.disabled = false; btn.textContent = '上传到 GitHub';
+    }
+
+    async function loadHistory() {
+      var data = await apiFetch('/api/history');
+      var tbody = document.getElementById('historyBody');
+      var clearBtn = document.getElementById('clearHistoryBtn');
+      if (data && data.ok && data.records.length > 0) {
+        clearBtn.style.display = 'inline-block';
+        tbody.innerHTML = data.records.map(function(r) {
+          var time = new Date(r.time).toLocaleString('zh-CN');
+          var commitLink = r.commitSha ? '<a class="commit-link" href="https://github.com/' + escapeHtml(r.repo) + '/commit/' + escapeHtml(r.commitSha) + '" target="_blank">' + r.commitSha.substring(0,7) + '</a>' : '-';
+          return '<tr><td>' + time + '</td><td>' + escapeHtml(r.fileName||'-') + '</td><td>' + r.fileCount + '</td><td>' + escapeHtml(r.repo||'-') + '</td><td><span class="badge badge-green">' + escapeHtml(r.status) + '</span></td><td>' + commitLink + '</td></tr>';
+        }).join('');
+      } else {
+        clearBtn.style.display = 'none';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">' + (data && data.error && !data.ok ? escapeHtml(data.error) : '暂无记录') + '</td></tr>';
+      }
+    }
+
+    async function clearHistory() {
+      if (!confirm('确定清除所有上传历史记录？此操作不可恢复。')) return;
+      try {
+        var res = await fetch('/api/history', { method: 'DELETE', headers: authHeader() });
+        var data = await res.json();
+        if (data.ok) { showAlert('历史记录已清除', true); loadHistory(); loadStats(); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 账号注销 =====
+    function openDeleteModal() {
+      document.getElementById('deletePassword').value = '';
+      document.getElementById('deleteAlert').innerHTML = '';
+      document.getElementById('deleteModal').classList.add('show');
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('show'); }
+    async function deleteAccount() {
+      var pwd = document.getElementById('deletePassword').value;
+      var alertEl = document.getElementById('deleteAlert');
+      if (!pwd) { alertEl.innerHTML = '<div class="alert alert-err">请输入密码</div>'; return; }
+      var btn = document.getElementById('confirmDeleteBtn');
+      btn.disabled = true; btn.textContent = '注销中...';
+      try {
+        var res = await fetch('/api/auth/delete-account', { method: 'POST', headers: authHeader(), body: JSON.stringify({ password: pwd }) });
+        var data = await res.json();
+        if (data.ok) { closeDeleteModal(); showAlert('账号已注销', true); setTimeout(function() { logout(); }, 2000); }
+        else { alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
+      } catch (e) { alertEl.innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '确认注销';
+    }
+
+    function logout() { localStorage.removeItem('token'); localStorage.removeItem('role'); window.location.href = '/login'; }
+
+    document.getElementById('repoModal').addEventListener('click', function(e) { if (e.target === this) closeRepoModal(); });
+    document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+    document.getElementById('clearRepoModal').addEventListener('click', function(e) { if (e.target === this) closeClearRepoModal(); });
+    document.getElementById('upgradeModal').addEventListener('click', function(e) { if (e.target === this) closeUpgradeModal(); });
+    document.getElementById('paymentModal').addEventListener('click', function(e) { if (e.target === this) closePaymentModal(); });
+    document.getElementById('apiKeyModal').addEventListener('click', function(e) { if (e.target === this) closeApiKeyModal(); });
+    document.getElementById('oauthImportModal').addEventListener('click', function(e) { if (e.target === this) closeOauthImportModal(); });
+    document.getElementById('fileBrowserModal').addEventListener('click', function(e) { if (e.target === this) closeFileBrowser(); });
+    document.getElementById('tokenCheckModal').addEventListener('click', function(e) { if (e.target === this) closeTokenCheckModal(); });
+    document.getElementById('templateModal').addEventListener('click', function(e) { if (e.target === this) closeTemplateModal(); });
+    document.getElementById('scheduleModal').addEventListener('click', function(e) { if (e.target === this) closeScheduleModal(); });
+    document.getElementById('emailConfigModal').addEventListener('click', function(e) { if (e.target === this) closeEmailConfigModal(); });
+
+    loadProfile();
+    loadPlanDetail();
+    loadStats();
+    loadRepos();
+    loadHistory();
+    loadAnnouncement();
+    loadOrders();
+    loadNotifications();
+    loadApiKeys();
+    loadTeams();
+    loadWebhooks();
+    handleOauthCallback();
+    loadOnlineCount();
+    loadTemplates();
+    loadSchedules();
+    loadEmailNotifyStatus();
+    loadChartData();
+
+    // 每 30 秒轮询通知，检测套餐变更后自动刷新
+    setInterval(function() { loadNotifications(); }, 30000);
+
+    // ===== 在线人数统计 =====
+    async function loadOnlineCount() {
+      try {
+        var res = await fetch('/api/auth/online-count');
+        var data = await res.json();
+        if (data.ok) {
+          var el = document.getElementById('onlineCountBadge');
+          if (el) el.textContent = data.onlineCount;
+        }
+      } catch(e) {}
+    }
+    setInterval(loadOnlineCount, 60 * 1000);
+
+    async function loadAnnouncement() {
+      try {
+        var res = await fetch('/api/auth/public-settings');
+        var data = await res.json();
+        if (data.ok && data.settings.announcement) {
+          document.getElementById('announcementText').textContent = data.settings.announcement;
+          document.getElementById('announcementBox').style.display = 'flex';
+        }
+      } catch (e) {}
+    }
+
+    // ===== 第二阶段：我的订单 =====
+    var currentPayOrderId = null;
+
+    async function loadOrders() {
+      var data = await apiFetch('/api/auth/my-orders');
+      if (data && data.ok && data.orders.length > 0) {
+        var tbody = document.getElementById('ordersBody');
+        tbody.innerHTML = data.orders.map(function(o) {
+          var time = new Date(o.createdAt).toLocaleString('zh-CN');
+          var statusBadge = o.status === 'paid' ? '<span class="badge badge-green">已开通</span>' :
+                            o.status === 'paid_pending' ? '<span class="badge badge-yellow">待确认</span>' :
+                            '<span class="badge badge-gray">待支付</span>';
+          var planName = { free: '免费版', pro: '专业版', enterprise: '企业版' }[o.plan] || o.plan;
+          var periodText = o.period === 'yearly' ? '年付' : '月付';
+          var payBtn = (o.status === 'pending') ? '<button class="btn btn-primary btn-sm" onclick="openPaymentModal(' + o.id + ')">去支付</button>' : '';
+          return '<tr><td style="font-family:monospace;font-size:12px;">' + escapeHtml(o.orderNo) + '</td><td>' + planName + '</td><td>¥' + o.amount + '</td><td>' + periodText + '</td><td>' + statusBadge + '</td><td>' + time + '</td><td>' + payBtn + '</td></tr>';
+        }).join('');
+        // 更新表头
+        var thead = document.querySelector('#ordersBody').closest('table').querySelector('thead tr');
+        if (thead.children.length === 6) {
+          thead.innerHTML = '<th>订单号</th><th>套餐</th><th>金额</th><th>周期</th><th>状态</th><th>时间</th><th>操作</th>';
+        }
+      }
+    }
+
+    async function openPaymentModal(orderId) {
+      currentPayOrderId = orderId;
+      document.getElementById('paymentAlert').innerHTML = '';
+      document.getElementById('paymentNoteInput').value = '';
+      document.getElementById('paymentOrderInfo').innerHTML = '订单 ID: ' + orderId;
+      document.getElementById('paymentQrcodes').innerHTML = '<div style="color:var(--text2);padding:20px;">加载中...</div>';
+      document.getElementById('paymentInstructionsBox').innerHTML = '';
+      document.getElementById('paymentModal').classList.add('show');
+
+      // 加载收款信息和订单详情
+      try {
+        var orderRes = await fetch('/api/auth/my-orders', { headers: authHeader() });
+        var orderData = await orderRes.json();
+        var order = null;
+        if (orderData.ok) {
+          order = orderData.orders.find(function(o) { return o.id === orderId; });
+        }
+        if (order) {
+          var planName = { free: '免费版', pro: '专业版', enterprise: '企业版' }[order.plan] || order.plan;
+          var periodText = order.period === 'yearly' ? '年付' : '月付';
+          document.getElementById('paymentOrderInfo').innerHTML =
+            '<strong>订单号:</strong> ' + escapeHtml(order.orderNo) + '<br>' +
+            '<strong>套餐:</strong> ' + planName + '<br>' +
+            '<strong>金额:</strong> ¥' + order.amount + ' (' + periodText + ')<br>' +
+            '<strong>备注码:</strong> <span style="color:var(--red);font-weight:700;font-size:16px;">' + escapeHtml(order.orderNo.slice(-6)) + '</span>';
+        }
+
+        var payRes = await fetch('/api/auth/payment-info');
+        var payData = await payRes.json();
+        if (payData.ok) {
+          var html = '';
+          if (payData.payment.alipayQrcode) {
+            html += '<div style="display:inline-block;margin:0 12px;text-align:center;">' +
+              '<img src="' + escapeHtml(payData.payment.alipayQrcode) + '" style="width:180px;height:180px;border:1px solid var(--border);border-radius:8px;">' +
+              '<div style="font-size:13px;margin-top:6px;color:var(--text2);">支付宝</div></div>';
+          }
+          if (payData.payment.wechatQrcode) {
+            html += '<div style="display:inline-block;margin:0 12px;text-align:center;">' +
+              '<img src="' + escapeHtml(payData.payment.wechatQrcode) + '" style="width:180px;height:180px;border:1px solid var(--border);border-radius:8px;">' +
+              '<div style="font-size:13px;margin-top:6px;color:var(--text2);">微信</div></div>';
+          }
+          if (!html) {
+            html = '<div style="padding:20px;color:var(--text2);">管理员尚未上传收款码，请联系管理员</div>';
+          }
+          document.getElementById('paymentQrcodes').innerHTML = html;
+          document.getElementById('paymentInstructionsBox').innerHTML = '📋 ' + escapeHtml(payData.payment.instructions || '');
+        }
+      } catch (e) {
+        document.getElementById('paymentQrcodes').innerHTML = '<div style="padding:20px;color:var(--red);">加载失败</div>';
+      }
+    }
+
+    function closePaymentModal() {
+      document.getElementById('paymentModal').classList.remove('show');
+      currentPayOrderId = null;
+    }
+
+    async function markOrderPaid() {
+      if (!currentPayOrderId) return;
+      var note = document.getElementById('paymentNoteInput').value.trim();
+      if (!note) {
+        document.getElementById('paymentAlert').innerHTML = '<div class="alert alert-err">请填写付款备注（如付款账号尾号）</div>';
+        return;
+      }
+      var btn = document.getElementById('markPaidBtn');
+      btn.disabled = true; btn.textContent = '提交中...';
+      try {
+        var res = await fetch('/api/auth/mark-order-paid', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ orderId: currentPayOrderId, paymentNote: note })
+        });
+        var data = await res.json();
+        if (data.ok) {
+          closePaymentModal();
+          showAlert(data.message, true);
+          loadOrders(); loadNotifications();
+        } else {
+          document.getElementById('paymentAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('paymentAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '我已支付';
+    }
+
+    // ===== 第二阶段：通知消息 =====
+    async function loadNotifications() {
+      var data = await apiFetch('/api/auth/notifications');
+      if (data && data.ok) {
+        var list = data.notifications || [];
+        var badge = document.getElementById('unreadBadge');
+        if (data.unreadCount > 0) {
+          badge.style.display = 'inline-block';
+          badge.textContent = data.unreadCount + ' 条未读';
+        } else {
+          badge.style.display = 'none';
+        }
+        var el = document.getElementById('notificationsList');
+        var clearBtn = document.getElementById('clearNotificationsBtn');
+        if (list.length === 0) {
+          el.innerHTML = '<div class="empty-state">暂无通知</div>';
+          clearBtn.style.display = 'none';
+        } else {
+          clearBtn.style.display = 'inline-block';
+          el.innerHTML = list.map(function(n) {
+            var time = new Date(n.createdAt).toLocaleString('zh-CN');
+            var typeIcon = { success: '✅', info: 'ℹ️', warning: '⚠️', error: '❌' }[n.type] || 'ℹ️';
+            var bg = n.isRead ? '' : 'background:rgba(59,130,246,0.03);';
+            return '<div style="padding:12px 0;border-bottom:1px solid var(--border);' + bg + 'cursor:pointer;" onclick="markRead(' + n.id + ',\'' + escapeHtml(n.title).replace(/'/g, "\\'") + '\')">' +
+              '<div style="display:flex;justify-content:space-between;align-items:start;">' +
+                '<div><span style="margin-right:6px;">' + typeIcon + '</span><strong style="font-size:14px;">' + escapeHtml(n.title) + '</strong>' +
+                (n.isRead ? '' : ' <span style="color:var(--blue);font-size:11px;">●未读</span>') + '</div>' +
+                '<span style="font-size:12px;color:var(--text2);white-space:nowrap;">' + time + '</span>' +
+              '</div>' +
+              (n.content ? '<p style="font-size:13px;color:var(--text2);margin-top:4px;">' + escapeHtml(n.content) + '</p>' : '') +
+            '</div>';
+          }).join('');
+
+          // 检测是否有"套餐开通成功"的未读通知，自动刷新套餐
+          var hasPlanUpdate = list.some(function(n) {
+            return !n.isRead && n.title === '套餐开通成功';
+          });
+          if (hasPlanUpdate) {
+            loadPlanDetail();
+          }
+        }
+      }
+    }
+
+    async function markRead(id, title) {
+      try {
+        await fetch('/api/auth/notifications', { method: 'POST', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        loadNotifications();
+        // 点击"套餐开通成功"通知时刷新套餐卡片
+        if (title === '套餐开通成功') {
+          loadPlanDetail();
+          showAlert('套餐已更新', true);
+        }
+      } catch (e) {}
+    }
+
+    async function markAllRead() {
+      try {
+        await fetch('/api/auth/notifications', { method: 'POST', headers: authHeader(), body: JSON.stringify({ markAll: true }) });
+        loadNotifications();
+        showAlert('全部已标记为已读', true);
+      } catch (e) {}
+    }
+
+    async function clearNotifications() {
+      if (!confirm('确定清除所有通知消息？此操作不可恢复。')) return;
+      try {
+        var res = await fetch('/api/auth/notifications', { method: 'DELETE', headers: authHeader() });
+        var data = await res.json();
+        if (data.ok) { showAlert('通知已清除', true); loadNotifications(); }
+        else { showAlert(data.error, false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 第三阶段：团队协作 =====
+    var teams = [];
+    var currentTeamId = null;
+    var currentTeamIsAdmin = false;
+
+    async function loadTeams() {
+      var data = await apiFetch('/api/team/list');
+      if (data && data.ok) {
+        teams = data.teams || [];
+        renderTeams();
+      } else if (data && data.needUpgrade) {
+        document.getElementById('teamList').innerHTML = '<div class="empty-state" style="color:var(--text2);">团队协作需要企业版套餐。 <a href="javascript:void(0)" onclick="openUpgradeModal()" style="color:var(--blue);">升级套餐</a></div>';
+        document.getElementById('createTeamBtn').style.display = 'none';
+      } else {
+        document.getElementById('teamList').innerHTML = '<div class="empty-state">' + escapeHtml((data && data.error) || '加载失败') + '</div>';
+      }
+    }
+
+    function renderTeams() {
+      var el = document.getElementById('teamList');
+      if (teams.length === 0) {
+        el.innerHTML = '<div class="empty-state">暂无团队，点击右上角「创建团队」开始</div>';
+        return;
+      }
+      el.innerHTML = teams.map(function(t) {
+        var roleBadge = t.role === 'admin'
+          ? '<span class="token-badge">管理员</span>'
+          : '<span class="token-badge" style="background:#fef3c7;color:#92400e;">成员</span>';
+        return '<div class="repo-card">' +
+          '<div class="repo-card-header">' +
+            '<span class="repo-card-title">' + escapeHtml(t.name) + ' ' + roleBadge + '</span>' +
+            '<div class="repo-card-actions">' +
+              '<button class="btn btn-blue btn-sm" onclick="openTeamDetail(\'' + t.id + '\')">查看详情</button>' +
+              (t.role === 'admin' ? '<button class="btn btn-red btn-sm" onclick="confirmDeleteTeamById(\'' + t.id + '\')">删除</button>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div class="repo-card-meta">' + escapeHtml(t.description || '暂无描述') + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function openTeamModal() {
+      document.getElementById('teamName').value = '';
+      document.getElementById('teamDesc').value = '';
+      document.getElementById('teamAlert').innerHTML = '';
+      document.getElementById('teamModal').classList.add('show');
+    }
+    function closeTeamModal() { document.getElementById('teamModal').classList.remove('show'); }
+
+    async function saveTeam() {
+      var name = document.getElementById('teamName').value.trim();
+      var desc = document.getElementById('teamDesc').value.trim();
+      if (!name) { document.getElementById('teamAlert').innerHTML = '<div class="alert alert-err">请输入团队名称</div>'; return; }
+      var btn = document.getElementById('saveTeamBtn');
+      btn.disabled = true; btn.textContent = '创建中...';
+      try {
+        var res = await fetch('/api/team/create', { method: 'POST', headers: authHeader(), body: JSON.stringify({ name: name, description: desc }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert('团队创建成功', true);
+          closeTeamModal();
+          await loadTeams();
+        } else {
+          if (data.needUpgrade) { showAlert(data.error, false); setTimeout(function() { openUpgradeModal(); }, 1500); }
+          else { document.getElementById('teamAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
+        }
+      } catch (e) { document.getElementById('teamAlert').innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '创建';
+    }
+
+    async function openTeamDetail(teamId) {
+      currentTeamId = teamId;
+      document.getElementById('teamDetailModal').classList.add('show');
+      document.getElementById('teamDetailAlert').innerHTML = '';
+      document.getElementById('teamMembersList').innerHTML = '<div style="color:var(--text2);padding:10px;">加载中...</div>';
+      document.getElementById('teamReposList').innerHTML = '<div style="color:var(--text2);padding:10px;">加载中...</div>';
+      document.getElementById('teamHistoryList').innerHTML = '<div style="color:var(--text2);padding:10px;">加载中...</div>';
+      try {
+        var res = await fetch('/api/team/detail', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: teamId }) });
+        var data = await res.json();
+        if (data.ok) {
+          document.getElementById('teamDetailTitle').textContent = data.team.name;
+          currentTeamIsAdmin = data.isAdmin;
+          document.getElementById('inviteSection').style.display = data.isAdmin ? 'flex' : 'none';
+          document.getElementById('deleteTeamBtn').style.display = data.isAdmin ? 'inline-block' : 'none';
+          renderTeamMembers(data.members, data.isAdmin);
+          renderTeamRepos(data.repos, data.isAdmin);
+          renderTeamHistory(data.history);
+        } else {
+          document.getElementById('teamDetailAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '加载失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('teamDetailAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+    }
+
+    function closeTeamDetailModal() { document.getElementById('teamDetailModal').classList.remove('show'); }
+
+    function renderTeamMembers(members, isAdmin) {
+      var el = document.getElementById('teamMembersList');
+      if (members.length === 0) { el.innerHTML = '<div style="color:var(--text2);padding:8px;">暂无成员</div>'; return; }
+      el.innerHTML = members.map(function(m) {
+        var roleTag = m.role === 'admin' ? '<span class="token-badge">管理员</span>' : '<span class="token-badge" style="background:#fef3c7;color:#92400e;">成员</span>';
+        var actions = '';
+        if (isAdmin && m.role !== 'admin') {
+          actions = '<button class="btn btn-outline btn-sm" onclick="setMemberRole(\'' + m.userId + '\',\'admin\')">设为管理员</button> ' +
+                     '<button class="btn btn-red btn-sm" onclick="removeMember(\'' + m.userId + '\')">移除</button>';
+        } else if (isAdmin && m.role === 'admin') {
+          actions = '<button class="btn btn-outline btn-sm" onclick="setMemberRole(\'' + m.userId + '\',\'member\')">设为成员</button>';
+        }
+        return '<div class="file-preview-item">' +
+          '<span class="file-path">' + escapeHtml(m.username) + ' ' + roleTag + '</span>' +
+          '<span style="display:flex;gap:6px;">' + actions + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderTeamRepos(repos, isAdmin) {
+      var el = document.getElementById('teamReposList');
+      if (repos.length === 0) { el.innerHTML = '<div style="color:var(--text2);padding:8px;">暂无共享仓库</div>'; return; }
+      el.innerHTML = repos.map(function(r) {
+        var actions = isAdmin ? '<button class="btn btn-red btn-sm" onclick="unshareRepo(' + r.repoId + ')">取消共享</button>' : '';
+        return '<div class="file-preview-item">' +
+          '<span class="file-path">' + escapeHtml(r.repoName) + ' (' + escapeHtml(r.repoUrl) + ')</span>' +
+          '<span style="display:flex;gap:6px;align-items:center;">' +
+            '<span style="font-size:12px;color:var(--text2);">共享者: ' + escapeHtml(r.sharedByName) + '</span>' +
+            actions +
+          '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderTeamHistory(history) {
+      var el = document.getElementById('teamHistoryList');
+      if (history.length === 0) { el.innerHTML = '<div style="color:var(--text2);padding:8px;">暂无动态</div>'; return; }
+      el.innerHTML = history.map(function(h) {
+        var time = new Date(h.time).toLocaleString('zh-CN');
+        return '<div class="file-preview-item">' +
+          '<span class="file-path">[' + escapeHtml(h.username) + '] ' + escapeHtml(h.fileName || '-') + ' → ' + escapeHtml(h.repo) + '</span>' +
+          '<span class="file-size">' + time + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function inviteMember() {
+      var username = document.getElementById('inviteUsername').value.trim();
+      if (!username) { showAlert('请输入用户名', false); return; }
+      try {
+        var res = await fetch('/api/team/invite', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: currentTeamId, username: username }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert(data.message, true);
+          document.getElementById('inviteUsername').value = '';
+          openTeamDetail(currentTeamId);
+        } else {
+          showAlert(data.error || '邀请失败', false);
+        }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function removeMember(userId) {
+      if (!confirm('确定移除该成员？')) return;
+      try {
+        var res = await fetch('/api/team/remove-member', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: currentTeamId, userId: userId }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('成员已移除', true); openTeamDetail(currentTeamId); }
+        else { showAlert(data.error || '操作失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function setMemberRole(userId, role) {
+      try {
+        var res = await fetch('/api/team/update-role', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: currentTeamId, userId: userId, role: role }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('角色已更新', true); openTeamDetail(currentTeamId); }
+        else { showAlert(data.error || '操作失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function loadShareRepos() {
+      try {
+        var res = await fetch('/api/team/my-repos', { headers: authHeader() });
+        var data = await res.json();
+        if (data.ok) {
+          var el = document.getElementById('shareRepoList');
+          if (data.repos.length === 0) {
+            el.innerHTML = '<div class="empty-state">你还没有配置仓库</div>';
+          } else {
+            el.innerHTML = data.repos.map(function(r) {
+              return '<div class="file-preview-item">' +
+                '<span class="file-path">' + escapeHtml(r.name) + ' (' + escapeHtml(r.repo) + ')</span>' +
+                '<button class="btn btn-blue btn-sm" onclick="shareRepo(' + r.id + ')">共享</button>' +
+              '</div>';
+            }).join('');
+          }
+          document.getElementById('shareRepoModal').classList.add('show');
+        } else { showAlert(data.error || '加载失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    function closeShareRepoModal() { document.getElementById('shareRepoModal').classList.remove('show'); }
+
+    async function shareRepo(repoId) {
+      try {
+        var res = await fetch('/api/team/share-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: currentTeamId, repoId: repoId }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert('仓库已共享', true);
+          closeShareRepoModal();
+          openTeamDetail(currentTeamId);
+        } else { showAlert(data.error || '共享失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function unshareRepo(repoId) {
+      if (!confirm('确定取消共享该仓库？')) return;
+      try {
+        var res = await fetch('/api/team/unshare-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: currentTeamId, repoId: repoId }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('已取消共享', true); openTeamDetail(currentTeamId); }
+        else { showAlert(data.error || '操作失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    function confirmDeleteTeam() {
+      if (!confirm('确定删除团队？所有成员和共享记录将被清除，此操作不可恢复。')) return;
+      deleteTeamById(currentTeamId);
+    }
+
+    function confirmDeleteTeamById(teamId) {
+      if (!confirm('确定删除团队？所有成员和共享记录将被清除，此操作不可恢复。')) return;
+      deleteTeamById(teamId);
+    }
+
+    async function deleteTeamById(teamId) {
+      try {
+        var res = await fetch('/api/team/delete', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: teamId }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert('团队已删除', true);
+          closeTeamDetailModal();
+          await loadTeams();
+        } else { showAlert(data.error || '删除失败', false); }
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 第二阶段：API 密钥 =====
+    async function loadApiKeys() {
+      var data = await apiFetch('/api/auth/api-keys');
+      if (data && data.ok) {
+        var el = document.getElementById('apiKeysList');
+        if (data.keys.length === 0) {
+          el.innerHTML = '<div class="empty-state">暂无 API 密钥</div>';
+        } else {
+          el.innerHTML = data.keys.map(function(k) {
+            var time = new Date(k.createdAt).toLocaleDateString('zh-CN');
+            var lastUsed = k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('zh-CN') : '未使用';
+            return '<div class="repo-card">' +
+              '<div class="repo-card-header">' +
+                '<span class="repo-card-title">' + escapeHtml(k.keyName) + ' <span class="token-badge">' + escapeHtml(k.status) + '</span></span>' +
+                '<div class="repo-card-actions">' +
+                  '<button class="btn btn-outline btn-sm" onclick="copyApiKey(\'' + escapeHtml(k.apiKey) + '\')">复制</button>' +
+                  '<button class="btn btn-red btn-sm" onclick="removeApiKey(' + k.id + ')">删除</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="repo-card-meta">密钥: <code style="font-size:12px;word-break:break-all;">' + escapeHtml(k.apiKey.substring(0, 16)) + '...</code><br>创建: ' + time + ' | 最后使用: ' + lastUsed + '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+    }
+
+    function openApiKeyModal() {
+      document.getElementById('apiKeyName').value = '';
+      document.getElementById('apiKeyAlert').innerHTML = '';
+      document.getElementById('apiKeyModal').classList.add('show');
+    }
+    function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.remove('show'); }
+
+    async function createApiKeyAction() {
+      var name = document.getElementById('apiKeyName').value.trim() || 'default';
+      // 检查是否企业版
+      if (!currentPlan || currentPlan.id !== 'enterprise') {
+        document.getElementById('apiKeyAlert').innerHTML = '<div class="alert alert-err">API 密钥仅企业版可用，请先升级</div>';
+        return;
+      }
+      var btn = document.getElementById('createApiKeyBtn');
+      btn.disabled = true; btn.textContent = '创建中...';
+      try {
+        var res = await fetch('/api/auth/api-keys', { method: 'POST', headers: authHeader(), body: JSON.stringify({ keyName: name }) });
+        var data = await res.json();
+        if (data.ok) {
+          closeApiKeyModal();
+          showAlert('API 密钥已创建：' + data.key.apiKey, true);
+          loadApiKeys();
+        } else {
+          document.getElementById('apiKeyAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('apiKeyAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '创建';
+    }
+
+    async function removeApiKey(id) {
+      if (!confirm('确定删除此 API 密钥？')) return;
+      try {
+        var res = await fetch('/api/auth/api-keys', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('密钥已删除', true); loadApiKeys(); }
+      } catch (e) {}
+    }
+
+    function copyApiKey(key) {
+      var textarea = document.createElement('textarea');
+      textarea.value = key;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); showAlert('密钥已复制到剪贴板', true); } catch (e) { showAlert('复制失败', false); }
+      document.body.removeChild(textarea);
+    }
+
+    // ===== Webhook 配置 =====
+    var WEBHOOK_PLATFORM_LABELS = { feishu: '飞书', dingtalk: '钉钉', wecom: '企业微信', discord: 'Discord', custom: '自定义' };
+    var WEBHOOK_EVENT_LABELS = { upload_success: '上传成功', upload_failed: '上传失败', repo_added: '仓库添加', repo_deleted: '仓库删除' };
+
+    function webhookAlert(msg, ok) {
+      document.getElementById('webhookFormAlert').innerHTML = '<div class="alert ' + (ok ? 'alert-ok' : 'alert-err') + '">' + escapeHtml(msg) + '</div>';
+    }
+
+    function toggleWebhookForm() {
+      var form = document.getElementById('webhookForm');
+      var isHidden = form.style.display === 'none';
+      if (isHidden) {
+        document.getElementById('webhookUrl').value = '';
+        document.getElementById('webhookSecret').value = '';
+        document.getElementById('webhookPlatform').value = 'feishu';
+        document.querySelectorAll('.webhook-event').forEach(function(c) { c.checked = (c.value === 'upload_success'); });
+        document.getElementById('webhookFormAlert').innerHTML = '';
+      }
+      form.style.display = isHidden ? 'block' : 'none';
+    }
+
+    async function loadWebhooks() {
+      var data = await apiFetch('/api/webhook');
+      var el = document.getElementById('webhookList');
+      if (data && data.ok && data.webhooks && data.webhooks.length > 0) {
+        el.innerHTML = data.webhooks.map(function(w) {
+          var platformLabel = WEBHOOK_PLATFORM_LABELS[w.platform] || w.platform || '未知';
+          var eventsLabel = (w.events || []).map(function(e) { return WEBHOOK_EVENT_LABELS[e] || e; }).join('、') || '无';
+          return '<div class="webhook-card">' +
+            '<div class="webhook-info">' +
+              '<div><span class="webhook-platform">' + escapeHtml(platformLabel) + '</span><span class="webhook-url">' + escapeHtml(w.url) + '</span></div>' +
+              '<div class="webhook-events">事件：' + escapeHtml(eventsLabel) + (w.secret ? ' · 已配置密钥' : '') + '</div>' +
+            '</div>' +
+            '<div class="webhook-actions">' +
+              '<button class="btn btn-outline btn-sm" onclick="testWebhook(' + w.id + ')" id="webhookTestBtn_' + w.id + '">测试</button>' +
+              '<button class="btn btn-red btn-sm" onclick="deleteWebhook(' + w.id + ')">删除</button>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      } else {
+        el.innerHTML = '<div class="empty-state">' + (data && data.error && !data.ok ? escapeHtml(data.error) : '暂无 Webhook 配置') + '</div>';
+      }
+    }
+
+    async function saveWebhook() {
+      var url = document.getElementById('webhookUrl').value.trim();
+      var platform = document.getElementById('webhookPlatform').value;
+      var secret = document.getElementById('webhookSecret').value.trim();
+      var events = [];
+      document.querySelectorAll('.webhook-event:checked').forEach(function(c) { events.push(c.value); });
+      if (!url) { webhookAlert('请填写 Webhook URL', false); return; }
+      if (events.length === 0) { webhookAlert('请至少选择一个事件类型', false); return; }
+      var btn = document.getElementById('saveWebhookBtn');
+      btn.disabled = true; btn.textContent = '保存中...';
+      try {
+        var res = await fetch('/api/webhook', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'create', url: url, platform: platform, events: events, secret: secret }) });
+        var data = await res.json();
+        if (data.ok) {
+          toggleWebhookForm();
+          showAlert('Webhook 已添加', true);
+          loadWebhooks();
+        } else {
+          webhookAlert(data.error || '保存失败', false);
+        }
+      } catch (e) {
+        webhookAlert('网络错误', false);
+      }
+      btn.disabled = false; btn.textContent = '保存 Webhook';
+    }
+
+    async function testWebhook(id) {
+      var btn = document.getElementById('webhookTestBtn_' + id);
+      btn.disabled = true; btn.textContent = '测试中...';
+      try {
+        var res = await fetch('/api/webhook', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'test', id: id }) });
+        var data = await res.json();
+        if (data.ok) showAlert('测试消息已发送', true);
+        else showAlert(data.error || '测试失败', false);
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+      btn.disabled = false; btn.textContent = '测试';
+    }
+
+    async function deleteWebhook(id) {
+      if (!confirm('确定删除此 Webhook 配置？')) return;
+      try {
+        var res = await fetch('/api/webhook', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('Webhook 已删除', true); loadWebhooks(); }
+        else { showAlert(data.error || '删除失败', false); }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
+    // ===== GitHub OAuth 仓库导入 =====
+    async function startGithubOAuth() {
+      var btn = document.getElementById('oauthBtn');
+      btn.disabled = true; btn.textContent = '获取授权链接...';
+      try {
+        var res = await fetch('/api/oauth/auth-url', { headers: authHeader() });
+        var data = await res.json();
+        if (data.ok) {
+          if (data.enabled === false) {
+            modalAlert('管理员未配置 OAuth，请联系管理员或手动填写 Token', false);
+          } else if (data.authUrl) {
+            window.open(data.authUrl, '_blank', 'width=600,height=700');
+            modalAlert('已打开 GitHub 授权页面，授权完成后将自动返回本页面', true);
+          } else {
+            modalAlert('未获取到授权链接', false);
+          }
+        } else {
+          modalAlert(data.error || '获取授权链接失败', false);
+        }
+      } catch (e) {
+        modalAlert('网络错误', false);
+      }
+      btn.disabled = false; btn.textContent = 'GitHub 一键授权';
+    }
+
+    function closeOauthImportModal() {
+      document.getElementById('oauthImportModal').classList.remove('show');
+    }
+
+    // 检测 URL 中的 oauth_token 参数
+    var oauthCallbackToken = null; // 保存 OAuth token 供导入仓库时使用
+    async function handleOauthCallback() {
+      var params = new URLSearchParams(window.location.search);
+      var oauthToken = params.get('oauth_token');
+      if (!oauthToken) return;
+      oauthCallbackToken = oauthToken; // 保存 token
+      // 清理 URL 参数
+      var cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      document.getElementById('oauthImportModal').classList.add('show');
+      document.getElementById('oauthImportAlert').innerHTML = '<div class="alert alert-ok">授权成功，正在获取仓库列表...</div>';
+      document.getElementById('oauthRepoList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);">加载中...</div>';
+
+      try {
+        var res = await fetch('/api/oauth/import-token', { method: 'POST', headers: authHeader(), body: JSON.stringify({ token: oauthToken }) });
+        var data = await res.json();
+        if (data.ok && data.repos && data.repos.length > 0) {
+          document.getElementById('oauthImportAlert').innerHTML = '';
+          if (data.githubUser) {
+            document.getElementById('oauthImportAlert').innerHTML = '<div class="alert alert-ok">已授权账号: ' + escapeHtml(data.githubUser.login) + '</div>';
+          }
+          document.getElementById('oauthRepoList').innerHTML = data.repos.map(function(r) {
+            return '<div class="oauth-repo-item">' +
+              '<div>' +
+                '<div class="oauth-repo-name">' + escapeHtml(r.fullName || r.name) + '</div>' +
+                '<div class="oauth-repo-desc">' + escapeHtml(r.description || '无描述') + ' · ' + escapeHtml(r.defaultBranch || 'main') + (r.private ? ' · 私有' : ' · 公开') + '</div>' +
+              '</div>' +
+              '<button class="btn btn-primary btn-sm" onclick="importOauthRepo(\'' + escapeHtml(r.fullName || r.name) + '\',\'' + escapeHtml(r.cloneUrl || r.url) + '\',\'' + escapeHtml(r.defaultBranch || 'main') + '\')">导入</button>' +
+            '</div>';
+          }).join('');
+        } else {
+          document.getElementById('oauthImportAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error || '未获取到仓库列表') + '</div>';
+          document.getElementById('oauthRepoList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);">暂无仓库</div>';
+        }
+      } catch (e) {
+        document.getElementById('oauthImportAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+        document.getElementById('oauthRepoList').innerHTML = '';
+      }
+    }
+
+    async function importOauthRepo(fullName, cloneUrl, defaultBranch) {
+      if (!confirm('确定导入仓库 ' + fullName + '？')) return;
+      if (!oauthCallbackToken) {
+        showAlert('授权已过期，请重新进行 GitHub 授权', false);
+        closeOauthImportModal();
+        return;
+      }
+      try {
+        var res = await fetch('/api/oauth/import-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ token: oauthCallbackToken, repoUrl: cloneUrl, repoName: fullName, branch: defaultBranch }) });
+        var data = await res.json();
+        if (data.ok) {
+          showAlert('仓库已导入：' + fullName, true);
+          closeOauthImportModal();
+          oauthCallbackToken = null; // 导入后清除 token
+          await loadRepos();
+          await loadStats();
+        } else {
+          showAlert(data.error || '导入失败', false);
+        }
+      } catch (e) {
+        showAlert('网络错误', false);
+      }
+    }
+
+    // ===== 上传结果弹窗 =====
+    function showResultModal(opts) {
+      var overlay = document.getElementById('resultOverlay');
+      if (!overlay) return;
+      var type = opts.type || 'info';
+      var icon = type === 'ok' ? '✓' : (type === 'err' ? '✕' : 'i');
+      var iconClass = type === 'ok' ? 'result-icon-ok' : (type === 'err' ? 'result-icon-err' : 'result-icon-info');
+      var title = opts.title || (type === 'ok' ? '上传成功' : (type === 'err' ? '上传失败' : '提示'));
+      var msg = opts.message || '';
+      var details = opts.details || [];
+      var btnText = opts.btnText || (type === 'ok' ? '完成' : '知道了');
+      var btnClass = type === 'ok' ? 'result-btn-ok' : 'result-btn-err';
+      var onBtn = opts.onClose || function(){};
+
+      var detailsHtml = details.length
+        ? '<div class="result-details">' + details.map(function(d) {
+            return '<div class="result-detail-row"><span class="result-detail-label">' + escapeHtml(d.label) + '</span><span class="result-detail-value">' + escapeHtml(d.value) + '</span></div>';
+          }).join('') + '</div>'
+        : '';
+
+      overlay.querySelector('.result-modal').innerHTML =
+        '<div class="result-icon-wrap ' + iconClass + '">' + icon + '</div>' +
+        '<div class="result-title">' + escapeHtml(title) + '</div>' +
+        (msg ? '<div class="result-message">' + escapeHtml(msg) + '</div>' : '') +
+        detailsHtml +
+        '<div class="result-actions"><button class="result-btn ' + btnClass + '" id="resultCloseBtn">' + escapeHtml(btnText) + '</button></div>';
+
+      overlay.classList.add('show');
+      document.getElementById('resultCloseBtn').onclick = function() {
+        overlay.classList.remove('show');
+        onBtn();
+      };
+
+      if (type === 'ok') spawnConfetti(overlay);
+    }
+
+    function spawnConfetti(overlay) {
+      var colors = ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ec4899'];
+      for (var i = 0; i < 12; i++) {
+        (function(idx) {
+          setTimeout(function() {
+            var c = document.createElement('div');
+            c.className = 'result-confetti';
+            c.style.left = (40 + Math.random() * 20) + '%';
+            c.style.top = '30%';
+            c.style.background = colors[idx % colors.length];
+            c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            overlay.appendChild(c);
+            setTimeout(function() { c.remove(); }, 1300);
+          }, idx * 40);
+        })(i);
+      }
+    }
+
+    // ===== 功能1: 仓库文件在线浏览 =====
+    var fileBrowserRepoId = null;
+
+    async function openFileBrowser(id) {
+      var r = repos.find(function(x) { return String(x.id) === String(id); });
+      if (!r) return;
+      fileBrowserRepoId = id;
+      document.getElementById('fileBrowserTitle').textContent = '仓库文件浏览 - ' + r.name;
+      document.getElementById('fileBrowserAlert').innerHTML = '';
+      document.getElementById('fileBrowserContent').style.display = 'none';
+      document.getElementById('fileViewerContent').style.display = 'none';
+      document.getElementById('fileBrowserLoading').style.display = 'block';
+      document.getElementById('fileBrowserModal').classList.add('show');
+
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'preview-files', repoId: id }) });
+        var data = await res.json();
+        document.getElementById('fileBrowserLoading').style.display = 'none';
+        if (data.ok) {
+          if (data.totalFiles === 0) {
+            document.getElementById('fileBrowserContent').style.display = 'block';
+            document.getElementById('fileBrowserList').innerHTML = '<div style="padding:16px;text-align:center;color:var(--text2);">仓库是空的</div>';
+          } else {
+            var html = data.files.map(function(f) {
+              return '<div class="file-preview-item" style="cursor:pointer;" onclick="viewFileContent(\'' + escapeHtml(f.path) + '\')">' +
+                '<span class="file-path">' + escapeHtml(f.path) + '</span>' +
+                '<span class="file-size">' + formatSize(f.size) + '</span>' +
+              '</div>';
+            }).join('');
+            document.getElementById('fileBrowserContent').style.display = 'block';
+            document.getElementById('fileBrowserList').innerHTML = html;
+          }
+        } else {
+          document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('fileBrowserLoading').style.display = 'none';
+        document.getElementById('fileBrowserAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+    }
+
+    async function viewFileContent(filePath) {
+      document.getElementById('fileBrowserContent').style.display = 'none';
+      document.getElementById('fileViewerContent').style.display = 'block';
+      document.getElementById('fileViewerPath').textContent = filePath;
+      document.getElementById('fileViewerPre').innerHTML = '<div style="color:var(--text2);">加载中...</div>';
+
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'file-content', repoId: fileBrowserRepoId, path: filePath }) });
+        var data = await res.json();
+        if (data.ok) {
+          if (data.encoding === 'base64' && data.isBinary) {
+            document.getElementById('fileViewerPre').innerHTML = '<img src="data:image/png;base64,' + data.content + '" style="max-width:100%;">';
+          } else if (data.encoding === 'binary') {
+            document.getElementById('fileViewerPre').textContent = '(二进制文件，无法在线预览)';
+          } else {
+            document.getElementById('fileViewerPre').textContent = data.content;
+          }
+        } else {
+          document.getElementById('fileViewerPre').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('fileViewerPre').textContent = '加载失败: ' + e.message;
+      }
+    }
+
+    function closeFileViewer() {
+      document.getElementById('fileViewerContent').style.display = 'none';
+      document.getElementById('fileBrowserContent').style.display = 'block';
+    }
+
+    function closeFileBrowser() {
+      document.getElementById('fileBrowserModal').classList.remove('show');
+      fileBrowserRepoId = null;
+    }
+
+    // ===== 功能3: Token 过期检测 =====
+    async function checkTokenStatus(id) {
+      var btn = document.getElementById('tokenBtn_' + id);
+      if (btn) { btn.disabled = true; btn.textContent = '检测中...'; }
+      document.getElementById('tokenCheckModal').classList.add('show');
+      document.getElementById('tokenCheckAlert').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);">正在检测 Token 状态...</div>';
+      document.getElementById('tokenCheckResult').innerHTML = '';
+
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'check-token', repoId: id }) });
+        var data = await res.json();
+        document.getElementById('tokenCheckAlert').innerHTML = '';
+        if (data.ok && data.valid) {
+          var html = '<div class="alert alert-ok">✓ Token 有效</div>';
+          html += '<div style="background:var(--bg);border-radius:8px;padding:16px;margin-top:12px;">';
+          if (data.userInfo) {
+            html += '<div style="margin-bottom:8px;"><strong>GitHub 用户:</strong> ' + escapeHtml(data.userInfo.login) + '</div>';
+          }
+          if (data.remaining !== undefined && data.remaining >= 0) {
+            html += '<div style="margin-bottom:8px;"><strong>剩余 API 调用:</strong> ' + data.remaining + '</div>';
+          }
+          html += '</div>';
+          document.getElementById('tokenCheckResult').innerHTML = html;
+        } else if (data.ok && data.expired) {
+          document.getElementById('tokenCheckResult').innerHTML = '<div class="alert alert-err">✗ Token 已过期或无效，请更新仓库 Token</div>';
+        } else {
+          document.getElementById('tokenCheckResult').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.message || data.error || '检测失败') + '</div>';
+        }
+      } catch (e) {
+        document.getElementById('tokenCheckAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Token'; }
+    }
+
+    function closeTokenCheckModal() {
+      document.getElementById('tokenCheckModal').classList.remove('show');
+    }
+
+    // ===== 功能5: 上传模板管理 =====
+    async function loadTemplates() {
+      var data = await apiFetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'list-templates' }) });
+      var el = document.getElementById('templateList');
+      if (data && data.ok && data.templates && data.templates.length > 0) {
+        el.innerHTML = data.templates.map(function(t) {
+          var repoName = '-';
+          var r = repos.find(function(x) { return String(x.id) === String(t.repoId); });
+          if (r) repoName = r.name;
+          return '<div class="repo-card">' +
+            '<div class="repo-card-header">' +
+              '<span class="repo-card-title">' + escapeHtml(t.name) + '</span>' +
+              '<div class="repo-card-actions">' +
+                '<button class="btn btn-blue btn-sm" onclick="applyTemplate(' + t.id + ')">应用</button>' +
+                '<button class="btn btn-red btn-sm" onclick="removeTemplate(' + t.id + ')">删除</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="repo-card-meta">仓库: ' + escapeHtml(repoName) + ' | 目录: ' + escapeHtml(t.targetDir) + (t.commitMsg ? ' | Commit: ' + escapeHtml(t.commitMsg) : '') + '</div>' +
+          '</div>';
+        }).join('');
+      } else {
+        el.innerHTML = '<div class="empty-state">' + (data && data.error ? escapeHtml(data.error) : '暂无模板，保存常用配置后可一键复用') + '</div>';
+      }
+    }
+
+    function openTemplateModal() {
+      var sel = document.getElementById('tplRepo');
+      sel.innerHTML = repos.map(function(r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('');
+      document.getElementById('tplName').value = '';
+      document.getElementById('tplTargetDir').value = '';
+      document.getElementById('tplCommitMsg').value = '';
+      document.getElementById('templateAlert').innerHTML = '';
+      document.getElementById('templateModal').classList.add('show');
+    }
+
+    function closeTemplateModal() { document.getElementById('templateModal').classList.remove('show'); }
+
+    async function saveTemplate() {
+      var name = document.getElementById('tplName').value.trim();
+      if (!name) { document.getElementById('templateAlert').innerHTML = '<div class="alert alert-err">请填写模板名称</div>'; return; }
+      var btn = document.getElementById('saveTemplateBtn');
+      btn.disabled = true; btn.textContent = '保存中...';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({
+          _action: 'create-template',
+          name: name,
+          repoId: parseInt(document.getElementById('tplRepo').value),
+          targetDir: document.getElementById('tplTargetDir').value.trim() || '.',
+          commitMsg: document.getElementById('tplCommitMsg').value.trim()
+        }) });
+        var data = await res.json();
+        if (data.ok) { closeTemplateModal(); showAlert('模板已保存', true); loadTemplates(); }
+        else { document.getElementById('templateAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
+      } catch (e) { document.getElementById('templateAlert').innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '保存';
+    }
+
+    function applyTemplate(id) {
+      var data = document.getElementById('templateList')._templates;
+      // Reload templates to find the one
+      fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'list-templates' }) })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            var tpl = data.templates.find(function(t) { return t.id === id; });
+            if (tpl) {
+              if (tpl.repoId) document.getElementById('uploadRepoSelect').value = tpl.repoId;
+              document.getElementById('repoTargetDir') && (document.getElementById('repoTargetDir').value = tpl.targetDir || '.');
+              if (tpl.commitMsg) document.getElementById('commitMsgInput').value = tpl.commitMsg;
+              showAlert('已应用模板: ' + tpl.name, true);
+            }
+          }
+        });
+    }
+
+    async function removeTemplate(id) {
+      if (!confirm('确定删除此模板？')) return;
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-template', id: id }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('模板已删除', true); loadTemplates(); }
+      } catch (e) {}
+    }
+
+    // ===== 功能4: 定时上传任务 =====
+    async function loadSchedules() {
+      var data = await apiFetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'list-schedules' }) });
+      var el = document.getElementById('scheduleList');
+      if (data && data.ok && data.schedules && data.schedules.length > 0) {
+        el.innerHTML = data.schedules.map(function(s) {
+          var repoName = '-';
+          var r = repos.find(function(x) { return String(x.id) === String(s.repoId); });
+          if (r) repoName = r.name;
+          var cronLabel = { hourly: '每小时', daily: '每天', weekly: '每周' }[s.cron] || s.cron || '每天';
+          var statusBadge = s.enabled ? '<span class="badge badge-green">启用</span>' : '<span class="badge badge-gray">已暂停</span>';
+          var toggleBtn = s.enabled
+            ? '<button class="btn btn-outline btn-sm" onclick="toggleSchedule(' + s.id + ', false)">暂停</button>'
+            : '<button class="btn btn-blue btn-sm" onclick="toggleSchedule(' + s.id + ', true)">启用</button>';
+          return '<div class="repo-card">' +
+            '<div class="repo-card-header">' +
+              '<span class="repo-card-title">' + escapeHtml(s.name) + ' ' + statusBadge + '</span>' +
+              '<div class="repo-card-actions">' +
+                toggleBtn +
+                '<button class="btn btn-red btn-sm" onclick="removeSchedule(' + s.id + ')">删除</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="repo-card-meta">仓库: ' + escapeHtml(repoName) + ' | 频率: ' + cronLabel + ' | 已运行: ' + (s.runCount || 0) + ' 次' + (s.lastRun ? ' | 上次: ' + new Date(s.lastRun).toLocaleString('zh-CN') : '') + '</div>' +
+          '</div>';
+        }).join('');
+      } else {
+        el.innerHTML = '<div class="empty-state">' + (data && data.error ? escapeHtml(data.error) : '暂无定时任务') + '</div>';
+      }
+    }
+
+    function openScheduleModal() {
+      var sel = document.getElementById('schedRepo');
+      sel.innerHTML = repos.map(function(r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('');
+      document.getElementById('schedName').value = '';
+      document.getElementById('schedFileContent').value = '';
+      document.getElementById('schedTargetDir').value = '';
+      document.getElementById('scheduleAlert').innerHTML = '';
+      document.getElementById('scheduleModal').classList.add('show');
+    }
+
+    function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('show'); }
+
+    async function saveSchedule() {
+      var name = document.getElementById('schedName').value.trim();
+      if (!name) { document.getElementById('scheduleAlert').innerHTML = '<div class="alert alert-err">请填写任务名称</div>'; return; }
+      var content = document.getElementById('schedFileContent').value.trim();
+      if (!content) { document.getElementById('scheduleAlert').innerHTML = '<div class="alert alert-err">请填写文件内容</div>'; return; }
+      var btn = document.getElementById('saveScheduleBtn');
+      btn.disabled = true; btn.textContent = '创建中...';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({
+          _action: 'create-schedule',
+          name: name,
+          repoId: parseInt(document.getElementById('schedRepo').value),
+          fileData: { fileName: 'auto_backup.txt', content: content },
+          targetDir: document.getElementById('schedTargetDir').value.trim() || '.',
+          commitMsg: '定时自动上传 - {date}',
+          cron: document.getElementById('schedCron').value,
+          enabled: true
+        }) });
+        var data = await res.json();
+        if (data.ok) { closeScheduleModal(); showAlert('定时任务已创建', true); loadSchedules(); }
+        else { document.getElementById('scheduleAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
+      } catch (e) { document.getElementById('scheduleAlert').innerHTML = '<div class="alert alert-err">网络错误</div>'; }
+      btn.disabled = false; btn.textContent = '创建';
+    }
+
+    async function toggleSchedule(id, enabled) {
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'toggle-schedule', id: id, enabled: enabled }) });
+        var data = await res.json();
+        if (data.ok) { showAlert(enabled ? '任务已启用' : '任务已暂停', true); loadSchedules(); }
+      } catch (e) {}
+    }
+
+    async function removeSchedule(id) {
+      if (!confirm('确定删除此定时任务？')) return;
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'delete-schedule', id: id }) });
+        var data = await res.json();
+        if (data.ok) { showAlert('任务已删除', true); loadSchedules(); }
+      } catch (e) {}
+    }
+
+    // ===== 功能6: 邮件通知 =====
+    async function loadEmailConfig() {
+      document.getElementById('emailConfigModal').classList.add('show');
+      document.getElementById('emailConfigAlert').innerHTML = '';
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'get-email-config' }) });
+        var data = await res.json();
+        if (data.ok) {
+          var cfg = data.config || {};
+          var un = data.userNotify || {};
+          document.getElementById('emailProvider').value = cfg.provider || 'resend';
+          document.getElementById('emailApiKey').value = cfg.apiKey || '';
+          document.getElementById('emailWebhookUrl').value = cfg.webhookUrl || '';
+          document.getElementById('userNotifyEmail').value = un.email || '';
+          document.getElementById('userNotifyEnabled').checked = un.enabled || false;
+          if (cfg.provider === 'webhook') {
+            document.getElementById('emailWebhookField').style.display = 'block';
+          }
+        }
+      } catch (e) {}
+    }
+
+    function closeEmailConfigModal() { document.getElementById('emailConfigModal').classList.remove('show'); }
+
+    async function saveEmailConfig() {
+      var btn = document.getElementById('saveEmailConfigBtn');
+      btn.disabled = true; btn.textContent = '保存中...';
+      try {
+        // 保存系统邮件配置
+        await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({
+          _action: 'set-email-config',
+          provider: document.getElementById('emailProvider').value,
+          apiKey: document.getElementById('emailApiKey').value.trim(),
+          webhookUrl: document.getElementById('emailWebhookUrl').value.trim()
+        }) });
+        // 保存用户通知配置
+        await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({
+          _action: 'set-user-email-notify',
+          enabled: document.getElementById('userNotifyEnabled').checked,
+          email: document.getElementById('userNotifyEmail').value.trim()
+        }) });
+        closeEmailConfigModal();
+        showAlert('邮件配置已保存', true);
+        loadEmailNotifyStatus();
+      } catch (e) {
+        document.getElementById('emailConfigAlert').innerHTML = '<div class="alert alert-err">网络错误</div>';
+      }
+      btn.disabled = false; btn.textContent = '保存';
+    }
+
+    async function loadEmailNotifyStatus() {
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'get-email-config' }) });
+        var data = await res.json();
+        if (data.ok) {
+          var un = data.userNotify || {};
+          var cfg = data.config || {};
+          var el = document.getElementById('emailNotifyStatus');
+          if (un.enabled && un.email) {
+            el.innerHTML = '<div class="alert alert-ok" style="margin:0;">✓ 邮件通知已开启 (' + escapeHtml(un.email) + ')</div>';
+          } else if (!cfg.apiKey && !cfg.webhookUrl) {
+            el.innerHTML = '<div class="empty-state">管理员尚未配置邮件服务，点击"配置"设置</div>';
+          } else {
+            el.innerHTML = '<div class="empty-state">邮件通知未开启，点击"配置"开启</div>';
+          }
+        }
+      } catch (e) {}
+    }
+
+    // ===== 功能7: 数据统计图表 =====
+    var trendChartInstance = null;
+    var repoDistChartInstance = null;
+
+    async function loadChartData() {
+      try {
+        var res = await fetch('/api/config', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'chart-data', days: 30 }) });
+        var data = await res.json();
+        if (data.ok) {
+          renderTrendChart(data.trend || []);
+          renderRepoDistChart(data.repoDist || []);
+        }
+      } catch (e) {}
+    }
+
+    function renderTrendChart(trend) {
+      var canvas = document.getElementById('trendChart');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      if (trendChartInstance) trendChartInstance.destroy();
+
+      var labels = trend.map(function(t) { return t.date; });
+      var counts = trend.map(function(t) { return t.count; });
+
+      // 简易折线图
+      var w = canvas.width = canvas.offsetWidth * 2;
+      var h = canvas.height = 200;
+      ctx.scale(2, 2);
+      var cw = w / 2, ch = h / 2;
+
+      if (labels.length === 0) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('暂无数据', cw / 2, ch / 2);
+        return;
+      }
+
+      var maxVal = Math.max.apply(null, counts.concat([1]));
+      var padding = 30;
+      var chartW = cw - padding * 2;
+      var chartH = ch - padding * 2;
+
+      // 轴线
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, ch - padding);
+      ctx.lineTo(cw - padding, ch - padding);
+      ctx.stroke();
+
+      // 折线
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      labels.forEach(function(label, i) {
+        var x = padding + (chartW / Math.max(labels.length - 1, 1)) * i;
+        var y = ch - padding - (chartH * counts[i] / maxVal);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // 填充
+      ctx.lineTo(padding + chartW, ch - padding);
+      ctx.lineTo(padding, ch - padding);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(59,130,246,0.1)';
+      ctx.fill();
+
+      // Y轴标签
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(maxVal, padding - 4, padding + 4);
+      ctx.fillText('0', padding - 4, ch - padding + 4);
+    }
+
+    function renderRepoDistChart(dist) {
+      var canvas = document.getElementById('repoDistChart');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      if (repoDistChartInstance) repoDistChartInstance.destroy();
+
+      var w = canvas.width = canvas.offsetWidth * 2;
+      var h = canvas.height = 200;
+      ctx.scale(2, 2);
+      var cw = w / 2, ch = h / 2;
+
+      if (dist.length === 0) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('暂无数据', cw / 2, ch / 2);
+        return;
+      }
+
+      // 简易条形图
+      var colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#14b8a6','#6366f1','#84cc16','#f97316'];
+      var maxVal = Math.max.apply(null, dist.map(function(d) { return d.count; }).concat([1]));
+      var padding = 40;
+      var barW = (cw - padding * 2) / dist.length * 0.7;
+      var gap = (cw - padding * 2) / dist.length * 0.3;
+      var chartH = ch - padding * 2;
+
+      dist.forEach(function(d, i) {
+        var x = padding + i * (barW + gap);
+        var barH = chartH * d.count / maxVal;
+        var y = ch - padding - barH;
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fillRect(x, y, barW, barH);
+
+        // 标签
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        var shortName = d.repo.split('/').pop() || d.repo;
+        if (shortName.length > 8) shortName = shortName.substring(0, 8) + '..';
+        ctx.fillText(shortName, x + barW / 2, ch - padding + 14);
+        ctx.fillText(d.count, x + barW / 2, y - 4);
+      });
+    }
+
+    // ===== Service Worker 注册 =====
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
+  </script>
+</body>
+</html>
