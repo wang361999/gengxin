@@ -4,6 +4,7 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/register", "destination": "/register.html" },
+    { "source": "/legal", "destination": "/legal.html" },
     { "source": "/api-docs", "destination": "/api-docs.html" }
   ],
   "functions": {
@@ -39,7 +40,7 @@
       ]
     },
     {
-      "source": "/(dashboard|admin|login|register|index|api-docs).html",
+      "source": "/(dashboard|admin|login|register|legal|index|api-docs).html",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]

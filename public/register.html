@@ -77,6 +77,28 @@
     }
     .benefits p:last-child { margin-bottom: 0; }
     .benefits .check { color: var(--green); margin-right: 6px; }
+    .legal-consent {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: rgba(249,115,22,0.05);
+      border: 1px solid rgba(249,115,22,0.15);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+    .legal-consent label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .legal-consent input[type="checkbox"] {
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .legal-consent a { color: var(--blue); text-decoration: none; }
+    .legal-consent a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -114,6 +136,12 @@
           <input type="text" id="brandName" placeholder="你的品牌名，默认用用户名">
         </div>
         <button class="btn btn-primary" id="btn" onclick="register()">注册</button>
+        <div class="legal-consent">
+          <label>
+            <input type="checkbox" id="agreeLegal">
+            <span>我已阅读并同意 <a href="/legal" target="_blank">《用户协议》</a> 和 <a href="/legal" target="_blank">《隐私政策》</a>，承诺不上传侵权、涉密或违反开源协议的内容。</span>
+          </label>
+        </div>
         <div class="benefits">
           <p><span class="check">&#10003;</span> 免费，无隐藏费用</p>
           <p><span class="check">&#10003;</span> 支持多仓库管理</p>
@@ -151,6 +179,10 @@
       var brandName = document.getElementById('brandName').value.trim();
       var alertEl = document.getElementById('alert');
       if (!username || !password) { alertEl.innerHTML = '<div class="alert alert-err">请填写用户名和密码</div>'; return; }
+      if (!document.getElementById('agreeLegal').checked) {
+        alertEl.innerHTML = '<div class="alert alert-err">请阅读并同意《用户协议》和《隐私政策》</div>';
+        return;
+      }
       btn.disabled = true; btn.textContent = '注册中...';
       try {
         var res = await fetch('/api/auth/register', {

@@ -367,13 +367,17 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           <span>系统设置</span>
         </a>
+        <a class="nav-item" data-page="legal" onclick="switchPage('legal')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
+          <span>法律文档</span>
+        </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
           <div class="avatar">A</div>
           <div class="user-info">
             <div class="user-name">管理员</div>
-            <div class="user-plan">v2.9.4</div>
+            <div class="user-plan">v2.9.5</div>
           </div>
         </div>
       </div>
@@ -1140,6 +1144,79 @@
             </div>
           </div>
         </div>
+
+        <!-- ===== 法律文档管理 ===== -->
+        <div class="page" id="page-legal">
+          <div class="page-header">
+            <h2>法律文档管理</h2>
+            <div class="subtitle">管理用户协议和隐私政策，支持在线编辑和发布</div>
+          </div>
+
+          <!-- 合规概览 -->
+          <div class="card">
+            <h3>合规概览</h3>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>启用法律文档</h4>
+                <p>开启后，注册页和登录页将展示用户协议和隐私政策链接</p>
+              </div>
+              <div class="toggle" id="setLegalEnabled" onclick="toggleLegalEnabled()"></div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>侵权投诉邮箱</h4>
+                <p>用于接收侵权投诉通知的邮箱地址（展示在用户协议中）</p>
+              </div>
+              <input type="email" id="setComplaintEmail" placeholder="admin@example.com" style="max-width:260px;">
+            </div>
+            <div style="margin-top:20px;text-align:right;">
+              <button class="btn btn-primary" onclick="saveLegalConfig()">保存配置</button>
+            </div>
+          </div>
+
+          <!-- 用户协议编辑 -->
+          <div class="card" style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <h3 style="margin:0;">用户协议</h3>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-outline" onclick="resetLegalDoc('user_agreement')" style="font-size:13px;padding:6px 14px;">恢复默认</button>
+                <button class="btn btn-outline" onclick="previewLegalDoc('user_agreement')" style="font-size:13px;padding:6px 14px;">预览</button>
+              </div>
+            </div>
+            <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">支持 Markdown 格式。修改后点击保存立即生效，用户在注册页将看到最新版本。</p>
+            <textarea id="setUserAgreement" placeholder="请输入用户协议内容..." style="width:100%;min-height:400px;padding:16px;border:1px solid var(--border);border-radius:8px;font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;background:var(--bg);color:var(--text);"></textarea>
+            <div style="margin-top:16px;text-align:right;">
+              <button class="btn btn-primary" onclick="saveLegalDoc('user_agreement', 'setUserAgreement')">保存用户协议</button>
+            </div>
+          </div>
+
+          <!-- 隐私政策编辑 -->
+          <div class="card" style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <h3 style="margin:0;">隐私政策</h3>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-outline" onclick="resetLegalDoc('privacy_policy')" style="font-size:13px;padding:6px 14px;">恢复默认</button>
+                <button class="btn btn-outline" onclick="previewLegalDoc('privacy_policy')" style="font-size:13px;padding:6px 14px;">预览</button>
+              </div>
+            </div>
+            <p style="color:var(--text2);font-size:13px;margin-bottom:12px;">支持 Markdown 格式。修改后点击保存立即生效，用户在注册页将看到最新版本。</p>
+            <textarea id="setPrivacyPolicy" placeholder="请输入隐私政策内容..." style="width:100%;min-height:400px;padding:16px;border:1px solid var(--border);border-radius:8px;font-family:monospace;font-size:13px;line-height:1.6;resize:vertical;background:var(--bg);color:var(--text);"></textarea>
+            <div style="margin-top:16px;text-align:right;">
+              <button class="btn btn-primary" onclick="saveLegalDoc('privacy_policy', 'setPrivacyPolicy')">保存隐私政策</button>
+            </div>
+          </div>
+
+          <!-- 预览弹窗 -->
+          <div class="force-pwd-overlay" id="legalPreviewOverlay" style="display:none;">
+            <div class="force-pwd-modal" style="max-width:700px;max-height:80vh;overflow-y:auto;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 id="legalPreviewTitle" style="margin:0;">预览</h3>
+                <button onclick="document.getElementById('legalPreviewOverlay').style.display='none';" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);">×</button>
+              </div>
+              <div id="legalPreviewContent" style="white-space:pre-wrap;font-size:14px;line-height:1.8;color:var(--text);"></div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
@@ -1314,7 +1391,8 @@
       broadcast: '通知广播',
       vercel: 'Vercel 部署',
       errors: '错误监控',
-      settings: '系统设置'
+      settings: '系统设置',
+      legal: '法律文档'
     };
 
     function switchPage(page) {
@@ -1330,6 +1408,7 @@
       if (page === 'analytics') loadAnalytics();
       if (page === 'vercel') loadVercelStatus();
       if (page === 'errors') { loadErrorStats(); loadErrorLogs(); }
+      if (page === 'legal') loadLegalDocs();
       // 移动端关闭侧边栏
       closeSidebar();
       // 滚动到顶部
@@ -1980,6 +2059,79 @@
         if (data.ok) showAlert('OAuth 配置已保存', true);
         else showAlert(data.error, false);
       } catch (e) { showAlert('网络错误', false); }
+    }
+
+    // ===== 法律文档管理 =====
+    var defaultLegalDocs = null;
+
+    async function loadLegalDocs() {
+      try {
+        var data = await apiFetch('/api/admin/settings');
+        if (!data || !data.ok) return;
+        var s = data.settings;
+        // 合规配置
+        var legalToggle = document.getElementById('setLegalEnabled');
+        if (s.legal_enabled !== 'false') legalToggle.classList.add('on');
+        else legalToggle.classList.remove('on');
+        document.getElementById('setComplaintEmail').value = s.complaint_email || '';
+        // 文档内容
+        document.getElementById('setUserAgreement').value = s.user_agreement || '';
+        document.getElementById('setPrivacyPolicy').value = s.privacy_policy || '';
+      } catch (e) {}
+    }
+
+    function toggleLegalEnabled() {
+      document.getElementById('setLegalEnabled').classList.toggle('on');
+    }
+
+    async function saveLegalConfig() {
+      var body = {
+        legal_enabled: document.getElementById('setLegalEnabled').classList.contains('on') ? 'true' : 'false',
+        complaint_email: document.getElementById('setComplaintEmail').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('合规配置已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function saveLegalDoc(key, textareaId) {
+      var content = document.getElementById(textareaId).value;
+      var body = {};
+      body[key] = content;
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert(key === 'user_agreement' ? '用户协议已保存' : '隐私政策已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    function previewLegalDoc(type) {
+      var title = type === 'user_agreement' ? '用户协议预览' : '隐私政策预览';
+      var content = type === 'user_agreement'
+        ? document.getElementById('setUserAgreement').value
+        : document.getElementById('setPrivacyPolicy').value;
+      document.getElementById('legalPreviewTitle').textContent = title;
+      document.getElementById('legalPreviewContent').textContent = content;
+      document.getElementById('legalPreviewOverlay').style.display = 'flex';
+    }
+
+    function resetLegalDoc(type) {
+      if (!confirm('确认恢复默认内容？当前编辑的内容将被覆盖。')) return;
+      // 从 API 重新加载默认值（数据库初始化时写入的原始内容）
+      apiFetch('/api/auth/public-settings').then(function(data) {
+        if (data && data.ok) {
+          if (type === 'user_agreement') {
+            document.getElementById('setUserAgreement').value = data.settings.userAgreement || '';
+          } else {
+            document.getElementById('setPrivacyPolicy').value = data.settings.privacyPolicy || '';
+          }
+          showAlert('已恢复默认内容，请点击保存生效', true);
+        }
+      });
     }
 
     async function testOauthConfig() {

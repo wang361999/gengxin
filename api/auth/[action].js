@@ -50,7 +50,11 @@ module.exports = async (req, res) => {
         settings: {
           siteName: all.site_name || 'GitShip',
           allowRegister: all.allow_register !== 'false',
-          announcement: all.announcement || ''
+          announcement: all.announcement || '',
+          legalEnabled: all.legal_enabled !== 'false',
+          complaintEmail: all.complaint_email || '',
+          userAgreement: all.user_agreement || '',
+          privacyPolicy: all.privacy_policy || ''
         }
       });
     }
