@@ -198,6 +198,53 @@
     </div>
   </div>
   <script>
+    // ===== 自动登录：检查已存储的 token，有效则直接跳转 =====
+    (async function autoLogin() {
+      var storedToken = localStorage.getItem('token');
+      var storedRole = localStorage.getItem('role');
+      if (!storedToken) return;
+
+      // 显示自动登录提示
+      var authCard = document.querySelector('.auth-card');
+      if (authCard) {
+        authCard.style.opacity = '0.6';
+        authCard.style.pointerEvents = 'none';
+      }
+      var autoLoginHint = document.createElement('div');
+      autoLoginHint.id = 'autoLoginHint';
+      autoLoginHint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:9999;';
+      autoLoginHint.innerHTML = '<div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;"></div><div style="color:var(--text2);font-size:14px;">正在自动登录...</div>';
+      document.body.appendChild(autoLoginHint);
+
+      try {
+        var res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + storedToken }
+        });
+        if (res.ok) {
+          var data = await res.json();
+          if (data.ok) {
+            // Token 有效，直接跳转
+            var redirect = storedRole === 'admin' ? '/admin' : '/dashboard';
+            window.location.href = redirect;
+            return;
+          }
+        }
+        // Token 无效或过期，清除并显示登录表单
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+      } catch (e) {
+        // 网络错误，不清除 token，允许后续手动登录
+      }
+
+      // 恢复登录表单
+      if (authCard) {
+        authCard.style.opacity = '';
+        authCard.style.pointerEvents = '';
+      }
+      var hint = document.getElementById('autoLoginHint');
+      if (hint) hint.remove();
+    })();
+
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
     async function checkAppVersion() {
       try {

@@ -329,6 +329,29 @@
   </div>
 
   <script>
+    // ===== 已登录用户自动跳转到控制台 =====
+    (function redirectIfLoggedIn() {
+      var token = localStorage.getItem('token');
+      var role = localStorage.getItem('role');
+      if (token) {
+        // 已有 token，验证后跳转
+        fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        }).then(function(res) {
+          if (res.ok) return res.json();
+          throw new Error('not ok');
+        }).then(function(data) {
+          if (data && data.ok) {
+            window.location.href = role === 'admin' ? '/admin' : '/dashboard';
+          }
+        }).catch(function() {
+          // token 无效，留在首页
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+        });
+      }
+    })();
+
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
     async function checkAppVersion() {
       try {
