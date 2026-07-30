@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>控制台 - GitUpload</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=2.6.1">
   <style>
     /* ===== 页面特有样式 ===== */
     .repo-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; transition: all 0.2s; background: var(--card); }
@@ -2174,7 +2174,7 @@
 
     // ===== 团队协作 =====
     async function loadTeams() {
-      var data = await apiFetch('/api/teams');
+      var data = await apiFetch('/api/team/list');
       if (data && data.ok) {
         renderTeams(data.teams);
       } else {
@@ -2217,7 +2217,7 @@
       var btn = document.getElementById('saveTeamBtn');
       btn.disabled = true; btn.textContent = '创建中...';
       try {
-        var res = await fetch('/api/teams', { method: 'POST', headers: authHeader(), body: JSON.stringify({ name: name, description: desc }) });
+        var res = await fetch('/api/team/create', { method: 'POST', headers: authHeader(), body: JSON.stringify({ name: name, description: desc }) });
         var data = await res.json();
         if (data.ok) { closeTeamModal(); showAlert('团队创建成功', true); loadTeams(); }
         else { document.getElementById('teamAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
@@ -2227,7 +2227,7 @@
 
     async function openTeamDetail(teamId) {
       try {
-        var res = await fetch('/api/teams/' + teamId, { headers: authHeader() });
+        var res = await fetch('/api/team/detail', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: teamId }) });
         var data = await res.json();
         if (data.ok) {
           var team = data.team;
@@ -2302,7 +2302,7 @@
       var username = document.getElementById('inviteUsername').value.trim();
       if (!username) { return; }
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/members', { method: 'POST', headers: authHeader(), body: JSON.stringify({ username: username }) });
+        var res = await fetch('/api/team/invite', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: window._currentTeamId, username: username }) });
         var data = await res.json();
         if (data.ok) { document.getElementById('inviteUsername').value = ''; openTeamDetail(window._currentTeamId); }
         else { document.getElementById('teamDetailAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
@@ -2312,7 +2312,7 @@
     async function removeMember(userId) {
       if (!confirm('确定移除该成员？')) return;
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/members', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ userId: userId }) });
+        var res = await fetch('/api/team/remove-member', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: window._currentTeamId, userId: userId }) });
         var data = await res.json();
         if (data.ok) { openTeamDetail(window._currentTeamId); }
         else { document.getElementById('teamDetailAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
@@ -2321,7 +2321,7 @@
 
     async function setMemberRole(userId, role) {
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/members', { method: 'POST', headers: authHeader(), body: JSON.stringify({ userId: userId, role: role }) });
+        var res = await fetch('/api/team/update-role', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: window._currentTeamId, userId: userId, role: role }) });
         var data = await res.json();
         if (data.ok) { openTeamDetail(window._currentTeamId); }
       } catch (e) {}
@@ -2332,7 +2332,7 @@
       el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);">加载中...</div>';
       document.getElementById('shareRepoModal').classList.add('show');
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/repos', { headers: authHeader() });
+        var res = await fetch('/api/team/my-repos', { headers: authHeader() });
         var data = await res.json();
         if (data.ok) {
           if (data.repos.length === 0) {
@@ -2357,7 +2357,7 @@
 
     async function shareRepo(repoId) {
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/repos', { method: 'POST', headers: authHeader(), body: JSON.stringify({ repoId: repoId }) });
+        var res = await fetch('/api/team/share-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: window._currentTeamId, repoId: repoId }) });
         var data = await res.json();
         if (data.ok) { loadShareRepos(); openTeamDetail(window._currentTeamId); }
       } catch (e) {}
@@ -2365,7 +2365,7 @@
 
     async function unshareRepo(repoId) {
       try {
-        var res = await fetch('/api/teams/' + window._currentTeamId + '/repos', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ repoId: repoId }) });
+        var res = await fetch('/api/team/unshare-repo', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: window._currentTeamId, repoId: repoId }) });
         var data = await res.json();
         if (data.ok) { loadShareRepos(); openTeamDetail(window._currentTeamId); }
       } catch (e) {}
@@ -2379,7 +2379,7 @@
 
     async function deleteTeamById(teamId) {
       try {
-        var res = await fetch('/api/teams/' + teamId, { method: 'DELETE', headers: authHeader() });
+        var res = await fetch('/api/team/delete', { method: 'POST', headers: authHeader(), body: JSON.stringify({ teamId: teamId }) });
         var data = await res.json();
         if (data.ok) { closeTeamDetailModal(); showAlert('团队已删除', true); loadTeams(); }
         else { document.getElementById('teamDetailAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>'; }
@@ -2388,7 +2388,7 @@
 
     // ===== API 密钥 =====
     async function loadApiKeys() {
-      var data = await apiFetch('/api/apikeys');
+      var data = await apiFetch('/api/auth/api-keys');
       if (data && data.ok) {
         var el = document.getElementById('apiKeysList');
         if (data.keys.length === 0) {
@@ -2429,7 +2429,7 @@
       var btn = document.getElementById('createApiKeyBtn');
       btn.disabled = true; btn.textContent = '创建中...';
       try {
-        var res = await fetch('/api/apikeys', { method: 'POST', headers: authHeader(), body: JSON.stringify({ name: name }) });
+        var res = await fetch('/api/auth/api-keys', { method: 'POST', headers: authHeader(), body: JSON.stringify({ keyName: name }) });
         var data = await res.json();
         if (data.ok) {
           closeApiKeyModal();
@@ -2445,7 +2445,7 @@
     async function removeApiKey(id) {
       if (!confirm('确定删除此 API 密钥？')) return;
       try {
-        var res = await fetch('/api/apikeys', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        var res = await fetch('/api/auth/api-keys', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
         var data = await res.json();
         if (data.ok) { showAlert('密钥已删除', true); loadApiKeys(); }
         else { showAlert(data.error, false); }
@@ -2481,7 +2481,7 @@
       var btn = document.getElementById('saveWebhookBtn');
       btn.disabled = true; btn.textContent = '保存中...';
       try {
-        var res = await fetch('/api/webhooks', { method: 'POST', headers: authHeader(), body: JSON.stringify({ url: url, platform: platform, secret: secret, events: events }) });
+        var res = await fetch('/api/webhook', { method: 'POST', headers: authHeader(), body: JSON.stringify({ _action: 'create', url: url, platform: platform, secret: secret, events: events }) });
         var data = await res.json();
         if (data.ok) { toggleWebhookForm(); loadWebhooks(); showAlert('Webhook 保存成功', true); }
         else { webhookAlert(data.error, false); }
@@ -2490,7 +2490,7 @@
     }
 
     async function loadWebhooks() {
-      var data = await apiFetch('/api/webhooks');
+      var data = await apiFetch('/api/webhook');
       if (data && data.ok) {
         var el = document.getElementById('webhookList');
         if (data.webhooks.length === 0) {
@@ -2517,7 +2517,7 @@
     async function removeWebhook(id) {
       if (!confirm('确定删除此 Webhook？')) return;
       try {
-        var res = await fetch('/api/webhooks', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
+        var res = await fetch('/api/webhook', { method: 'DELETE', headers: authHeader(), body: JSON.stringify({ id: id }) });
         var data = await res.json();
         if (data.ok) { loadWebhooks(); showAlert('Webhook 已删除', true); }
         else { showAlert(data.error, false); }
