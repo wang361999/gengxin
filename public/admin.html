@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1a1a1a">
   <title>管理后台 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v2.9.4">
+  <link rel="stylesheet" href="/style.css?v=3.0.0">
   <script src="/error-tracker.js"></script>
   <style>
     /* ===== 侧边栏深色定制 ===== */
@@ -1118,8 +1118,8 @@
 
           <!-- GitHub OAuth 配置 -->
           <div class="card" style="margin-top:20px;">
-            <h3 style="margin-bottom:16px;">GitHub OAuth 配置</h3>
-            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以通过 GitHub 弹窗授权一键导入仓库，无需手动填写 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
+            <h3 style="margin-bottom:16px;">GitHub OAuth 登录配置</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 GitHub OAuth App 后，用户可以在登录页点击「使用 GitHub 账号登录」，通过 GitHub 授权自动登录/注册，无需手动输入 Token。<br>请在 <a href="https://github.com/settings/developers" target="_blank" style="color:var(--blue);">GitHub Developer Settings</a> 创建 OAuth App，Authorization callback URL 填写：<code id="oauthCallbackHint" style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">加载中...</code></p>
             <div class="field">
               <label>GitHub OAuth Client ID</label>
               <input type="text" id="setOauthClientId" placeholder="Iv1.xxxxxxxxxxxxxxxx" style="max-width:400px;">
@@ -1133,6 +1133,36 @@
               <button class="btn btn-outline" onclick="testOauthConfig()">测试 OAuth 是否可用</button>
             </div>
             <div id="oauthTestResult" style="margin-top:12px;"></div>
+          </div>
+
+          <!-- 授权验证配置（ET Studio 授权系统） -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">产品授权验证配置</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 ET Studio 授权系统后，系统会自动验证授权码并保护 API 路由。授权服务器域名：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">gitd.cn</code></p>
+            <div class="setting-row">
+              <div class="setting-info">
+                <h4>启用授权验证</h4>
+                <p>开启后所有 API 路由将检查授权状态</p>
+              </div>
+              <div class="toggle-switch" id="setLicenseEnabled" onclick="toggleSwitch('setLicenseEnabled')"></div>
+            </div>
+            <div class="field" style="margin-top:16px;">
+              <label>授权码（License Key）</label>
+              <input type="text" id="setLicenseKey" placeholder="ET-XXXXXXXX-XXXXXXXX-XXXXXXXX" style="max-width:400px;">
+            </div>
+            <div class="field">
+              <label>验证接口地址</label>
+              <input type="text" id="setLicenseVerifyUrl" placeholder="https://gitd.cn/api/license/verify" style="max-width:400px;">
+            </div>
+            <div class="field">
+              <label>运行域名（留空则自动识别）</label>
+              <input type="text" id="setLicenseDomain" placeholder="your-domain.com" style="max-width:400px;">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" onclick="saveLicenseConfig()">保存授权配置</button>
+              <button class="btn btn-outline" onclick="testLicenseConfig()">测试授权验证</button>
+            </div>
+            <div id="licenseTestResult" style="margin-top:12px;"></div>
           </div>
 
           <!-- 系统健康检查 -->
@@ -1295,6 +1325,22 @@
   </div>
 
   <script>
+    // ===== OAuth 回调：自动登录（从 GitHub OAuth 回调带 JWT token） =====
+    (function handleOAuthCallback() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var jwtToken = urlParams.get('token');
+      var oauthError = urlParams.get('oauth_error');
+      if (jwtToken) {
+        localStorage.setItem('token', jwtToken);
+        localStorage.setItem('role', 'admin');
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      if (oauthError) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setTimeout(function() { alert('GitHub 登录失败: ' + decodeURIComponent(oauthError)); }, 500);
+      }
+    })();
+
     var token = localStorage.getItem('token');
     if (!token) { window.location.href = '/login'; }
 
@@ -1967,6 +2013,13 @@
           // OAuth 配置
           document.getElementById('setOauthClientId').value = s.github_oauth_client_id || '';
           document.getElementById('setOauthClientSecret').value = s.github_oauth_client_secret || '';
+          // 授权验证配置
+          document.getElementById('setLicenseKey').value = s.license_key || '';
+          document.getElementById('setLicenseVerifyUrl').value = s.license_verify_url || 'https://gitd.cn/api/license/verify';
+          document.getElementById('setLicenseDomain').value = s.license_domain || '';
+          var licenseToggle = document.getElementById('setLicenseEnabled');
+          if (s.license_enabled === 'true') licenseToggle.classList.add('on');
+          else licenseToggle.classList.remove('on');
         }
       } catch (e) {}
     }
@@ -1975,6 +2028,9 @@
 
     // ===== 套餐功能开关 =====
     function togglePlansEnabled() { document.getElementById('setPlansEnabled').classList.toggle('on'); }
+
+    // ===== 通用开关切换 =====
+    function toggleSwitch(id) { var el = document.getElementById(id); if (el) el.classList.toggle('on'); }
 
     function loadPlansEnabled(settingsObj) {
       var s = settingsObj || {};
@@ -2166,6 +2222,43 @@
           resultEl.innerHTML = '<div style="padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;font-size:14px;color:#ea580c;">⚠️ OAuth 未配置，请先填写 Client ID 和 Secret 并保存</div>';
         } else {
           resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">' + escapeHtml(data.error || '测试失败') + '</div>';
+        }
+      } catch (e) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';
+      }
+    }
+
+    // ===== 授权验证配置 =====
+    async function saveLicenseConfig() {
+      var body = {
+        license_enabled: document.getElementById('setLicenseEnabled').classList.contains('on') ? 'true' : 'false',
+        license_key: document.getElementById('setLicenseKey').value.trim(),
+        license_verify_url: document.getElementById('setLicenseVerifyUrl').value.trim() || 'https://gitd.cn/api/license/verify',
+        license_domain: document.getElementById('setLicenseDomain').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('授权配置已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function testLicenseConfig() {
+      var resultEl = document.getElementById('licenseTestResult');
+      var licenseKey = document.getElementById('setLicenseKey').value.trim();
+      if (!licenseKey) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;font-size:14px;color:#ea580c;">⚠️ 请先填写授权码</div>';
+        return;
+      }
+      resultEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;font-size:14px;color:var(--text2);">正在验证授权码...</div>';
+      try {
+        var data = await apiFetch('/api/admin/license-test', { method: 'POST', headers: authHeader(), body: JSON.stringify({ license_key: licenseKey, verify_url: document.getElementById('setLicenseVerifyUrl').value.trim() || 'https://gitd.cn/api/license/verify', domain: document.getElementById('setLicenseDomain').value.trim() }) });
+        if (!data) return;
+        if (data.ok && data.valid) {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:14px;color:#059669;">✅ 授权验证成功<br>' + (data.info ? '<br>授权信息：' + escapeHtml(JSON.stringify(data.info).slice(0, 200)) : '') + '</div>';
+        } else {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">❌ 授权验证失败：' + escapeHtml(data.message || data.error || '未知错误') + '</div>';
         }
       } catch (e) {
         resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';

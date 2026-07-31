@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登录 - GitShip</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/style.css?v=2.8.1">
+  <link rel="stylesheet" href="/style.css?v=3.0.0">
   <style>
     .auth-page {
       min-height: calc(100vh - 60px);
@@ -168,26 +168,16 @@
 
       <div class="divider"><span>或</span></div>
 
-      <!-- GitHub Token 登录 -->
+      <!-- GitHub OAuth 登录 -->
       <div class="github-link">
-        <a href="javascript:void(0)" onclick="toggleGithubLogin()">
+        <a href="javascript:void(0)" onclick="githubOAuthLogin()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          GitHub 登录
+          使用 GitHub 账号登录
         </a>
       </div>
-      <div class="github-login-box" id="githubLoginBox">
-        <div class="field">
-          <label>GitHub Personal Access Token</label>
-          <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" onkeypress="if(event.key==='Enter')githubLogin()">
-        </div>
-        <button class="btn-github" id="ghBtn" onclick="githubLogin()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          用 GitHub Token 登录
-        </button>
-        <p style="font-size:12px;color:var(--text2);margin-top:8px;text-align:center;">
-          没有 Token？<a href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=GitShip" target="_blank" style="color:var(--blue);">点这里创建</a>
-        </p>
-      </div>
+      <p style="font-size:12px;color:var(--text2);margin-top:8px;text-align:center;">
+        GitHub OAuth 安全授权，无需手动输入 Token
+      </p>
 
       <p class="auth-footer">
         没有账号？<a href="/register">立即注册</a>
@@ -198,6 +188,19 @@
     </div>
   </div>
   <script>
+    // ===== 检查 OAuth 回调错误 =====
+    (function checkOAuthError() {
+      var urlParams = new URLSearchParams(window.location.search);
+      var oauthError = urlParams.get('oauth_error');
+      if (oauthError) {
+        var alertEl = document.getElementById('alert');
+        if (alertEl) {
+          alertEl.innerHTML = '<div class="alert alert-err">GitHub 登录失败: ' + escapeHtml(decodeURIComponent(oauthError)) + '</div>';
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    })();
+
     // ===== 自动登录：检查已存储的 token，有效则直接跳转 =====
     (async function autoLogin() {
       var storedToken = localStorage.getItem('token');
@@ -326,44 +329,20 @@
       return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    function toggleGithubLogin() {
-      var box = document.getElementById('githubLoginBox');
-      if (box.style.display === 'block') {
-        box.style.display = 'none';
-      } else {
-        box.style.display = 'block';
-        document.getElementById('ghToken').focus();
-      }
-    }
-
-    async function githubLogin() {
-      var btn = document.getElementById('ghBtn');
-      var token = document.getElementById('ghToken').value.trim();
+    // ===== GitHub OAuth 登录（跳转授权） =====
+    async function githubOAuthLogin() {
       var alertEl = document.getElementById('alert');
-      if (!token) { alertEl.innerHTML = '<div class="alert alert-err">请输入 GitHub Token</div>'; return; }
-      btn.disabled = true; btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="animation:spin 0.8s linear infinite;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg> 验证中...';
       try {
-        var res = await fetch('/api/auth/github-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: token })
-        });
+        var res = await fetch('/api/oauth/auth-url?login=1');
         var data = await res.json();
-        if (data.ok) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('role', data.role);
-          if (data.githubUser) {
-            alertEl.innerHTML = '<div class="alert alert-ok">GitHub 用户 ' + escapeHtml(data.githubUser) + ' 登录成功，正在跳转...</div>';
-          }
-          window.location.href = data.redirect || '/dashboard';
+        if (data.ok && data.enabled && data.authUrl) {
+          window.location.href = data.authUrl;
         } else {
-          alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+          alertEl.innerHTML = '<div class="alert alert-err">' + escapeHtml(data.message || data.error || 'GitHub OAuth 未配置，请联系管理员') + '</div>';
         }
       } catch (e) {
         alertEl.innerHTML = '<div class="alert alert-err">网络错误，请重试</div>';
       }
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg> 用 GitHub Token 登录';
     }
   </script>
 </body>

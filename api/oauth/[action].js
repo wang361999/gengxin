@@ -1,7 +1,8 @@
 const https = require('https');
+const bcrypt = require('bcryptjs');
 const { sendJson, readBody } = require('../../lib/helpers');
-const { requireAuth, initSecret } = require('../../lib/auth');
-const { addRepo, listRepos, getSetting } = require('../../lib/db');
+const { requireAuth, initSecret, signToken } = require('../../lib/auth');
+const { addRepo, listRepos, getSetting, findUserByUsername, createUser, updateUserSession } = require('../../lib/db');
 const { encrypt } = require('../../lib/crypto');
 
 // GitHub OAuth 配置（异步：getSetting 是异步函数）
@@ -123,22 +124,27 @@ module.exports = async (req, res) => {
       if (!clientId) {
         return sendJson(res, 200, { ok: true, enabled: false, message: 'GitHub OAuth 未配置' });
       }
-      const redirectUri = req.headers.origin + '/api/oauth/callback';
+      const urlObj = new URL(req.url, 'http://localhost');
+      const isLogin = urlObj.searchParams.get('login') === '1';
+      const redirectUri = req.headers.origin + '/api/oauth/callback' + (isLogin ? '?login=1' : '');
       const scope = 'repo,read:user';
       const state = Math.random().toString(36).substring(2);
       const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
       return sendJson(res, 200, { ok: true, enabled: true, authUrl, state });
     }
 
-    // ===== OAuth 回调 =====
+    // ===== OAuth 回调（GitHub 授权后回调，自动登录/注册） =====
     if (action === 'callback') {
       const url = new URL(req.url, req.headers.origin);
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const error = url.searchParams.get('error');
+      // login=1 表示从登录页发起的 OAuth（用于自动登录）
+      const isLogin = url.searchParams.get('login') === '1';
 
       if (error) {
-        res.setHeader('Location', '/dashboard?oauth_error=' + encodeURIComponent(error));
+        const redirectPage = isLogin ? '/login' : '/dashboard';
+        res.setHeader('Location', redirectPage + '?oauth_error=' + encodeURIComponent(error));
         res.statusCode = 302;
         return res.end();
       }
@@ -152,7 +158,8 @@ module.exports = async (req, res) => {
       const tokenData = await exchangeCode(code, clientId, clientSecret, redirectUri);
 
       if (tokenData.error) {
-        res.setHeader('Location', '/dashboard?oauth_error=' + encodeURIComponent(tokenData.error_description || tokenData.error));
+        const redirectPage = isLogin ? '/login' : '/dashboard';
+        res.setHeader('Location', redirectPage + '?oauth_error=' + encodeURIComponent(tokenData.error_description || tokenData.error));
         res.statusCode = 302;
         return res.end();
       }
@@ -160,8 +167,52 @@ module.exports = async (req, res) => {
       const ghToken = tokenData.access_token;
       if (!ghToken) return sendJson(res, 400, { error: '获取 Token 失败' });
 
-      // 重定向到前端，带上 token
-      res.setHeader('Location', '/dashboard?oauth_token=' + encodeURIComponent(ghToken));
+      // 获取 GitHub 用户信息
+      let ghUser;
+      try {
+        ghUser = await getGithubUser(ghToken);
+      } catch (e) {
+        return sendJson(res, 500, { error: '获取 GitHub 用户信息失败' });
+      }
+      if (!ghUser || !ghUser.login) return sendJson(res, 400, { error: 'GitHub 用户信息无效' });
+
+      // ===== 自动登录/注册 =====
+      const ghUsername = 'github_' + ghUser.login.toLowerCase();
+      let user = await findUserByUsername(ghUsername);
+
+      if (user) {
+        // 已有账号，检查是否被禁用
+        if (user.status === 'disabled') {
+          res.setHeader('Location', '/login?oauth_error=' + encodeURIComponent('账号已被禁用'));
+          res.statusCode = 302;
+          return res.end();
+        }
+        // 签发系统 JWT 并更新会话
+        const jwtToken = await signToken({ userId: user.id, username: user.username });
+        try { await updateUserSession(user.id, jwtToken); } catch {}
+        // 重定向到前端，带上 JWT token
+        const redirectPage = user.role === 'admin' ? '/admin' : '/dashboard';
+        res.setHeader('Location', redirectPage + '?token=' + encodeURIComponent(jwtToken) + '&oauth_token=' + encodeURIComponent(ghToken));
+        res.statusCode = 302;
+        return res.end();
+      }
+
+      // 没有账号则自动注册
+      const allowRegister = await getSetting('allow_register');
+      if (allowRegister === 'false') {
+        res.setHeader('Location', '/login?oauth_error=' + encodeURIComponent('系统已关闭注册'));
+        res.statusCode = 302;
+        return res.end();
+      }
+
+      const randomPwd = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const hash = await bcrypt.hash(randomPwd, 10);
+      user = await createUser(ghUsername, hash, ghUser.name || ghUser.login);
+      const jwtToken = await signToken({ userId: user.id, username: user.username });
+      try { await updateUserSession(user.id, jwtToken); } catch {}
+
+      // 重定向到前端，带上 JWT token 和 GitHub token
+      res.setHeader('Location', '/dashboard?token=' + encodeURIComponent(jwtToken) + '&oauth_token=' + encodeURIComponent(ghToken));
       res.statusCode = 302;
       return res.end();
     }

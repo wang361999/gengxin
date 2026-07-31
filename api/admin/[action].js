@@ -112,7 +112,7 @@ module.exports = async (req, res) => {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id', 'plans_enabled', 'donation_enabled', 'donation_title', 'donation_message', 'legal_enabled', 'complaint_email', 'user_agreement', 'privacy_policy'];
+        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id', 'plans_enabled', 'donation_enabled', 'donation_title', 'donation_message', 'legal_enabled', 'complaint_email', 'user_agreement', 'privacy_policy', 'license_key', 'license_verify_url', 'license_domain', 'license_enabled'];
         for (const key of allowedKeys) {
           if (body[key] !== undefined) {
             await updateSetting(key, body[key]);
@@ -361,6 +361,25 @@ module.exports = async (req, res) => {
       if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
       const result = await clearErrorLogs();
       return sendJson(res, 200, { ok: true, message: `已清除 ${result.deletedCount} 条错误日志`, deletedCount: result.deletedCount });
+    }
+
+    // ===== 授权验证：测试授权码 =====
+    if (action === 'license-test') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const body = await readBody(req);
+      const licenseKey = String(body.license_key || '').trim();
+      const verifyUrl = String(body.verify_url || 'https://gitd.cn/api/license/verify').trim();
+      const domain = String(body.domain || '').trim();
+
+      if (!licenseKey) return sendJson(res, 400, { error: '请填写授权码' });
+
+      try {
+        const { verifyLicense } = require('../../lib/license-verifier');
+        const result = await verifyLicense({ licenseKey, verifyUrl, domain });
+        return sendJson(res, 200, { ok: true, valid: !!result.valid, message: result.message || '', info: result });
+      } catch (err) {
+        return sendJson(res, 200, { ok: true, valid: false, message: err.message || '验证失败' });
+      }
     }
 
     return sendJson(res, 404, { error: '未知的操作: ' + action });
