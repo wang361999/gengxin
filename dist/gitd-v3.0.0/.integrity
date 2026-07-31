@@ -1,0 +1,12 @@
+{
+  "lib/auth.js": "f0abb4177ba60056a58338e07064d261bbe6d003aa633e2bc5d5419594cee1e4",
+  "lib/license-verifier.js": "800e5f5fb4063f430018c85c57605f05ef8f536747a85fd45441cbbd7b326b34",
+  "lib/protection.js": "c2316aeadb24716664b9659e1c1ef1a3adc974a463fdc1778acc8db935bb1073",
+  "lib/db.js": "92fb1d5e7966a79fa9548afd9b7f93a9d0fb7c75d84394ce4fb9b86428fa2fa1",
+  "lib/crypto.js": "e25736fb2bfa81dc9f6eec937898ae369749467d24a2129f710fa1d11fd6eb9a",
+  "_meta": {
+    "version": "3.0.0",
+    "generated": "2026-07-31T18:52:45.950Z",
+    "files": 5
+  }
+}

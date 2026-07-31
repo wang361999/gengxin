@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安装向导 - gitd</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0a0b'/><text y='.9em' font-size='52' x='50' text-anchor='middle' fill='%23fff' font-family='sans-serif' font-weight='bold'>G</text></svg>">
+  <link rel="stylesheet" href="/style.css?v=3.0.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0b;
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .install-container {
+      width: 100%;
+      max-width: 640px;
+      position: relative;
+    }
+    .install-bg {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 20% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .install-card {
+      position: relative;
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      z-index: 1;
+    }
+    .install-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .install-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .install-logo svg { width: 32px; height: 32px; }
+    .install-logo span { font-size: 24px; font-weight: 800; }
+    .install-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .install-header p { color: #a1a1aa; font-size: 14px; }
+
+    /* 步骤指示器 */
+    .steps-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+    }
+    .step-dot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-dot-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      background: #27272a;
+      color: #71717a;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+    }
+    .step-dot.active .step-dot-num {
+      background: #3b82f6;
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.2);
+    }
+    .step-dot.done .step-dot-num {
+      background: #22c55e;
+      color: #fff;
+    }
+    .step-dot-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #71717a;
+      white-space: nowrap;
+    }
+    .step-dot.active .step-dot-label { color: #e4e4e7; }
+    .step-dot.done .step-dot-label { color: #22c55e; }
+    .step-line {
+      width: 24px;
+      height: 2px;
+      background: #27272a;
+      margin: 0 8px;
+    }
+    .step-line.done { background: #22c55e; }
+
+    /* 步骤面板 */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .step-panel h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .step-panel .step-desc {
+      color: #a1a1aa;
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    /* 状态卡片 */
+    .status-card {
+      background: #1e1e22;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .status-icon.success { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .status-icon.error { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .status-icon.pending { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .status-icon.warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .status-icon.loading { background: rgba(59,130,246,0.15); color: #3b82f6; animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    .status-info { flex: 1; }
+    .status-info .status-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .status-info .status-detail { font-size: 12px; color: #71717a; }
+
+    /* 表单 */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #1e1e22;
+      border: 1px solid #27272a;
+      border-radius: 10px;
+      color: #e4e4e7;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .field input:focus { border-color: #3b82f6; }
+    .field input::placeholder { color: #52525b; }
+    .field .field-hint {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 4px;
+    }
+
+    /* 按钮 */
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+      flex: 1;
+    }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; }
+    .btn-secondary {
+      background: #27272a;
+      color: #e4e4e7;
+    }
+    .btn-secondary:hover:not(:disabled) { background: #33333a; }
+
+    /* 提示信息 */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+    .alert-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+    .alert-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
+
+    /* 进度条 */
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #27272a;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #6366f1);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* 完成页面 */
+    .complete-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(34,197,94,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      animation: bounceIn 0.6s ease;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .complete-icon svg { width: 36px; height: 36px; color: #22c55e; }
+
+    /* 链接 */
+    .install-link {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .install-link:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .install-card { padding: 24px 20px; }
+      .step-dot-label { display: none; }
+      .step-line { width: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="install-bg"></div>
+  <div class="install-container">
+    <div class="install-card">
+      <div class="install-header">
+        <div class="install-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5 16 5l3 3L7.5 19.5 4.5 18.5z"/><path d="m13 8 3 3"/><path d="M16.5 5.5 19 8"/></svg>
+          <span>gitd 安装向导</span>
+        </div>
+        <h1 id="wizardTitle">欢迎使用 gitd</h1>
+        <p id="wizardSubtitle">按照以下步骤完成系统初始化</p>
+      </div>
+
+      <!-- 步骤指示器 -->
+      <div class="steps-indicator" id="stepsIndicator">
+        <div class="step-dot active" data-step="1">
+          <div class="step-dot-num">1</div>
+          <div class="step-dot-label">环境检测</div>
+        </div>
+        <div class="step-line" data-line="1"></div>
+        <div class="step-dot" data-step="2">
+          <div class="step-dot-num">2</div>
+          <div class="step-dot-label">数据库</div>
+        </div>
+        <div class="step-line" data-line="2"></div>
+        <div class="step-dot" data-step="3">
+          <div class="step-dot-num">3</div>
+          <div class="step-dot-label">管理员</div>
+        </div>
+        <div class="step-line" data-line="3"></div>
+        <div class="step-dot" data-step="4">
+          <div class="step-dot-num">4</div>
+          <div class="step-dot-label">授权</div>
+        </div>
+        <div class="step-line" data-line="4"></div>
+        <div class="step-dot" data-step="5">
+          <div class="step-dot-num">5</div>
+          <div class="step-dot-label">完成</div>
+        </div>
+      </div>
+
+      <!-- 步骤1: 环境检测 -->
+      <div class="step-panel active" id="step1">
+        <h2>环境检测</h2>
+        <p class="step-desc">系统正在检测运行环境，请确保所有检测项通过后再继续。</p>
+        <div id="envCheckList">
+          <div class="status-card">
+            <div class="status-icon loading">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            </div>
+            <div class="status-info">
+              <div class="status-title">正在检测...</div>
+              <div class="status-detail">请稍候</div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btnToStep2" disabled onclick="goToStep(2)">
+            下一步
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 步骤2: 数据库配置 -->
+      <div class="step-panel" id="step2">
+        <h2>数据库配置</h2>
+        <p class="step-desc">检测数据库连接状态并初始化数据表结构。</p>
+        <div id="dbStatusArea"></div>
+        <div id="dbForm" style="margin-top:16px;">
+          <div class="field">
+            <label>数据库连接字符串</label>
+            <input type="text" id="dbConnStr" placeholder="postgres://用户名:密码@主机:端口/数据库名">
+            <div class="field-hint">如果已在环境变量中配置（POSTGRES_URL），此处可留空，系统将自动使用环境变量。</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(1)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            上一步
+          </button>
+          <button class="btn btn-primary" id="btnTestDb" onclick="testDatabase()">
+            测试连接
+          </button>
+          <button class="btn btn-primary" id="btnInitDb" disabled onclick="initDatabase()" style="display:none;">
+            初始化数据库
+          </button>
+        </div>
+      </div>
+
+      <!-- 步骤3: 管理员账号 -->
+      <div class="step-panel" id="step3">
+        <h2>创建管理员账号</h2>
+        <p class="step-desc">设置管理员登录用户名和密码，用于登录系统后台。</p>
+        <div class="field">
+          <label>管理员用户名</label>
+          <input type="text" id="adminUsername" placeholder="admin" value="admin">
+        </div>
+        <div class="field">
+          <label>管理员密码</label>
+          <input type="password" id="adminPassword" placeholder="至少 8 位，建议包含字母和数字">
+        </div>
+        <div class="field">
+          <label>确认密码</label>
+          <input type="password" id="adminPasswordConfirm" placeholder="再次输入密码">
+        </div>
+        <div id="adminAlert"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(2)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            上一步
+          </button>
+          <button class="btn btn-primary" id="btnCreateAdmin" onclick="createAdmin()">
+            创建账号
+          </button>
+        </div>
+      </div>
+
+      <!-- 步骤4: 授权配置 -->
+      <div class="step-panel" id="step4">
+        <h2>授权配置</h2>
+        <p class="step-desc">
+          输入从 <a href="https://gitd.cn" target="_blank" class="install-link">gitd.cn</a> 获取的授权码激活系统。<br>
+          如果暂时没有授权码，可跳过此步骤，稍后在后台配置。
+        </p>
+        <div class="field">
+          <label>授权码</label>
+          <input type="text" id="licenseKey" placeholder="GS-XXXX-XXXX-XXXX-XXXX">
+          <div class="field-hint">授权码用于激活系统，未激活的系统将显示未授权提示。</div>
+        </div>
+        <div id="licenseAlert"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="goToStep(3)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            上一步
+          </button>
+          <button class="btn btn-secondary" id="btnSkipLicense" onclick="goToStep(5)">
+            跳过
+          </button>
+          <button class="btn btn-primary" id="btnSaveLicense" onclick="saveLicense()">
+            保存并继续
+          </button>
+        </div>
+      </div>
+
+      <!-- 步骤5: 完成 -->
+      <div class="step-panel" id="step5">
+        <div class="complete-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 style="text-align:center;">安装完成！</h2>
+        <p class="step-desc" style="text-align:center;">
+          gitd 已成功安装。即将跳转到登录页面，使用刚才创建的管理员账号登录即可开始使用。
+        </p>
+        <div id="completeAlert"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="finishInstall()" style="width:100%;">
+            进入系统
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 全局状态 =====
+    var currentStep = 1;
+    var installState = {
+      dbConnected: false,
+      dbInitialized: false,
+      adminCreated: false,
+      licenseSaved: false,
+    };
+
+    // ===== 页面加载时检查安装状态 =====
+    (async function checkStatus() {
+      try {
+        var res = await fetch('/api/install?action=status');
+        var data = await res.json();
+        if (data.ok && data.status) {
+          var s = data.status;
+
+          // 如果已经安装完成，显示已完成提示
+          if (s.installed) {
+            document.getElementById('wizardTitle').textContent = '系统已安装';
+            document.getElementById('wizardSubtitle').textContent = '系统已完成安装，无需重复安装';
+            document.getElementById('envCheckList').innerHTML =
+              '<div class="alert alert-info">系统已完成安装。如需重新安装，请先清空数据库中的 settings 表。</div>' +
+              '<div class="btn-row"><button class="btn btn-primary" style="width:100%;" onclick="window.location.href=\'/login\'">前往登录</button></div>';
+            document.getElementById('btnToStep2').style.display = 'none';
+            return;
+          }
+
+          renderEnvCheck(s);
+        }
+      } catch (e) {
+        document.getElementById('envCheckList').innerHTML =
+          '<div class="alert alert-error">检测失败：' + escapeHtml(e.message) + '。请确保服务已正确部署。</div>';
+      }
+    })();
+
+    function renderEnvCheck(s) {
+      var html = '';
+
+      // 数据库环境变量
+      html += '<div class="status-card">' +
+        '<div class="status-icon ' + (s.dbConfigured ? 'success' : 'error') + '">' +
+        getStatusIcon(s.dbConfigured ? 'success' : 'error') +
+        '</div><div class="status-info">' +
+        '<div class="status-title">数据库环境变量</div>' +
+        '<div class="status-detail">' + (s.dbConfigured ? '已配置 POSTGRES_URL / DATABASE_URL' : '未检测到 POSTGRES_URL 或 DATABASE_URL，请在环境变量或下方输入框中配置') +
+        '</div></div></div>';
+
+      // 数据库连接
+      if (s.dbConfigured) {
+        html += '<div class="status-card">' +
+          '<div class="status-icon ' + (s.dbConnected ? 'success' : 'error') + '">' +
+          getStatusIcon(s.dbConnected ? 'success' : 'error') +
+          '</div><div class="status-info">' +
+          '<div class="status-title">数据库连接</div>' +
+          '<div class="status-detail">' + (s.dbConnected ? '连接成功' : (s.dbError || '连接失败')) +
+          '</div></div></div>';
+      }
+
+      // JWT 密钥
+      html += '<div class="status-card">' +
+        '<div class="status-icon ' + (s.jwtConfigured ? 'success' : 'warning') + '">' +
+        getStatusIcon(s.jwtConfigured ? 'success' : 'warning') +
+        '</div><div class="status-info">' +
+        '<div class="status-title">JWT 密钥</div>' +
+        '<div class="status-detail">' + (s.jwtConfigured ? '已配置 JWT_SECRET' : '未配置 JWT_SECRET，系统将自动生成（建议配置环境变量）') +
+        '</div></div></div>';
+
+      var allOk = s.dbConfigured && s.dbConnected;
+
+      if (allOk) {
+        document.getElementById('btnToStep2').disabled = false;
+      } else {
+        document.getElementById('btnToStep2').disabled = false;
+        html += '<div class="alert alert-info" style="margin-top:16px;">部分检测项未通过，你仍可继续安装并在下一步手动配置数据库连接。</div>';
+      }
+
+      document.getElementById('envCheckList').innerHTML = html;
+    }
+
+    function getStatusIcon(type) {
+      var icons = {
+        success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+        error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+        warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      };
+      return icons[type] || '';
+    }
+
+    // ===== 步骤切换 =====
+    function goToStep(step) {
+      // 隐藏所有面板
+      var panels = document.querySelectorAll('.step-panel');
+      for (var i = 0; i < panels.length; i++) {
+        panels[i].classList.remove('active');
+      }
+      // 显示目标面板
+      var target = document.getElementById('step' + step);
+      if (target) target.classList.add('active');
+
+      // 更新步骤指示器
+      var dots = document.querySelectorAll('.step-dot');
+      var lines = document.querySelectorAll('.step-line');
+      for (var j = 0; j < dots.length; j++) {
+        dots[j].classList.remove('active', 'done');
+        var dotStep = parseInt(dots[j].getAttribute('data-step'));
+        if (dotStep < step) {
+          dots[j].classList.add('done');
+        } else if (dotStep === step) {
+          dots[j].classList.add('active');
+        }
+      }
+      for (var k = 0; k < lines.length; k++) {
+        lines[k].classList.remove('done');
+        var lineStep = parseInt(lines[k].getAttribute('data-line'));
+        if (lineStep < step) {
+          lines[k].classList.add('done');
+        }
+      }
+
+      currentStep = step;
+
+      // 滚动到顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== 测试数据库连接 =====
+    async function testDatabase() {
+      var btn = document.getElementById('btnTestDb');
+      var connStr = document.getElementById('dbConnStr').value.trim();
+      var area = document.getElementById('dbStatusArea');
+
+      btn.disabled = true;
+      btn.textContent = '测试中...';
+      area.innerHTML = '<div class="status-card"><div class="status-icon loading"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div><div class="status-info"><div class="status-title">正在测试连接...</div></div></div>';
+
+      try {
+        var res = await fetch('/api/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'db-check', connectionString: connStr })
+        });
+        var data = await res.json();
+
+        if (data.ok) {
+          area.innerHTML = '<div class="alert alert-success">数据库连接成功！' + (data.version ? '<br>版本：' + escapeHtml(data.version) : '') + '</div>';
+          installState.dbConnected = true;
+          document.getElementById('btnInitDb').style.display = '';
+          document.getElementById('btnInitDb').disabled = false;
+          document.getElementById('btnTestDb').textContent = '重新测试';
+        } else {
+          area.innerHTML = '<div class="alert alert-error">连接失败：' + escapeHtml(data.error || '未知错误') + '</div>';
+        }
+      } catch (e) {
+        area.innerHTML = '<div class="alert alert-error">请求失败：' + escapeHtml(e.message) + '</div>';
+      }
+
+      btn.disabled = false;
+    }
+
+    // ===== 初始化数据库 =====
+    async function initDatabase() {
+      var btn = document.getElementById('btnInitDb');
+      var connStr = document.getElementById('dbConnStr').value.trim();
+      var area = document.getElementById('dbStatusArea');
+
+      btn.disabled = true;
+      btn.textContent = '初始化中...';
+      area.innerHTML += '<div class="alert alert-info">正在创建数据表，请稍候...</div>';
+
+      try {
+        var res = await fetch('/api/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'db-init', connectionString: connStr })
+        });
+        var data = await res.json();
+
+        if (data.ok) {
+          area.innerHTML = '<div class="alert alert-success">数据库初始化成功！所有数据表已创建。</div>';
+          installState.dbInitialized = true;
+          btn.textContent = '已完成';
+          // 自动跳转下一步
+          setTimeout(function() { goToStep(3); }, 800);
+        } else {
+          area.innerHTML = '<div class="alert alert-error">初始化失败：' + escapeHtml(data.error) + '</div>';
+          btn.disabled = false;
+          btn.textContent = '重新初始化';
+        }
+      } catch (e) {
+        area.innerHTML = '<div class="alert alert-error">请求失败：' + escapeHtml(e.message) + '</div>';
+        btn.disabled = false;
+        btn.textContent = '重新初始化';
+      }
+    }
+
+    // ===== 创建管理员账号 =====
+    async function createAdmin() {
+      var btn = document.getElementById('btnCreateAdmin');
+      var username = document.getElementById('adminUsername').value.trim();
+      var password = document.getElementById('adminPassword').value;
+      var passwordConfirm = document.getElementById('adminPasswordConfirm').value;
+      var connStr = document.getElementById('dbConnStr').value.trim();
+      var alertEl = document.getElementById('adminAlert');
+
+      if (!username) { alertEl.innerHTML = '<div class="alert alert-error">请输入用户名</div>'; return; }
+      if (!password) { alertEl.innerHTML = '<div class="alert alert-error">请输入密码</div>'; return; }
+      if (password.length < 8) { alertEl.innerHTML = '<div class="alert alert-error">密码至少 8 位</div>'; return; }
+      if (password !== passwordConfirm) { alertEl.innerHTML = '<div class="alert alert-error">两次输入的密码不一致</div>'; return; }
+
+      btn.disabled = true;
+      btn.textContent = '创建中...';
+      alertEl.innerHTML = '<div class="alert alert-info">正在创建管理员账号...</div>';
+
+      try {
+        var res = await fetch('/api/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'create-admin', username: username, password: password, connectionString: connStr })
+        });
+        var data = await res.json();
+
+        if (data.ok) {
+          alertEl.innerHTML = '<div class="alert alert-success">管理员账号创建成功！</div>';
+          installState.adminCreated = true;
+          btn.textContent = '已完成';
+          setTimeout(function() { goToStep(4); }, 800);
+        } else {
+          alertEl.innerHTML = '<div class="alert alert-error">创建失败：' + escapeHtml(data.error) + '</div>';
+          btn.disabled = false;
+          btn.textContent = '创建账号';
+        }
+      } catch (e) {
+        alertEl.innerHTML = '<div class="alert alert-error">请求失败：' + escapeHtml(e.message) + '</div>';
+        btn.disabled = false;
+        btn.textContent = '创建账号';
+      }
+    }
+
+    // ===== 保存授权码 =====
+    async function saveLicense() {
+      var btn = document.getElementById('btnSaveLicense');
+      var licenseKey = document.getElementById('licenseKey').value.trim();
+      var connStr = document.getElementById('dbConnStr').value.trim();
+      var alertEl = document.getElementById('licenseAlert');
+
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      try {
+        var res = await fetch('/api/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'license', licenseKey: licenseKey, connectionString: connStr })
+        });
+        var data = await res.json();
+
+        if (data.ok) {
+          alertEl.innerHTML = '<div class="alert alert-success">授权码已保存！</div>';
+          installState.licenseSaved = true;
+          btn.textContent = '已完成';
+          setTimeout(function() { goToStep(5); }, 800);
+        } else {
+          alertEl.innerHTML = '<div class="alert alert-error">保存失败：' + escapeHtml(data.error) + '</div>';
+          btn.disabled = false;
+          btn.textContent = '保存并继续';
+        }
+      } catch (e) {
+        alertEl.innerHTML = '<div class="alert alert-error">请求失败：' + escapeHtml(e.message) + '</div>';
+        btn.disabled = false;
+        btn.textContent = '保存并继续';
+      }
+    }
+
+    // ===== 完成安装 =====
+    async function finishInstall() {
+      var connStr = document.getElementById('dbConnStr').value.trim();
+      var alertEl = document.getElementById('completeAlert');
+
+      try {
+        var res = await fetch('/api/install', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: 'complete', connectionString: connStr })
+        });
+        var data = await res.json();
+
+        if (data.ok) {
+          window.location.href = '/login';
+        } else {
+          // 即使完成标记失败也跳转
+          window.location.href = '/login';
+        }
+      } catch (e) {
+        window.location.href = '/login';
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
