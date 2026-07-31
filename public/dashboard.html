@@ -2458,7 +2458,7 @@
             '<div><strong style="font-size:16px;">' + escapeHtml(t.name) + '</strong>' +
               (t.role === 'admin' ? '<span class="badge badge-blue" style="margin-left:8px;">管理员</span>' : '<span class="badge badge-gray" style="margin-left:8px;">成员</span>') +
             '</div>' +
-            '<div><button class="btn btn-outline btn-sm" onclick="openTeamDetail(' + t.id + ')">查看详情</button></div>' +
+            '<div><button class="btn btn-outline btn-sm" onclick="openTeamDetail(\'' + t.id + '\')">查看详情</button></div>' +
           '</div>' +
           (t.description ? '<p style="color:var(--text2);font-size:13px;margin-top:8px;">' + escapeHtml(t.description) + '</p>' : '') +
           '<div style="font-size:12px;color:var(--text2);margin-top:8px;">创建于 ' + new Date(t.createdAt).toLocaleDateString('zh-CN') + '</div>' +
