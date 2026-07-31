@@ -658,7 +658,7 @@
               <h2>邮件通知</h2>
               <div class="subtitle">上传成功/失败时自动发送邮件通知，无需配置第三方平台</div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="loadEmailConfig()">配置</button>
+            <button class="btn btn-outline btn-sm" onclick="openEmailConfig()">配置</button>
           </div>
           <div class="card">
             <div id="emailNotifyStatus"><div class="empty-state">加载中...</div></div>
@@ -1197,6 +1197,10 @@
       var navItem = document.querySelector('[data-page="' + page + '"]');
       if (navItem) navItem.classList.add('active');
       document.getElementById('topbarTitle').textContent = pageTitles[page] || page;
+      // 按需加载数据
+      if (page === 'team') loadTeams();
+      if (page === 'apikeys') loadApiKeys();
+      if (page === 'email') loadEmailConfig();
       // 移动端关闭侧边栏
       if (window.innerWidth <= 768) closeSidebar();
       // 滚动到顶部
@@ -1584,7 +1588,7 @@
               '<button class="btn-icon" onclick="downloadRepo(' + r.id + ')" id="downloadBtn_' + r.id + '" title="下载仓库">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>下载</button>' +
               '<span class="repo-action-divider"></span>' +
-              '<button class="btn-icon btn-icon-danger" onclick="openClearRepoModal(' + r.id + ')" title="清空仓库文件（保留 README）">' +
+              '<button class="btn-icon btn-icon-danger" onclick="openClearRepoModal(' + r.id + ')" title="清空仓库全部文件">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>清空</button>' +
               '<button class="btn-icon btn-icon-danger-solid" onclick="removeRepo(' + r.id + ')" title="删除此仓库配置">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>删除</button>' +
@@ -2439,7 +2443,7 @@
             '<div><button class="btn btn-outline btn-sm" onclick="openTeamDetail(' + t.id + ')">查看详情</button></div>' +
           '</div>' +
           (t.description ? '<p style="color:var(--text2);font-size:13px;margin-top:8px;">' + escapeHtml(t.description) + '</p>' : '') +
-          '<div style="font-size:12px;color:var(--text2);margin-top:8px;">成员 ' + (t.memberCount || 0) + ' 人 · 仓库 ' + (t.repoCount || 0) + ' 个</div>' +
+          '<div style="font-size:12px;color:var(--text2);margin-top:8px;">创建于 ' + new Date(t.createdAt).toLocaleDateString('zh-CN') + '</div>' +
         '</div>';
       }).join('');
     }
@@ -2473,15 +2477,16 @@
         var data = await res.json();
         if (data.ok) {
           var team = data.team;
+          var isAdmin = data.myRole === 'admin';
           document.getElementById('teamDetailTitle').textContent = team.name;
           document.getElementById('teamDetailAlert').innerHTML = '';
-          renderTeamMembers(team.members, team.role === 'admin');
-          renderTeamRepos(team.repos, team.role === 'admin');
-          renderTeamHistory(team.history);
+          renderTeamMembers(data.members, isAdmin);
+          renderTeamRepos(data.repos, isAdmin);
+          renderTeamHistory(data.history);
           var deleteBtn = document.getElementById('deleteTeamBtn');
-          deleteBtn.style.display = (team.role === 'admin') ? 'inline-block' : 'none';
+          deleteBtn.style.display = isAdmin ? 'inline-block' : 'none';
           deleteBtn.onclick = function() { confirmDeleteTeamById(teamId); };
-          document.getElementById('inviteSection').style.display = (team.role === 'admin') ? 'flex' : 'none';
+          document.getElementById('inviteSection').style.display = isAdmin ? 'flex' : 'none';
           document.getElementById('teamDetailModal').classList.add('show');
           window._currentTeamId = teamId;
         } else {
@@ -2517,9 +2522,9 @@
         return;
       }
       el.innerHTML = repos.map(function(r) {
-        var unshareBtn = isAdmin ? '<button class="btn btn-outline btn-sm" style="color:var(--red);" onclick="unshareRepo(' + r.id + ')">取消共享</button>' : '';
+        var unshareBtn = isAdmin ? '<button class="btn btn-outline btn-sm" style="color:var(--red);" onclick="unshareRepo(' + r.repoId + ')">取消共享</button>' : '';
         return '<div class="webhook-card">' +
-          '<div><strong>' + escapeHtml(r.name) + '</strong><div style="font-size:12px;color:var(--text2);">' + escapeHtml(r.repo) + '</div></div>' +
+          '<div><strong>' + escapeHtml(r.repoName || '未命名仓库') + '</strong><div style="font-size:12px;color:var(--text2);">' + escapeHtml(r.repoUrl || '') + '</div></div>' +
           '<div>' + unshareBtn + '</div>' +
         '</div>';
       }).join('');
@@ -2532,9 +2537,10 @@
         return;
       }
       el.innerHTML = history.map(function(h) {
-        var time = new Date(h.createdAt).toLocaleString('zh-CN');
+        var time = new Date(h.time).toLocaleString('zh-CN');
+        var action = '上传了 ' + escapeHtml(h.fileName || '文件') + ' (' + (h.fileCount || 0) + ' 个文件)';
         return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);font-size:13px;">' +
-          '<strong>' + escapeHtml(h.username) + '</strong> ' + escapeHtml(h.action) +
+          '<strong>' + escapeHtml(h.username) + '</strong> ' + action +
           ' <span style="color:var(--text2);">· ' + time + '</span>' +
         '</div>';
       }).join('');
@@ -2639,18 +2645,19 @@
         }
         el.innerHTML = data.keys.map(function(k) {
           var time = new Date(k.createdAt).toLocaleString('zh-CN');
+          var keyPrefix = (k.apiKey || '').substring(0, 12);
           return '<div class="card" style="margin-bottom:12px;">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
-              '<div><strong>' + escapeHtml(k.name) + '</strong>' +
+              '<div><strong>' + escapeHtml(k.keyName || 'default') + '</strong>' +
                 (k.lastUsedAt ? '<div style="font-size:12px;color:var(--text2);">最后使用: ' + new Date(k.lastUsedAt).toLocaleString('zh-CN') + '</div>' : '') +
                 '<div style="font-size:12px;color:var(--text2);">创建: ' + time + '</div>' +
               '</div>' +
               '<div>' +
-                '<button class="btn btn-outline btn-sm" onclick="copyApiKey(\'' + k.keyPrefix + '...\')">复制</button>' +
+                '<button class="btn btn-outline btn-sm" onclick="copyApiKey(\'' + escapeHtml(k.apiKey || '') + '\')">复制完整密钥</button>' +
                 '<button class="btn btn-red btn-sm" style="margin-left:8px;" onclick="removeApiKey(' + k.id + ')">删除</button>' +
               '</div>' +
             '</div>' +
-            '<div style="margin-top:8px;font-family:monospace;font-size:13px;color:var(--text2);background:var(--bg);padding:8px 12px;border-radius:var(--radius-sm);">' + escapeHtml(k.keyPrefix) + '...' + '</div>' +
+            '<div style="margin-top:8px;font-family:monospace;font-size:13px;color:var(--text2);background:var(--bg);padding:8px 12px;border-radius:var(--radius-sm);">' + escapeHtml(keyPrefix) + '...</div>' +
           '</div>';
         }).join('');
       } else {
@@ -2675,7 +2682,13 @@
         var data = await res.json();
         if (data.ok) {
           closeApiKeyModal();
-          showAlert('API 密钥创建成功：' + data.key, true);
+          var newKey = data.key && data.key.apiKey ? data.key.apiKey : (typeof data.key === 'string' ? data.key : '');
+          if (newKey) {
+            showAlert('API 密钥创建成功，请立即复制保存（仅显示一次）：' + newKey, true);
+            copyApiKey(newKey);
+          } else {
+            showAlert('API 密钥创建成功', true);
+          }
           loadApiKeys();
         } else {
           document.getElementById('apiKeyAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
@@ -2767,27 +2780,37 @@
     }
 
     // ===== 邮件通知 =====
+    async function openEmailConfig() {
+      document.getElementById('emailConfigModal').classList.add('show');
+      await loadEmailConfig();
+    }
+
     async function loadEmailConfig() {
       try {
-        var res = await fetch('/api/email/config', { headers: authHeader() });
+        var res = await fetch('/api/config', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ _action: 'get-email-config' })
+        });
         var data = await res.json();
         if (data.ok) {
-          document.getElementById('emailProvider').value = data.config.provider || 'resend';
-          document.getElementById('emailApiKey').value = data.config.apiKey || '';
-          document.getElementById('emailWebhookUrl').value = data.config.webhookUrl || '';
-          document.getElementById('userNotifyEmail').value = data.config.notifyEmail || '';
-          document.getElementById('userNotifyEnabled').checked = data.config.notifyEnabled || false;
-          document.getElementById('emailWebhookField').style.display = (data.config.provider === 'webhook') ? 'block' : 'none';
-          document.getElementById('emailConfigModal').classList.add('show');
-          renderEmailStatus(data.config);
+          var config = data.config || {};
+          var userNotify = data.userNotify || {};
+          document.getElementById('emailProvider').value = config.provider || 'resend';
+          document.getElementById('emailApiKey').value = config.apiKey || '';
+          document.getElementById('emailWebhookUrl').value = config.webhookUrl || '';
+          document.getElementById('userNotifyEmail').value = userNotify.email || '';
+          document.getElementById('userNotifyEnabled').checked = userNotify.enabled || false;
+          document.getElementById('emailWebhookField').style.display = (config.provider === 'webhook') ? 'block' : 'none';
+          renderEmailStatus({ notifyEnabled: userNotify.enabled, notifyEmail: userNotify.email });
         }
       } catch (e) { showAlert('加载邮件配置失败', false); }
     }
 
-    function renderEmailStatus(config) {
+    function renderEmailStatus(info) {
       var el = document.getElementById('emailNotifyStatus');
-      if (config.notifyEnabled) {
-        el.innerHTML = '<div class="alert alert-ok">✅ 邮件通知已开启<br>接收邮箱: ' + escapeHtml(config.notifyEmail || '未设置') + '</div>';
+      if (!el) return;
+      if (info && info.notifyEnabled) {
+        el.innerHTML = '<div class="alert alert-ok">✅ 邮件通知已开启<br>接收邮箱: ' + escapeHtml(info.notifyEmail || '未设置') + '</div>';
       } else {
         el.innerHTML = '<div class="alert alert-warn">⚠️ 邮件通知未开启，点击「配置」开启</div>';
       }
@@ -2796,24 +2819,31 @@
     function closeEmailConfigModal() { document.getElementById('emailConfigModal').classList.remove('show'); }
 
     async function saveEmailConfig() {
-      var body = {
-        provider: document.getElementById('emailProvider').value,
-        apiKey: document.getElementById('emailApiKey').value.trim(),
-        webhookUrl: document.getElementById('emailWebhookUrl').value.trim(),
-        notifyEmail: document.getElementById('userNotifyEmail').value.trim(),
-        notifyEnabled: document.getElementById('userNotifyEnabled').checked
-      };
+      var provider = document.getElementById('emailProvider').value;
+      var apiKey = document.getElementById('emailApiKey').value.trim();
+      var webhookUrl = document.getElementById('emailWebhookUrl').value.trim();
+      var notifyEmail = document.getElementById('userNotifyEmail').value.trim();
+      var notifyEnabled = document.getElementById('userNotifyEnabled').checked;
       var btn = document.getElementById('saveEmailConfigBtn');
       btn.disabled = true; btn.textContent = '保存中...';
       try {
-        var res = await fetch('/api/email/config', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
-        var data = await res.json();
-        if (data.ok) {
+        // 保存全局邮件配置
+        await fetch('/api/config', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ _action: 'set-email-config', provider: provider, apiKey: apiKey, webhookUrl: webhookUrl })
+        });
+        // 保存用户通知配置
+        var res2 = await fetch('/api/config', {
+          method: 'POST', headers: authHeader(),
+          body: JSON.stringify({ _action: 'set-user-email-notify', enabled: notifyEnabled, email: notifyEmail })
+        });
+        var data2 = await res2.json();
+        if (data2.ok) {
           closeEmailConfigModal();
           showAlert('邮件配置已保存', true);
-          renderEmailStatus(data.config);
+          renderEmailStatus({ notifyEnabled: notifyEnabled, notifyEmail: notifyEmail });
         } else {
-          document.getElementById('emailConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data.error) + '</div>';
+          document.getElementById('emailConfigAlert').innerHTML = '<div class="alert alert-err">' + escapeHtml(data2.error) + '</div>';
         }
       } catch (e) { document.getElementById('emailConfigAlert').innerHTML = '<div class="alert alert-err">网络错误</div>'; }
       btn.disabled = false; btn.textContent = '保存';

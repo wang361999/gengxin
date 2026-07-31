@@ -206,8 +206,8 @@ module.exports = async (req, res) => {
         return sendJson(res, 200, {
           ok: true,
           message: result.deletedCount === 0
-            ? '仓库已经是空的（已保留 README.md）'
-            : `已清空仓库，删除了 ${result.deletedCount} 个文件（已保留 README.md，确保后续可正常上传）`,
+            ? '仓库已经是空的'
+            : `已完全清空仓库，删除了 ${result.deletedCount} 个文件`,
           deletedCount: result.deletedCount,
           commitSha: result.commitSha,
           keptReadme: result.keptReadme
