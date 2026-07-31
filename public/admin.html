@@ -1325,6 +1325,26 @@
     checkAppVersion();
     setInterval(checkAppVersion, 5 * 60 * 1000);
 
+    // ===== 动态应用站点名称 =====
+    (async function applySiteName() {
+      try {
+        var res = await fetch('/api/auth/public-settings');
+        var data = await res.json();
+        if (!data.ok || !data.settings.siteName) return;
+        var name = data.settings.siteName;
+        document.title = '管理后台 - ' + name;
+        var brand = document.querySelector('.sidebar-header a.brand');
+        if (brand) {
+          var svg = brand.querySelector('svg');
+          var sub = brand.querySelector('.brand-sub');
+          brand.textContent = '';
+          if (svg) brand.appendChild(svg);
+          brand.appendChild(document.createTextNode(' ' + name + ' '));
+          if (sub) brand.appendChild(sub);
+        }
+      } catch (e) {}
+    })();
+
     // ===== Service Worker 注册 =====
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(function() {});

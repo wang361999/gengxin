@@ -546,6 +546,37 @@
       }).catch(function () { /* 静默回退到占位符 */ });
     })();
 
+    // ===== 动态应用站点名称 =====
+    (async function applySiteName() {
+      try {
+        var res = await fetch('/api/auth/public-settings');
+        var data = await res.json();
+        if (!data.ok || !data.settings.siteName) return;
+        var name = data.settings.siteName;
+        // 更新浏览器标签标题
+        document.title = name + ' — 一键推送代码到 GitHub';
+        // 更新导航栏品牌名
+        var navBrand = document.querySelector('.ln-brand');
+        if (navBrand) {
+          var logoSvg = navBrand.querySelector('.ln-logo');
+          navBrand.textContent = '';
+          if (logoSvg) navBrand.appendChild(logoSvg);
+          navBrand.appendChild(document.createTextNode(' ' + name));
+        }
+        // 更新页脚品牌名
+        var footerBrand = document.querySelector('.footer-brand .ln-brand');
+        if (footerBrand) {
+          var footerSvg = footerBrand.querySelector('.ln-logo');
+          footerBrand.textContent = '';
+          if (footerSvg) footerBrand.appendChild(footerSvg);
+          footerBrand.appendChild(document.createTextNode(' ' + name));
+        }
+        // 更新页脚版权
+        var footerBottom = document.querySelector('.footer-bottom p');
+        if (footerBottom) footerBottom.innerHTML = name + ' &copy; 2026 · 基于 <a href="https://vercel.com" target="_blank" rel="noopener" style="color:#a1a1aa;">Vercel</a> · 开源项目';
+      } catch (e) {}
+    })();
+
     // ===== Service Worker 注册 =====
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(function () {});

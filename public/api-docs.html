@@ -595,6 +595,25 @@ Content-Type: application/json</code></pre>
       checkAppVersion();
       setInterval(checkAppVersion, 5 * 60 * 1000);
 
+      // ===== 动态应用站点名称 =====
+      (async function applySiteName() {
+        try {
+          var res = await fetch('/api/auth/public-settings');
+          var data = await res.json();
+          if (!data.ok || !data.settings.siteName) return;
+          var name = data.settings.siteName;
+          document.title = 'API 文档 - ' + name;
+          document.querySelectorAll('.nav-brand a').forEach(function(el) {
+            if (el.tagName === 'A') {
+              var svg = el.querySelector('svg');
+              el.textContent = '';
+              if (svg) el.appendChild(svg);
+              el.appendChild(document.createTextNode(' ' + name));
+            }
+          });
+        } catch (e) {}
+      })();
+
       // ===== Service Worker 注册 =====
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(function() {});

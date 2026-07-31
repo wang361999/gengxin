@@ -1,5 +1,5 @@
 // Service Worker：网络优先策略，版本联动缓存清理
-const CACHE_NAME = 'gitship-v10';
+const CACHE_NAME = 'gitship-v11';
 const STATIC_ASSETS = [
   '/style.css',
   '/dashboard.html',
@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   '/register.html',
   '/admin.html',
   '/legal.html',
+  '/api-docs.html',
   '/manifest.json'
 ];
 

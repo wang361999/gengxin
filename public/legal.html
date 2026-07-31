@@ -72,6 +72,19 @@
         var data = await res.json();
         if (data.ok) {
           legalData = data.settings;
+          // ===== 动态应用站点名称 =====
+          if (legalData.siteName) {
+            var name = legalData.siteName;
+            document.title = '法律文档 - ' + name;
+            document.querySelectorAll('.nav-brand a').forEach(function(el) {
+              if (el.tagName === 'A') {
+                var svg = el.querySelector('svg');
+                el.textContent = '';
+                if (svg) el.appendChild(svg);
+                el.appendChild(document.createTextNode(' ' + name));
+              }
+            });
+          }
           if (!legalData.legalEnabled) {
             document.getElementById('legalContent').innerHTML = '<div class="legal-empty">法律文档暂未开放</div>';
             return;
@@ -96,7 +109,7 @@
 
       if (!legalData) return;
       var content = tab === 'agreement' ? legalData.userAgreement : legalData.privacyPolicy;
-      var title = tab === 'agreement' ? 'GitShip 用户协议' : 'GitShip 隐私政策';
+      var title = tab === 'agreement' ? (legalData.siteName || 'GitShip') + ' 用户协议' : (legalData.siteName || 'GitShip') + ' 隐私政策';
       if (!content) {
         document.getElementById('legalContent').innerHTML = '<div class="legal-empty">暂无内容</div>';
         return;

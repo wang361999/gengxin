@@ -1254,6 +1254,24 @@
     checkAppVersion();
     setInterval(checkAppVersion, 5 * 60 * 1000);
 
+    // ===== 动态应用站点名称 =====
+    (async function applySiteName() {
+      try {
+        var res = await fetch('/api/auth/public-settings');
+        var data = await res.json();
+        if (!data.ok || !data.settings.siteName) return;
+        var name = data.settings.siteName;
+        document.title = '控制台 - ' + name;
+        var brand = document.querySelector('.sidebar-header a.brand');
+        if (brand) {
+          var svg = brand.querySelector('svg');
+          brand.textContent = '';
+          if (svg) brand.appendChild(svg);
+          brand.appendChild(document.createTextNode(' ' + name));
+        }
+      } catch (e) {}
+    })();
+
     function authHeader() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
 
     async function apiFetch(url, options) {
