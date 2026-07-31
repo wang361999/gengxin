@@ -112,7 +112,7 @@ module.exports = async (req, res) => {
       }
       if (req.method === 'POST') {
         const body = await readBody(req);
-        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id', 'plans_enabled', 'donation_enabled', 'donation_title', 'donation_message', 'legal_enabled', 'complaint_email', 'user_agreement', 'privacy_policy', 'license_key', 'license_verify_url', 'license_domain', 'license_enabled'];
+        const allowedKeys = ['site_name', 'allow_register', 'announcement', 'free_upload_limit', 'pro_price', 'enterprise_price', 'alipay_qrcode', 'wechat_qrcode', 'payment_instructions', 'contact_email', 'contact_wechat', 'github_oauth_client_id', 'github_oauth_client_secret', 'vercel_token', 'vercel_project_id', 'plans_enabled', 'donation_enabled', 'donation_title', 'donation_message', 'legal_enabled', 'complaint_email', 'user_agreement', 'privacy_policy', 'license_key', 'license_verify_url', 'license_domain', 'license_enabled', 'license_product_slug', 'license_version_api_url'];
         for (const key of allowedKeys) {
           if (body[key] !== undefined) {
             await updateSetting(key, body[key]);
@@ -379,6 +379,74 @@ module.exports = async (req, res) => {
         return sendJson(res, 200, { ok: true, valid: !!result.valid, message: result.message || '', info: result });
       } catch (err) {
         return sendJson(res, 200, { ok: true, valid: false, message: err.message || '验证失败' });
+      }
+    }
+
+    // ===== 授权验证：获取当前授权状态 =====
+    if (action === 'license-status') {
+      if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
+      const { getLicenseStatus } = require('../../lib/license-verifier');
+      const status = getLicenseStatus();
+      const licenseEnabled = await getSetting('license_enabled');
+      const licenseKey = await getSetting('license_key');
+      const verifyUrl = await getSetting('license_verify_url');
+      const licenseDomain = await getSetting('license_domain');
+      return sendJson(res, 200, {
+        ok: true,
+        enabled: licenseEnabled === 'true',
+        configured: !!(licenseKey && verifyUrl),
+        status: {
+          isVerified: status.isVerified,
+          lastCheckTime: status.lastCheckTime,
+          licenseInfo: status.licenseInfo
+        },
+        config: {
+          licenseKey: licenseKey ? licenseKey.substring(0, 8) + '****' : '',
+          verifyUrl: verifyUrl || 'https://gitd.cn/api/license/verify',
+          domain: licenseDomain || ''
+        }
+      });
+    }
+
+    // ===== 授权验证：强制重新验证（清除缓存） =====
+    if (action === 'license-recheck') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const licenseKey = await getSetting('license_key');
+      const verifyUrl = await getSetting('license_verify_url') || 'https://gitd.cn/api/license/verify';
+      const licenseDomain = await getSetting('license_domain');
+
+      if (!licenseKey) return sendJson(res, 400, { error: '未配置授权码' });
+
+      try {
+        // 清除缓存
+        const { verifyLicense } = require('../../lib/license-verifier');
+        const result = await verifyLicense({ licenseKey, verifyUrl, domain: licenseDomain || undefined });
+        return sendJson(res, 200, {
+          ok: true,
+          valid: !!result.valid,
+          message: result.message || '',
+          info: result
+        });
+      } catch (err) {
+        return sendJson(res, 200, { ok: true, valid: false, message: err.message || '验证失败' });
+      }
+    }
+
+    // ===== 版本更新检查 =====
+    if (action === 'version-check') {
+      if (req.method !== 'POST') return sendJson(res, 405, { error: '只支持 POST' });
+      const productSlug = await getSetting('license_product_slug');
+      const versionApiUrl = await getSetting('license_version_api_url') || 'https://gitd.cn/api';
+      const currentVersion = await getAppVersion();
+
+      if (!productSlug) return sendJson(res, 400, { error: '未配置产品标识（product slug），请先在后台配置' });
+
+      try {
+        const { checkVersion } = require('../../lib/license-verifier');
+        const result = await checkVersion(versionApiUrl, productSlug, currentVersion);
+        return sendJson(res, 200, { ok: true, result });
+      } catch (err) {
+        return sendJson(res, 200, { ok: true, result: { hasUpdate: false, message: err.message || '检查失败' } });
       }
     }
 

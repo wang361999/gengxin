@@ -1135,7 +1135,23 @@
             <div id="oauthTestResult" style="margin-top:12px;"></div>
           </div>
 
-          <!-- 授权验证配置（ET Studio 授权系统） -->
+          <!-- 授权验证状态（ET Studio 授权系统） -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">授权验证状态</h3>
+            <div id="licenseStatusPanel" style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div>
+                  <span id="licenseStatusBadge" style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;background:var(--bg);color:var(--text2);">加载中...</span>
+                  <span id="licenseStatusText" style="margin-left:8px;font-size:14px;color:var(--text2);"></span>
+                </div>
+                <button class="btn btn-outline" onclick="recheckLicense()" id="recheckBtn">重新验证</button>
+              </div>
+              <div id="licenseInfoDetails" style="display:none;padding:16px;background:var(--bg);border-radius:8px;font-size:14px;line-height:2;">
+              </div>
+            </div>
+          </div>
+
+          <!-- 授权验证配置 -->
           <div class="card" style="margin-top:20px;">
             <h3 style="margin-bottom:16px;">产品授权验证配置</h3>
             <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">配置 ET Studio 授权系统后，系统会自动验证授权码并保护 API 路由。授权服务器域名：<code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;">gitd.cn</code></p>
@@ -1163,6 +1179,25 @@
               <button class="btn btn-outline" onclick="testLicenseConfig()">测试授权验证</button>
             </div>
             <div id="licenseTestResult" style="margin-top:12px;"></div>
+          </div>
+
+          <!-- 版本更新检查 -->
+          <div class="card" style="margin-top:20px;">
+            <h3 style="margin-bottom:16px;">版本更新检查</h3>
+            <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">检查官网是否发布了新版本。配置产品标识后可一键检查更新。</p>
+            <div class="field">
+              <label>官网 API 地址</label>
+              <input type="text" id="setLicenseVersionApiUrl" placeholder="https://gitd.cn/api" style="max-width:400px;">
+            </div>
+            <div class="field">
+              <label>产品标识（Product Slug）</label>
+              <input type="text" id="setLicenseProductSlug" placeholder="my-product" style="max-width:400px;">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" onclick="saveVersionCheckConfig()">保存配置</button>
+              <button class="btn btn-outline" onclick="checkVersionUpdate()">检查更新</button>
+            </div>
+            <div id="versionCheckResult" style="margin-top:12px;"></div>
           </div>
 
           <!-- 系统健康检查 -->
@@ -2017,9 +2052,13 @@
           document.getElementById('setLicenseKey').value = s.license_key || '';
           document.getElementById('setLicenseVerifyUrl').value = s.license_verify_url || 'https://gitd.cn/api/license/verify';
           document.getElementById('setLicenseDomain').value = s.license_domain || '';
+          document.getElementById('setLicenseVersionApiUrl').value = s.license_version_api_url || 'https://gitd.cn/api';
+          document.getElementById('setLicenseProductSlug').value = s.license_product_slug || '';
           var licenseToggle = document.getElementById('setLicenseEnabled');
           if (s.license_enabled === 'true') licenseToggle.classList.add('on');
           else licenseToggle.classList.remove('on');
+          // 加载授权状态
+          loadLicenseStatus();
         }
       } catch (e) {}
     }
@@ -2259,6 +2298,113 @@
           resultEl.innerHTML = '<div style="padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:14px;color:#059669;">✅ 授权验证成功<br>' + (data.info ? '<br>授权信息：' + escapeHtml(JSON.stringify(data.info).slice(0, 200)) : '') + '</div>';
         } else {
           resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">❌ 授权验证失败：' + escapeHtml(data.message || data.error || '未知错误') + '</div>';
+        }
+      } catch (e) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';
+      }
+    }
+
+    // ===== 授权状态加载 =====
+    async function loadLicenseStatus() {
+      try {
+        var data = await apiFetch('/api/admin/license-status');
+        if (!data || !data.ok) return;
+        var badge = document.getElementById('licenseStatusBadge');
+        var text = document.getElementById('licenseStatusText');
+        var details = document.getElementById('licenseInfoDetails');
+
+        if (!data.enabled) {
+          badge.textContent = '未启用';
+          badge.style.background = 'rgba(107,114,128,0.1)';
+          badge.style.color = '#6b7280';
+          text.textContent = '授权验证未开启，系统正常运行';
+          details.style.display = 'none';
+        } else if (data.status.isVerified) {
+          badge.textContent = '已授权';
+          badge.style.background = 'rgba(16,185,129,0.1)';
+          badge.style.color = '#059669';
+          var lastTime = data.status.lastCheckTime ? new Date(data.status.lastCheckTime).toLocaleString('zh-CN') : '未知';
+          text.textContent = '最后验证：' + lastTime;
+          // 显示授权详情
+          var info = data.status.licenseInfo || {};
+          details.style.display = 'block';
+          details.innerHTML = '<strong>授权信息</strong><br>' +
+            '产品名称：' + escapeHtml(info.project_name || info.name || '-') + '<br>' +
+            '产品类型：' + escapeHtml(info.project_type || info.type || '-') + '<br>' +
+            '到期时间：' + escapeHtml(info.expires_at || info.expired_at || '永久') + '<br>' +
+            '域名绑定：' + escapeHtml((info.bound_domains || 0) + ' / ' + (info.max_domains || '-')) + '<br>' +
+            '授权码：' + escapeHtml(data.config.licenseKey || '-') + '<br>' +
+            '运行域名：' + escapeHtml(data.config.domain || '自动识别');
+        } else {
+          badge.textContent = '未授权';
+          badge.style.background = 'rgba(239,68,68,0.1)';
+          badge.style.color = '#dc2626';
+          text.textContent = data.configured ? '授权验证失败，请检查授权码' : '未配置授权码';
+          details.style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    async function recheckLicense() {
+      var btn = document.getElementById('recheckBtn');
+      btn.disabled = true; btn.textContent = '验证中...';
+      try {
+        var data = await apiFetch('/api/admin/license-recheck', { method: 'POST', headers: authHeader() });
+        if (!data) return;
+        if (data.ok && data.valid) {
+          showAlert('重新验证成功，授权有效', true);
+        } else {
+          showAlert('验证失败：' + (data.message || '未知错误'), false);
+        }
+        loadLicenseStatus();
+      } catch (e) { showAlert('网络错误', false); }
+      btn.disabled = false; btn.textContent = '重新验证';
+    }
+
+    // ===== 版本更新检查配置 =====
+    async function saveVersionCheckConfig() {
+      var body = {
+        license_version_api_url: document.getElementById('setLicenseVersionApiUrl').value.trim() || 'https://gitd.cn/api',
+        license_product_slug: document.getElementById('setLicenseProductSlug').value.trim()
+      };
+      try {
+        var data = await apiFetch('/api/admin/settings', { method: 'POST', headers: authHeader(), body: JSON.stringify(body) });
+        if (!data) return;
+        if (data.ok) showAlert('版本检查配置已保存', true);
+        else showAlert(data.error, false);
+      } catch (e) { showAlert('网络错误', false); }
+    }
+
+    async function checkVersionUpdate() {
+      var resultEl = document.getElementById('versionCheckResult');
+      var slug = document.getElementById('setLicenseProductSlug').value.trim();
+      if (!slug) {
+        resultEl.innerHTML = '<div style="padding:12px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:6px;font-size:14px;color:#ea580c;">⚠️ 请先填写产品标识并保存</div>';
+        return;
+      }
+      resultEl.innerHTML = '<div style="padding:8px 12px;background:var(--bg);border-radius:6px;font-size:14px;color:var(--text2);">正在检查更新...</div>';
+      try {
+        var data = await apiFetch('/api/admin/version-check', { method: 'POST', headers: authHeader() });
+        if (!data) return;
+        if (data.ok && data.result) {
+          var r = data.result;
+          if (r.hasUpdate) {
+            var v = r.latestVersion;
+            var html = '<div style="padding:16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:6px;font-size:14px;">';
+            html += '<div style="font-weight:600;color:var(--blue);margin-bottom:8px;">发现新版本 ' + escapeHtml(v.version || '') + '</div>';
+            if (v.title) html += '<div style="margin-bottom:4px;"><strong>标题：</strong>' + escapeHtml(v.title) + '</div>';
+            if (v.changelog) html += '<div style="margin-bottom:4px;white-space:pre-wrap;"><strong>更新日志：</strong><br>' + escapeHtml(v.changelog) + '</div>';
+            if (v.downloadUrl) html += '<div style="margin-bottom:4px;"><strong>下载地址：</strong><a href="' + escapeHtml(v.downloadUrl) + '" target="_blank" style="color:var(--blue);word-break:break-all;">' + escapeHtml(v.downloadUrl) + '</a></div>';
+            if (v.downloadPassword) html += '<div style="margin-bottom:4px;"><strong>下载密码：</strong><code>' + escapeHtml(v.downloadPassword) + '</code></div>';
+            if (v.fileSize) html += '<div style="margin-bottom:4px;"><strong>文件大小：</strong>' + escapeHtml(v.fileSize) + '</div>';
+            if (v.createdAt) html += '<div><strong>发布时间：</strong>' + escapeHtml(v.createdAt) + '</div>';
+            html += '</div>';
+            resultEl.innerHTML = html;
+          } else {
+            resultEl.innerHTML = '<div style="padding:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:6px;font-size:14px;color:#059669;">✅ 当前已是最新版本（' + escapeHtml(r.currentVersion || '未知') + '）</div>';
+          }
+        } else {
+          resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">' + escapeHtml(data.error || data.result && data.result.message || '检查失败') + '</div>';
         }
       } catch (e) {
         resultEl.innerHTML = '<div style="padding:12px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;font-size:14px;color:#dc2626;">网络错误</div>';
