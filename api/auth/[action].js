@@ -45,6 +45,17 @@ module.exports = async (req, res) => {
     if (action === 'public-settings') {
       if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
       const all = await getAllSettings();
+      // 检查授权状态（公开，只返回是否已授权，不返回敏感信息）
+      let licenseAuthorized = true;
+      if (all.license_enabled === 'true') {
+        const { checkLicenseForRequest } = require('../../lib/license-verifier');
+        try {
+          const result = await checkLicenseForRequest();
+          licenseAuthorized = !!result.valid;
+        } catch {
+          licenseAuthorized = true;
+        }
+      }
       return sendJson(res, 200, {
         ok: true,
         settings: {
@@ -55,6 +66,10 @@ module.exports = async (req, res) => {
           complaintEmail: all.complaint_email || '',
           userAgreement: all.user_agreement || '',
           privacyPolicy: all.privacy_policy || ''
+        },
+        license: {
+          enabled: all.license_enabled === 'true',
+          authorized: licenseAuthorized
         }
       });
     }

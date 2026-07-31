@@ -147,6 +147,12 @@
       <a href="/register">注册</a>
     </div>
   </nav>
+  <!-- 未授权提示 -->
+  <div id="licenseBanner" style="display:none;">
+    <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);border-bottom:1px solid rgba(59,130,246,0.2);padding:12px 20px;text-align:center;">
+      <span style="font-size:13px;color:#a1a1b5;">本站未获得正式授权，请前往 <a href="https://gitd.cn" target="_blank" rel="noopener" style="color:#60a5fa;font-weight:600;">gitd.cn</a> 获取正版授权</span>
+    </div>
+  </div>
   <div class="auth-page">
     <div class="auth-card">
       <div class="brand-logo">
@@ -199,6 +205,24 @@
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       }
+    })();
+
+    // ===== 授权状态检查：未授权时显示提示 =====
+    (function checkLicenseBanner() {
+      fetch('/api/auth/public-settings').then(function(res) {
+        return res.json();
+      }).then(function(data) {
+        if (data && data.ok && data.license) {
+          var banner = document.getElementById('licenseBanner');
+          if (banner) {
+            if (data.license.enabled && !data.license.authorized) {
+              banner.style.display = 'block';
+            } else {
+              banner.style.display = 'none';
+            }
+          }
+        }
+      }).catch(function() {});
     })();
 
     // ===== 自动登录：检查已存储的 token，有效则直接跳转 =====

@@ -24,9 +24,137 @@
   <link rel="stylesheet" href="/style.css?v=3.0.0">
   <!-- 错误追踪器：静默采集前端错误，不影响页面渲染 -->
   <script src="/error-tracker.js"></script>
+  <style>
+    /* ===== 未授权提示横幅 ===== */
+    .license-banner {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-bottom: 1px solid rgba(59,130,246,0.2);
+    }
+    .license-banner-inner {
+      position: relative;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+    .license-banner-glow {
+      position: absolute;
+      top: -50%;
+      left: -10%;
+      width: 60%;
+      height: 200%;
+      background: radial-gradient(ellipse, rgba(59,130,246,0.15) 0%, transparent 60%);
+      pointer-events: none;
+      animation: license-glow 4s ease-in-out infinite alternate;
+    }
+    @keyframes license-glow {
+      from { transform: translateX(0); opacity: 0.5; }
+      to { transform: translateX(80%); opacity: 1; }
+    }
+    .license-banner-content {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .license-banner-icon {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2));
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 12px;
+      color: #60a5fa;
+    }
+    .license-banner-text {
+      flex: 1;
+      min-width: 200px;
+    }
+    .license-banner-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f0f0f5;
+      margin-bottom: 3px;
+      letter-spacing: -0.01em;
+    }
+    .license-banner-desc {
+      font-size: 13px;
+      color: #a1a1b5;
+      line-height: 1.5;
+    }
+    .license-banner-link {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .license-banner-link:hover {
+      text-decoration: underline;
+    }
+    .license-banner-btn {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 12px rgba(59,130,246,0.3);
+    }
+    .license-banner-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(59,130,246,0.5);
+    }
+    @media (max-width: 640px) {
+      .license-banner-content { flex-direction: column; text-align: center; }
+      .license-banner-text { text-align: center; }
+    }
+    @media (prefers-color-scheme: light) {
+      .license-banner {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #e0e7ff 100%);
+        border-bottom-color: rgba(59,130,246,0.15);
+      }
+      .license-banner-title { color: #1e3a5f; }
+      .license-banner-desc { color: #475569; }
+    }
+  </style>
 </head>
 <body>
   <div class="landing">
+
+    <!-- ===== 未授权提示横幅 ===== -->
+    <div id="licenseBanner" style="display:none;">
+      <div class="license-banner">
+        <div class="license-banner-inner">
+          <div class="license-banner-glow"></div>
+          <div class="license-banner-content">
+            <div class="license-banner-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div class="license-banner-text">
+              <div class="license-banner-title">本站未获得正式授权</div>
+              <div class="license-banner-desc">当前部署未配置有效授权码，部分功能可能受限。请前往 <a href="https://gitd.cn" target="_blank" rel="noopener" class="license-banner-link">gitd.cn</a> 获取正版授权，支持开发者持续维护。</div>
+            </div>
+            <a href="https://gitd.cn" target="_blank" rel="noopener" class="license-banner-btn">
+              获取授权
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== Nav ===== -->
     <nav class="landing-nav" id="landingNav">
@@ -351,6 +479,27 @@
           localStorage.removeItem('role');
         });
       }
+    })();
+
+    // ===== 授权状态检查：未授权时显示提示横幅 =====
+    (function checkLicenseBanner() {
+      fetch('/api/auth/public-settings').then(function(res) {
+        return res.json();
+      }).then(function(data) {
+        if (data && data.ok && data.license) {
+          var banner = document.getElementById('licenseBanner');
+          if (banner) {
+            // 启用了授权验证但未通过 → 显示横幅
+            if (data.license.enabled && !data.license.authorized) {
+              banner.style.display = 'block';
+            } else {
+              banner.style.display = 'none';
+            }
+          }
+        }
+      }).catch(function() {
+        // 静默失败，不影响页面正常加载
+      });
     })();
 
     // ===== 动态版本检测：从 API 获取版本号，部署后强制刷新 =====
