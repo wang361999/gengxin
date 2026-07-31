@@ -489,8 +489,8 @@
         if (data && data.ok && data.license) {
           var banner = document.getElementById('licenseBanner');
           if (banner) {
-            // 启用了授权验证但未通过 → 显示横幅
-            if (data.license.enabled && !data.license.authorized) {
+            // 未授权就显示横幅（不管是否开启验证开关）
+            if (!data.license.authorized) {
               banner.style.display = 'block';
             } else {
               banner.style.display = 'none';

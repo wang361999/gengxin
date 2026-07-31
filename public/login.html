@@ -215,7 +215,7 @@
         if (data && data.ok && data.license) {
           var banner = document.getElementById('licenseBanner');
           if (banner) {
-            if (data.license.enabled && !data.license.authorized) {
+            if (!data.license.authorized) {
               banner.style.display = 'block';
             } else {
               banner.style.display = 'none';

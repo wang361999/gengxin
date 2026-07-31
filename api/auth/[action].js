@@ -45,17 +45,25 @@ module.exports = async (req, res) => {
     if (action === 'public-settings') {
       if (req.method !== 'GET') return sendJson(res, 405, { error: '只支持 GET' });
       const all = await getAllSettings();
-      // 检查授权状态（公开，只返回是否已授权，不返回敏感信息）
-      let licenseAuthorized = true;
-      if (all.license_enabled === 'true') {
+      // 检查授权状态：没有配置有效授权码即为未授权
+      let licenseAuthorized = false;
+      let licenseVerified = false;
+      const licenseKey = all.license_key || '';
+      const licenseEnabled = all.license_enabled === 'true';
+
+      if (licenseKey) {
+        // 有授权码，检查是否验证通过
         const { checkLicenseForRequest } = require('../../lib/license-verifier');
         try {
           const result = await checkLicenseForRequest();
-          licenseAuthorized = !!result.valid;
+          licenseVerified = !!result.valid;
+          licenseAuthorized = licenseVerified;
         } catch {
-          licenseAuthorized = true;
+          // SDK 异常时当作未验证
+          licenseAuthorized = false;
         }
       }
+      // 管理员豁免：license_enabled 未开启时也显示未授权横幅（只要有授权码就检查，没有授权码就是未授权）
       return sendJson(res, 200, {
         ok: true,
         settings: {
@@ -68,8 +76,10 @@ module.exports = async (req, res) => {
           privacyPolicy: all.privacy_policy || ''
         },
         license: {
-          enabled: all.license_enabled === 'true',
-          authorized: licenseAuthorized
+          enabled: licenseEnabled,
+          authorized: licenseAuthorized,
+          hasKey: !!licenseKey,
+          verified: licenseVerified
         }
       });
     }
