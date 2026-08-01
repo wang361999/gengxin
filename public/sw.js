@@ -1,5 +1,5 @@
 // Service Worker：网络优先策略，版本联动缓存清理
-const CACHE_NAME = 'gitd-v13';
+const CACHE_NAME = 'gitd-v14';
 const STATIC_ASSETS = [
   '/style.css',
   '/dashboard.html',
@@ -9,7 +9,8 @@ const STATIC_ASSETS = [
   '/admin.html',
   '/legal.html',
   '/api-docs.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/error-tracker.js'
 ];
 
 // 安装：跳过预缓存，立即激活（避免用旧资源填充缓存）
@@ -44,7 +45,7 @@ self.addEventListener('message', event => {
   }
 });
 
-// 请求拦截：全部网络优先，确保始终拿到最新内容
+// 请求拦截：分层缓存策略
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -61,11 +62,32 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 2. 导航请求 + 静态资源：统一网络优先，离线才回退缓存
+  // 2. 静态资源（CSS, JS, 图片）：stale-while-revalidate 策略
+  const isStaticAsset = url.pathname.match(/\.(css|js|svg|png|jpg|jpeg|gif|webp|ico|woff2?)$/i)
+    || url.pathname === '/manifest.json';
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.match(event.request).then(cached => {
+          const fetchPromise = fetch(event.request).then(response => {
+            if (response.ok && url.origin === self.location.origin) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          }).catch(() => cached);
+          // 返回缓存（如果有），否则等待网络
+          return cached || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // 3. 导航请求：网络优先，离线回退缓存
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // 只缓存同源的成功响应
         if (response.ok && url.origin === self.location.origin) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => {

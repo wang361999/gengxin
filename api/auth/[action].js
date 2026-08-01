@@ -268,13 +268,20 @@ module.exports = async (req, res) => {
       const body = await readBody(req);
       const username = String(body.username || '').trim();
       const password = String(body.password || '');
-      const brandName = String(body.brandName || '').trim();
+      const brandName = String(body.brandName || '').trim().slice(0, 50);
 
       if (!username || username.length < 3 || username.length > 20) {
         return sendJson(res, 400, { error: '用户名 3-20 个字符' });
       }
       if (!password || password.length < 6) {
         return sendJson(res, 400, { error: '密码至少 6 位' });
+      }
+      // 安全检查：防止注入攻击
+      if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+        return sendJson(res, 400, { error: '用户名只能包含字母、数字、下划线和中文' });
+      }
+      if (password.length > 128) {
+        return sendJson(res, 400, { error: '密码长度不能超过 128 位' });
       }
 
       const existing = await findUserByUsername(username);
