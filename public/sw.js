@@ -1,5 +1,5 @@
 // Service Worker：网络优先策略，版本联动缓存清理
-const CACHE_NAME = 'gitd-v12';
+const CACHE_NAME = 'gitd-v13';
 const STATIC_ASSETS = [
   '/style.css',
   '/dashboard.html',

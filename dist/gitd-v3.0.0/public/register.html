@@ -88,14 +88,23 @@
       line-height: 1.6;
     }
     .legal-consent label {
-      display: flex;
+      display: flex !important;
       align-items: flex-start;
       gap: 8px;
       cursor: pointer;
+      width: 100%;
     }
-    .legal-consent input[type="checkbox"] {
-      margin-top: 2px;
+    .legal-consent label > input[type="checkbox"] {
+      margin-top: 3px;
       flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+    }
+    .legal-consent label > span {
+      flex: 1 1 auto;
+      min-width: 0;
+      word-break: break-word;
+      display: block;
     }
     .legal-consent a { color: var(--blue); text-decoration: none; }
     .legal-consent a:hover { text-decoration: underline; }
