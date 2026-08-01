@@ -14,9 +14,11 @@ function getPool() {
     pool = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      max: 3,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 15000
+      max: 5,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
+      statement_timeout: 30000,
+      query_timeout: 25000
     });
   }
   return pool;
@@ -224,6 +226,25 @@ async function ensureDB() {
           created_at TIMESTAMPTZ DEFAULT NOW()
         )
       `);
+
+      // ===== 性能索引（幂等，重复执行不会报错） =====
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_repos_user_id ON repos(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_history_user_id ON history(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_history_created_at ON history(created_at DESC)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_usage_stats_user_month ON usage_stats(user_id, year, month)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(user_id, is_read)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_team_members_user_id ON team_members(user_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_team_repos_team_id ON team_repos(team_id)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)`); } catch {}
+      try { await client.query(`CREATE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username))`); } catch {}
 
       // 初始化默认设置
       await client.query(`
